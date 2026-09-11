@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Search, Filter, Map as MapIcon, ChevronRight } from 'lucide-react';
+import { Search, Filter, Map as MapIcon, ChevronRight, X } from 'lucide-react';
 import './OrdersPage.css';
 
 const OrdersPage = () => {
@@ -11,6 +11,7 @@ const OrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedOrders, setSelectedOrders] = useState([]);
+  const [viewingOrder, setViewingOrder] = useState(null); // For modal
 
   // Enrich order data
   const getEnrichedOrder = (order) => ({
@@ -25,7 +26,8 @@ const OrdersPage = () => {
   const filteredOrders = enrichedOrders.filter(order => {
     const matchesSearch = 
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      order.customer.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      order.customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.vendor.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -40,7 +42,7 @@ const OrdersPage = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      // Only select orders that are not already assigned to a group
+      // Only select orders that are not already assigned to a delivery group
       const unassignedIds = filteredOrders.filter(o => !o.deliveryGroupId).map(o => o.id);
       setSelectedOrders(unassignedIds);
     } else {
@@ -50,9 +52,13 @@ const OrdersPage = () => {
 
   const handleAggregate = () => {
     if (selectedOrders.length === 0) return;
-    // We could store in Context or pass via router state. We'll use router state here.
     navigate('/order-aggregation', { state: { preSelectedOrders: selectedOrders } });
   };
+
+  const statusOptions = [
+    'PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY', 
+    'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'
+  ];
 
   return (
     <div className="page-container">
@@ -76,7 +82,7 @@ const OrdersPage = () => {
           <Search size={18} className="text-secondary" />
           <input 
             type="text" 
-            placeholder="Search by ID or customer..." 
+            placeholder="Search by ID, customer or vendor..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -85,10 +91,9 @@ const OrdersPage = () => {
           <Filter size={18} className="text-secondary" />
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="All">All Statuses</option>
-            <option value="Pending">Pending</option>
-            <option value="Preparing">Preparing</option>
-            <option value="Assigned">Assigned</option>
-            <option value="Delivered">Delivered</option>
+            {statusOptions.map(s => (
+               <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -101,9 +106,9 @@ const OrdersPage = () => {
                 <input type="checkbox" onChange={handleSelectAll} />
               </th>
               <th>Order ID</th>
+              <th>Date</th>
               <th>Customer</th>
               <th>Vendor</th>
-              <th>Items</th>
               <th>Amount</th>
               <th>Status</th>
               <th>Action</th>
@@ -126,6 +131,7 @@ const OrdersPage = () => {
                       />
                     </td>
                     <td className="font-medium">{order.id}</td>
+                    <td>{new Date(order.date).toLocaleDateString()}</td>
                     <td>
                       <div className="customer-info">
                         <span>{order.customer.name}</span>
@@ -133,23 +139,23 @@ const OrdersPage = () => {
                       </div>
                     </td>
                     <td>{order.vendor.name}</td>
-                    <td>{order.items.reduce((sum, item) => sum + item.qty, 0)} items</td>
-                    <td className="font-medium">${order.total.toFixed(2)}</td>
+                    <td className="font-medium">₹{order.total.toFixed(2)}</td>
                     <td>
                       <select 
                         className={`status-badge badge-${order.status.toLowerCase()}`}
                         value={order.status}
                         onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                        disabled={isGrouped && order.status !== 'Delivered'} // Simplify logic for mock
+                        disabled={isGrouped && !['DELIVERED', 'CANCELLED'].includes(order.status)} 
                       >
-                        <option value="Pending">Pending</option>
-                        <option value="Preparing">Preparing</option>
-                        <option value="Assigned" disabled>Assigned</option>
-                        <option value="Delivered">Delivered</option>
+                         {statusOptions.map(s => (
+                           <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                         ))}
                       </select>
                     </td>
                     <td>
-                      <button className="icon-btn-small"><ChevronRight size={18} /></button>
+                      <button className="icon-btn-small" onClick={() => setViewingOrder(order)}>
+                         <ChevronRight size={18} />
+                      </button>
                     </td>
                   </tr>
                 )
@@ -158,6 +164,53 @@ const OrdersPage = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Order Details Modal */}
+      {viewingOrder && (
+        <div className="modal-overlay" onClick={() => setViewingOrder(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Order Details: {viewingOrder.id}</h3>
+              <button className="icon-btn-small" onClick={() => setViewingOrder(null)}><X size={20}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-group">
+                <p><strong>Date:</strong> {new Date(viewingOrder.date).toLocaleString()}</p>
+                <p><strong>Status:</strong> <span className={`badge badge-${viewingOrder.status.toLowerCase()}`}>{viewingOrder.status.replace(/_/g, ' ')}</span></p>
+              </div>
+              <div className="detail-group">
+                <h4>Customer</h4>
+                <p>{viewingOrder.customer.name}</p>
+                <p>{viewingOrder.customer.address}</p>
+                <p>{viewingOrder.customer.phone}</p>
+              </div>
+              <div className="detail-group">
+                <h4>Vendor</h4>
+                <p>{viewingOrder.vendor.name}</p>
+                <p>{viewingOrder.vendor.address}</p>
+              </div>
+              <div className="detail-group">
+                <h4>Items</h4>
+                <table className="mini-table">
+                  <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+                  <tbody>
+                    {viewingOrder.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td>{item.name}</td>
+                        <td>{item.qty}</td>
+                        <td>₹{item.price.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="detail-total">
+                <strong>Total Amount: </strong> ₹{viewingOrder.total.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

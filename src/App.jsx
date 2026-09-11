@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage';
 
 // Dashboard Pages
 import DashboardOverview from './pages/DashboardOverview';
+import CustomerDashboard from './pages/CustomerDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import OrdersPage from './pages/OrdersPage';
 import ProductsPage from './pages/ProductsPage';
 import InventoryPage from './pages/InventoryPage';
@@ -30,6 +32,9 @@ function App() {
             
             {/* Protected Routes wrapped in Dashboard Layout */}
             <Route path="/dashboard" element={<DashboardLayout><DashboardOverview /></DashboardLayout>} />
+            <Route path="/vendor-dashboard" element={<DashboardLayout><DashboardOverview /></DashboardLayout>} />
+            <Route path="/customer-dashboard" element={<DashboardLayout><CustomerDashboard /></DashboardLayout>} />
+            <Route path="/admin-dashboard" element={<DashboardLayout><AdminDashboard /></DashboardLayout>} />
             <Route path="/orders" element={<DashboardLayout><OrdersPage /></DashboardLayout>} />
             <Route path="/products" element={<DashboardLayout><ProductsPage /></DashboardLayout>} />
             <Route path="/inventory" element={<DashboardLayout><InventoryPage /></DashboardLayout>} />

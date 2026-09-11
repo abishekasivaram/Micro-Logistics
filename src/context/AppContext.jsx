@@ -4,7 +4,10 @@ import {
   vendors as initialVendors, 
   customers as initialCustomers, 
   deliveryPersonnel as initialDeliveryPersonnel,
-  deliveryGroups as initialDeliveryGroups 
+  deliveryGroups as initialDeliveryGroups,
+  products as initialProducts,
+  initialNotifications,
+  mockUsers
 } from '../data/sampleData';
 
 const AppContext = createContext();
@@ -17,70 +20,102 @@ export const AppProvider = ({ children }) => {
   const [customers, setCustomers] = useState(initialCustomers);
   const [deliveryPersonnel, setDeliveryPersonnel] = useState(initialDeliveryPersonnel);
   const [deliveryGroups, setDeliveryGroups] = useState(initialDeliveryGroups);
-
-  // Products wasn't in initial sampleData, let's create some
-  const [products, setProducts] = useState([
-    { id: 'p1', name: 'Fresh Milk 1L', category: 'Dairy', price: 4.5, stock: 15, vendorId: 'v1', status: 'In Stock' },
-    { id: 'p2', name: 'Whole Wheat Bread', category: 'Bakery', price: 2.0, stock: 5, vendorId: 'v1', status: 'Low Stock' },
-    { id: 'p3', name: 'Basmati Rice 5kg', category: 'Grains', price: 15.0, stock: 20, vendorId: 'v2', status: 'In Stock' },
-    { id: 'p4', name: 'Potato Chips', category: 'Snacks', price: 3.0, stock: 0, vendorId: 'v2', status: 'Out of Stock' },
-  ]);
-
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'Welcome to MicroLogi!', type: 'system', date: new Date().toISOString() }
-  ]);
-
-  // Methods for interactions
+  const [products, setProducts] = useState(initialProducts);
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [currentUser, setCurrentUser] = useState(mockUsers.find(u => u.role === 'vendor'));
+  // --- Orders CRUD ---
   const updateOrderStatus = (orderId, status) => {
     setOrders(orders.map(o => o.id === orderId ? { ...o, status } : o));
+    
+    // Auto-generate notification for status change
+    addNotification(`Order ${orderId} status changed to ${status}`, 'order');
   };
 
+  // --- Delivery Groups CRUD ---
   const createDeliveryGroup = (orderIds, personnelId) => {
     const newGroupId = `DG-${Math.floor(1000 + Math.random() * 9000)}`;
     
-    // Create new group
     const newGroup = {
       id: newGroupId,
       orderIds: orderIds,
       personnelId: personnelId,
-      status: 'Assigned',
+      status: personnelId ? 'ASSIGNED' : 'READY',
       date: new Date().toISOString()
     };
     
     setDeliveryGroups([...deliveryGroups, newGroup]);
     
-    // Update orders with the group ID
-    setOrders(orders.map(o => orderIds.includes(o.id) ? { ...o, deliveryGroupId: newGroupId, status: 'Assigned' } : o));
+    setOrders(orders.map(o => orderIds.includes(o.id) ? { ...o, deliveryGroupId: newGroupId, status: personnelId ? 'ASSIGNED' : 'READY_FOR_DELIVERY' } : o));
     
-    // Update personnel status if assigned
     if (personnelId) {
        setDeliveryPersonnel(deliveryPersonnel.map(dp => dp.id === personnelId ? { ...dp, status: 'On Delivery' } : dp));
     }
 
-    setNotifications([{ id: Date.now(), message: `Delivery Group ${newGroupId} created.`, type: 'delivery', date: new Date().toISOString() }, ...notifications]);
+    addNotification(`Delivery Group ${newGroupId} created.`, 'delivery');
   };
   
   const updateDeliveryGroupStatus = (groupId, status) => {
     setDeliveryGroups(deliveryGroups.map(g => g.id === groupId ? { ...g, status } : g));
     
-    // Propagate status to orders if needed (e.g. if delivered, mark orders as delivered)
-    if (status === 'Delivered') {
+    if (status === 'DELIVERED') {
       const group = deliveryGroups.find(g => g.id === groupId);
       if (group) {
-        setOrders(orders.map(o => group.orderIds.includes(o.id) ? { ...o, status: 'Delivered' } : o));
-        
-        // Free up the driver
+        setOrders(orders.map(o => group.orderIds.includes(o.id) ? { ...o, status: 'DELIVERED' } : o));
         if(group.personnelId) {
             setDeliveryPersonnel(deliveryPersonnel.map(dp => dp.id === group.personnelId ? { ...dp, status: 'Available' } : dp));
         }
+        addNotification(`Delivery Group ${groupId} has been delivered.`, 'delivery');
       }
     }
   };
 
-  // Product CRUD
-  const addProduct = (product) => setProducts([...products, { ...product, id: `p${Date.now()}` }]);
-  const updateProduct = (id, updated) => setProducts(products.map(p => p.id === id ? { ...p, ...updated } : p));
-  const deleteProduct = (id) => setProducts(products.filter(p => p.id !== id));
+  // --- Products & Inventory CRUD ---
+  const addProduct = (product) => {
+    const newProduct = { ...product, id: `p${Date.now()}` };
+    setProducts([...products, newProduct]);
+    addNotification(`New product added: ${product.name}`, 'system');
+  };
+  
+  const updateProduct = (id, updatedFields) => {
+    setProducts(products.map(p => {
+      if (p.id === id) {
+        const updated = { ...p, ...updatedFields };
+        // Auto-calculate status based on stock
+        if (updated.stock !== undefined) {
+          if (updated.stock > 10) updated.status = 'In Stock';
+          else if (updated.stock > 0) updated.status = 'Low Stock';
+          else updated.status = 'Out of Stock';
+        }
+        return updated;
+      }
+      return p;
+    }));
+  };
+  
+  const deleteProduct = (id) => {
+    setProducts(products.filter(p => p.id !== id));
+    addNotification(`Product deleted.`, 'system');
+  };
+
+  // --- Notifications CRUD ---
+  const addNotification = (message, type = 'system') => {
+    const newNotif = {
+      id: Date.now(),
+      message,
+      type,
+      isRead: false,
+      date: new Date().toISOString()
+    };
+    setNotifications([newNotif, ...notifications]);
+  };
+
+  const markNotificationAsRead = (id) => {
+    setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+  };
 
   return (
     <AppContext.Provider value={{
@@ -90,7 +125,8 @@ export const AppProvider = ({ children }) => {
       deliveryPersonnel, setDeliveryPersonnel,
       deliveryGroups, createDeliveryGroup, updateDeliveryGroupStatus,
       products, addProduct, updateProduct, deleteProduct,
-      notifications
+      notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
+      currentUser, setCurrentUser
     }}>
       {children}
     </AppContext.Provider>
