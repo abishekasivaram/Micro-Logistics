@@ -4,15 +4,16 @@ import { useAppContext } from '../context/AppContext';
 import { 
   LayoutDashboard, ShoppingBag, Package, Truck, Layers, Users, Bell, 
   Settings, HelpCircle, LogOut, Map, User, Navigation, Calendar, 
-  Store, BarChart3, ShoppingCart
+  Store, BarChart3, ShoppingCart, FileText
 } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
-  const { currentUser, setCurrentUser, cart } = useAppContext();
+  const { currentUser, setCurrentUser, cart, notifications } = useAppContext();
   const navigate = useNavigate();
   const role = currentUser?.role || 'vendor'; 
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const unreadNotifCount = notifications.filter(n => !n.isRead).length;
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -20,40 +21,57 @@ const Sidebar = () => {
     navigate('/login');
   };
 
-  // Render Admin Links
+  // Render Admin Links (12 Complete Items)
   const renderAdminLinks = () => (
     <>
       <NavLink to="/admin-dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <LayoutDashboard size={20} />
-        <span>Admin Dashboard</span>
+        <span>Dashboard</span>
       </NavLink>
-      <NavLink to="/customers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/admin/sellers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Store size={20} />
+        <span>Sellers</span>
+      </NavLink>
+      <NavLink to="/admin/customers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Users size={20} />
         <span>Customers</span>
       </NavLink>
-      <NavLink to="/products" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Package size={20} />
-        <span>Products</span>
-      </NavLink>
-      <NavLink to="/inventory" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Layers size={20} />
-        <span>Inventory</span>
-      </NavLink>
-      <NavLink to="/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/admin/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <ShoppingBag size={20} />
         <span>Orders</span>
       </NavLink>
-      <NavLink to="/deliveries" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Truck size={20} />
-        <span>Deliveries</span>
-      </NavLink>
-      <NavLink to="/order-aggregation" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/admin/order-aggregation" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Map size={20} />
         <span>Order Aggregation</span>
       </NavLink>
-      <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/admin/delivery-management" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Truck size={20} />
+        <span>Delivery Management</span>
+      </NavLink>
+      <NavLink to="/admin/delivery-agents" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Navigation size={20} />
+        <span>Delivery Agents</span>
+      </NavLink>
+      <NavLink to="/admin/routes" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Layers size={20} />
+        <span>Routes / Coordination</span>
+      </NavLink>
+      <NavLink to="/admin/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Bell size={20} />
         <span>Notifications</span>
+        {unreadNotifCount > 0 && <span className="nav-badge">{unreadNotifCount}</span>}
+      </NavLink>
+      <NavLink to="/admin/analytics" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <BarChart3 size={20} />
+        <span>Analytics</span>
+      </NavLink>
+      <NavLink to="/admin/reports" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <FileText size={20} />
+        <span>Reports</span>
+      </NavLink>
+      <NavLink to="/admin/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Settings size={20} />
+        <span>Settings</span>
       </NavLink>
     </>
   );
@@ -158,15 +176,17 @@ const Sidebar = () => {
         <div className="nav-divider"></div>
 
         <div className="nav-section">
-          <NavLink to="/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <Settings size={20} />
-            <span>Settings</span>
-          </NavLink>
           {role !== 'admin' && (
-            <NavLink to="/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-              <HelpCircle size={20} />
-              <span>Help & Support</span>
-            </NavLink>
+            <>
+              <NavLink to="/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+                <Settings size={20} />
+                <span>Settings</span>
+              </NavLink>
+              <NavLink to="/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+                <HelpCircle size={20} />
+                <span>Help & Support</span>
+              </NavLink>
+            </>
           )}
           <Link to="/login" onClick={handleLogout} className="nav-item text-danger mt-auto">
             <LogOut size={20} />
@@ -179,4 +199,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-

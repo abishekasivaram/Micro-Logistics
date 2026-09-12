@@ -1,0 +1,75 @@
+.aggregation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.recommendation-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.recommendation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.badge-score {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #bfdbfe;
+}
+
+.mock-disclaimer-pill {
+  display: inline-block;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.reasons-list {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.reason-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.reason-item:last-child {
+  margin-bottom: 0;
+}
+
+.metrics-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px border-bottom 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  font-size: 13px;
+}

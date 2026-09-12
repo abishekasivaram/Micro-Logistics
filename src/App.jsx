@@ -24,17 +24,30 @@ import DashboardOverview from './pages/DashboardOverview';
 import SellerAnalyticsPage from './pages/SellerAnalyticsPage';
 import BusinessProfilePage from './pages/BusinessProfilePage';
 
-// Common / Shared Pages
+// Admin Dedicated Pages (Stage 2)
+import AdminDashboard from './pages/AdminDashboard';
+import AdminSellersPage from './pages/AdminSellersPage';
+import AdminCustomersPage from './pages/AdminCustomersPage';
+import AdminCentralOrdersPage from './pages/AdminCentralOrdersPage';
+import OrderAggregationPage from './pages/OrderAggregationPage';
+import DeliveryManagementPage from './pages/DeliveryManagementPage';
+import DeliveryAgentsPage from './pages/DeliveryAgentsPage';
+import AdminRoutesPage from './pages/AdminRoutesPage';
+import AdminNotificationsPage from './pages/AdminNotificationsPage';
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import AdminReportsPage from './pages/AdminReportsPage';
+import AdminSettingsPage from './pages/AdminSettingsPage';
+
+// Common / Shared Pages (Stage 1 Preservation)
 import OrdersPage from './pages/OrdersPage';
 import ProductsPage from './pages/ProductsPage';
 import InventoryPage from './pages/InventoryPage';
 import DeliveriesPage from './pages/DeliveriesPage';
-import MapPlanning from './pages/MapPlanning'; // Order Aggregation
+import MapPlanning from './pages/MapPlanning';
 import CustomersPage from './pages/CustomersPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import HelpPage from './pages/HelpPage';
-import AdminDashboard from './pages/AdminDashboard';
 
 import './styles/global.css';
 
@@ -109,7 +122,69 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Shared / Role-aware Routes */}
+            {/* Admin Dedicated Routes (Stage 2) */}
+            <Route path="/admin-dashboard" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/sellers" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminSellersPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/customers" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminCustomersPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/orders" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminCentralOrdersPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/order-aggregation" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><OrderAggregationPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/delivery-management" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><DeliveryManagementPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/delivery-agents" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><DeliveryAgentsPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/routes" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminRoutesPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/notifications" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminNotificationsPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/analytics" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminAnalyticsPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/reports" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminReportsPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout><AdminSettingsPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+
+            {/* Shared / Role-aware Routes (Stage 1 Preservation) */}
             <Route path="/orders" element={
               <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
                 <DashboardLayout><OrdersPage /></DashboardLayout>
@@ -132,7 +207,7 @@ function App() {
             } />
             <Route path="/order-aggregation" element={
               <ProtectedRoute allowedRoles={['vendor', 'admin']}>
-                <DashboardLayout><MapPlanning /></DashboardLayout>
+                <DashboardLayout><OrderAggregationPage /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/customers" element={
@@ -156,13 +231,6 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Admin Routes */}
-            <Route path="/admin-dashboard" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminDashboard /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -173,4 +241,3 @@ function App() {
 }
 
 export default App;
-
