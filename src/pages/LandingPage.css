@@ -219,12 +219,143 @@
   color: var(--color-text-tertiary);
 }
 
-/* Footer */
-.landing-footer {
-  padding: var(--spacing-6);
-  text-align: center;
-  background-color: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  margin-top: auto;
+.logo-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  background-color: var(--color-primary-light);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.landing-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-subtext {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  display: block;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.section-header {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 40px auto;
+}
+
+.section-header h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: 8px;
+}
+
+.section-header p {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+/* Role Portals */
+.roles-section {
+  padding: var(--spacing-12) var(--spacing-8);
+  background-color: #f8fafc;
+  border-top: 1px solid var(--color-border);
+}
+
+.roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.role-card {
+  background: white;
+  padding: 32px 24px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.role-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+}
+
+.role-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.customer-role-icon { background-color: #e0e7ff; color: #4f46e5; }
+.seller-role-icon { background-color: #d1fae5; color: #059669; }
+.admin-role-icon { background-color: #fef3c7; color: #d97706; }
+
+.role-card h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.role-card p {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  flex: 1;
+}
+
+.role-actions {
+  width: 100%;
+}
+
+.btn-dark {
+  background-color: #0f172a;
+  color: white;
+  border: none;
+}
+
+.btn-dark:hover {
+  background-color: #1e293b;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    flex-direction: column;
+    padding: var(--spacing-8) var(--spacing-4);
+    min-height: auto;
+  }
+
+  .hero-content h1 {
+    font-size: 2.5rem;
+  }
+
+  .card-1 { left: 0; }
+  .card-2 { right: 0; }
+}
+

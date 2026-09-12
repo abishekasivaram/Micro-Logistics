@@ -1,0 +1,135 @@
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+@media (max-width: 900px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bar-chart-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 220px;
+  padding-top: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.bar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  position: relative;
+  flex: 1;
+}
+
+.bar-wrapper {
+  width: 24px;
+  height: 100%;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, #6366f1, #4f46e5);
+  border-radius: 6px;
+  transition: height 0.4s ease;
+}
+
+.bar-column:hover .bar-fill {
+  background: linear-gradient(180deg, #818cf8, #4f46e5);
+}
+
+.bar-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.bar-tooltip {
+  position: absolute;
+  top: -24px;
+  font-size: 11px;
+  background-color: #1e293b;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.bar-column:hover .bar-tooltip {
+  opacity: 1;
+}
+
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.distribution-progress-box {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.distr-bar-bg {
+  height: 10px;
+  background-color: #e5e7eb;
+  border-radius: 5px;
+  display: flex;
+  overflow: hidden;
+}
+
+.distr-fill { height: 100%; }
+.distr-fill.completed { background-color: #10b981; }
+.distr-fill.preparing { background-color: #f59e0b; }
+.distr-fill.cancelled { background-color: #ef4444; }
+
+.distr-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+.distr-legend span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-completed { background-color: #10b981; }
+.dot-preparing { background-color: #f59e0b; }
+.dot-cancelled { background-color: #ef4444; }

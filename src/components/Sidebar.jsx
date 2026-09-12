@@ -1,13 +1,18 @@
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { LayoutDashboard, ShoppingBag, Package, Truck, Layers, Users, Bell, Settings, HelpCircle, LogOut, Map, User, Navigation } from 'lucide-react';
+import { 
+  LayoutDashboard, ShoppingBag, Package, Truck, Layers, Users, Bell, 
+  Settings, HelpCircle, LogOut, Map, User, Navigation, Calendar, 
+  Store, BarChart3, ShoppingCart
+} from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
-  const { currentUser, setCurrentUser } = useAppContext();
+  const { currentUser, setCurrentUser, cart } = useAppContext();
   const navigate = useNavigate();
-  const role = currentUser?.role || 'vendor'; // Default to vendor to preserve existing
+  const role = currentUser?.role || 'vendor'; 
+  const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -22,17 +27,9 @@ const Sidebar = () => {
         <LayoutDashboard size={20} />
         <span>Admin Dashboard</span>
       </NavLink>
-      <NavLink to="/users" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Users size={20} />
-        <span>Users</span>
-      </NavLink>
       <NavLink to="/customers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Users size={20} />
         <span>Customers</span>
-      </NavLink>
-      <NavLink to="/vendors" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Users size={20} />
-        <span>Vendors</span>
       </NavLink>
       <NavLink to="/products" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Package size={20} />
@@ -68,17 +65,30 @@ const Sidebar = () => {
         <LayoutDashboard size={20} />
         <span>Dashboard</span>
       </NavLink>
+      <NavLink to="/browse-sellers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Store size={20} />
+        <span>Browse Sellers</span>
+      </NavLink>
       <NavLink to="/products" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Package size={20} />
-        <span>Browse Products</span>
+        <span>Products</span>
+      </NavLink>
+      <NavLink to="/cart" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <ShoppingCart size={20} />
+        <span>Cart</span>
+        {cartItemCount > 0 && <span className="nav-badge">{cartItemCount}</span>}
       </NavLink>
       <NavLink to="/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <ShoppingBag size={20} />
         <span>My Orders</span>
       </NavLink>
-      <NavLink to="/deliveries" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/track-delivery" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Navigation size={20} />
         <span>Track Delivery</span>
+      </NavLink>
+      <NavLink to="/delivery-schedule" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Calendar size={20} />
+        <span>Delivery Schedule</span>
       </NavLink>
       <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Bell size={20} />
@@ -91,36 +101,36 @@ const Sidebar = () => {
     </>
   );
 
-  // Render Vendor Links (Existing)
+  // Render Seller / Vendor Links
   const renderVendorLinks = () => (
     <>
       <NavLink to="/vendor-dashboard" className={({isActive}) => `nav-item ${isActive || window.location.pathname === '/dashboard' ? 'active' : ''}`}>
         <LayoutDashboard size={20} />
         <span>Dashboard</span>
       </NavLink>
-      <NavLink to="/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <ShoppingBag size={20} />
-        <span>Orders</span>
-      </NavLink>
       <NavLink to="/products" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Package size={20} />
         <span>Products</span>
       </NavLink>
-      <NavLink to="/inventory" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Layers size={20} />
-        <span>Inventory</span>
+      <NavLink to="/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <ShoppingBag size={20} />
+        <span>Orders</span>
       </NavLink>
       <NavLink to="/deliveries" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Truck size={20} />
-        <span>Deliveries</span>
+        <span>Delivery Coordination</span>
       </NavLink>
       <NavLink to="/order-aggregation" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Map size={20} />
-        <span>Order Aggregation</span>
+        <span>Aggregation Status</span>
       </NavLink>
-      <NavLink to="/customers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Users size={20} />
-        <span>Customers</span>
+      <NavLink to="/seller-analytics" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <BarChart3 size={20} />
+        <span>Analytics</span>
+      </NavLink>
+      <NavLink to="/business-profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Store size={20} />
+        <span>Business Profile</span>
       </NavLink>
       <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <Bell size={20} />
@@ -134,7 +144,7 @@ const Sidebar = () => {
       <div className="sidebar-brand">
         <h1>MicroLogi</h1>
         <span style={{ fontSize: '12px', opacity: 0.8, display: 'block', textTransform: 'capitalize' }}>
-          {role} Panel
+          {role === 'vendor' ? 'Seller Panel' : `${role} Panel`}
         </span>
       </div>
       
@@ -169,3 +179,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
