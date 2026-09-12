@@ -134,14 +134,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         <ShoppingBag size={20} />
         <span>Orders</span>
       </NavLink>
-      <NavLink to="/deliveries" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Truck size={20} />
-        <span>Delivery Coordination</span>
-      </NavLink>
-      <NavLink to="/order-aggregation" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Map size={20} />
-        <span>Aggregation Status</span>
-      </NavLink>
       <NavLink to="/seller-analytics" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
         <BarChart3 size={20} />
         <span>Analytics</span>

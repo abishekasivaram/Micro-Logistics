@@ -200,16 +200,6 @@ function App() {
                 <DashboardLayout><InventoryPage /></DashboardLayout>
               </ProtectedRoute>
             } />
-            <Route path="/deliveries" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><DeliveriesPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/order-aggregation" element={
-              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
-                <DashboardLayout><OrderAggregationPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
             <Route path="/customers" element={
               <ProtectedRoute allowedRoles={['vendor', 'admin']}>
                 <DashboardLayout><CustomersPage /></DashboardLayout>

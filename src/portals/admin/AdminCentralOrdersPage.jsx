@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { ShoppingBag, Search, Filter, Eye, X, Calendar, MapPin, Store, User } from 'lucide-react';
-import { getHumanReadableStatus, getStatusBadgeClass } from '../../utils/aggregationUtils';
+import { Search, Eye } from 'lucide-react';
+import StatusBadge from '../../components/common/StatusBadge';
 import OrderDetailsModal from '../../components/common/OrderDetailsModal';
 import '../seller/DashboardOverview.css';
 
@@ -18,14 +18,27 @@ const AdminCentralOrdersPage = () => {
 
   const filteredOrders = orders.filter(o => {
     const sTerm = searchTerm.toLowerCase();
-    const matchesSearch = (o.id || '').toLowerCase().includes(sTerm) ||
-                          (o.orderId || '').toLowerCase().includes(sTerm) ||
-                          (o.customerName || '').toLowerCase().includes(sTerm) ||
-                          (o.vendorName || o.sellerName || '').toLowerCase().includes(sTerm);
     
-    const matchesSeller = sellerFilter === 'ALL' || o.vendorId === sellerFilter || o.sellerId === sellerFilter;
-    const matchesStatus = orderStatusFilter === 'ALL' || o.status === orderStatusFilter || o.orderStatus === orderStatusFilter;
-    const matchesAgg = aggregationFilter === 'ALL' || o.aggregationStatus === aggregationFilter;
+    // Fallbacks for missing string values to avoid runtime exceptions
+    const orderId = o.id || o.orderId || '';
+    const customerName = o.customerName || '';
+    const vendorName = o.vendorName || o.sellerName || '';
+    
+    const matchesSearch = 
+      orderId.toLowerCase().includes(sTerm) ||
+      customerName.toLowerCase().includes(sTerm) ||
+      vendorName.toLowerCase().includes(sTerm);
+    
+    // Explicit null/undefined checks for filters.
+    // If a filter is ALL, we accept it regardless of the field's presence.
+    const vendorIdMatch = o.vendorId || o.sellerId || '';
+    const matchesSeller = sellerFilter === 'ALL' || vendorIdMatch === sellerFilter;
+    
+    const statusMatch = o.status || o.orderStatus || '';
+    const matchesStatus = orderStatusFilter === 'ALL' || statusMatch === orderStatusFilter;
+    
+    const aggMatch = o.aggregationStatus || '';
+    const matchesAgg = aggregationFilter === 'ALL' || aggMatch === aggregationFilter;
 
     return matchesSearch && matchesSeller && matchesStatus && matchesAgg;
   });
@@ -57,7 +70,7 @@ const AdminCentralOrdersPage = () => {
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <select className="form-control" value={sellerFilter} onChange={e => setSellerFilter(e.target.value)} style={{ width: 'auto' }}>
               <option value="ALL">All Sellers</option>
-              {sellersList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {sellersList.map(s => <option key={s.id} value={s.id}>{s.name || 'Unknown Seller'}</option>)}
             </select>
 
             <select className="form-control" value={orderStatusFilter} onChange={e => setOrderStatusFilter(e.target.value)} style={{ width: 'auto' }}>
@@ -91,53 +104,64 @@ const AdminCentralOrdersPage = () => {
             <thead>
               <tr>
                 <th>Order ID</th>
-                <th>Seller</th>
                 <th>Customer</th>
-                <th>Pickup & Delivery</th>
-                <th>Delivery Window</th>
+                <th>Seller / Shop</th>
+                <th>Items</th>
+                <th>Total Amount</th>
+                <th>Order Date</th>
                 <th>Order Status</th>
+                <th>Delivery Status</th>
                 <th>Aggregation Status</th>
-                <th>Assigned Agent</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrders.length === 0 ? (
-                <tr><td colSpan="9" className="empty-state">No central orders match your search and filter criteria.</td></tr>
+                <tr><td colSpan="10" className="empty-state">No central orders match your search and filter criteria.</td></tr>
               ) : (
-                filteredOrders.map(o => (
-                  <tr key={o.id}>
-                    <td className="font-medium">{o.orderId || o.id}</td>
-                    <td>{o.vendorName || o.sellerName || 'Local Seller'}</td>
-                    <td>{o.customerName}</td>
-                    <td style={{ fontSize: '12px', maxWidth: '200px' }}>
-                      <div style={{ color: '#475569' }}><strong>From:</strong> {o.pickupLocation}</div>
-                      <div style={{ color: '#0284c7' }}><strong>To:</strong> {o.deliveryLocation}</div>
-                    </td>
-                    <td style={{ fontSize: '12px' }}>
-                      <div>{o.deliveryDate}</div>
-                      <div className="text-secondary">{o.deliveryTimeSlot}</div>
-                    </td>
-                    <td>
-                      <span className={`badge ${getStatusBadgeClass(o.status || o.orderStatus)}`}>
-                        {getHumanReadableStatus(o.status || o.orderStatus)}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="badge badge-secondary" style={{ fontSize: '11px' }}>
-                        {o.aggregationStatus || 'Waiting'}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '13px' }}>
-                      {o.assignedAgent || <span className="text-warning">Unassigned</span>}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn-sm btn-outline" onClick={() => setSelectedOrder(o)}>
-                        <Eye size={14} /> Details
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                filteredOrders.map(o => {
+                  const currentSt = o.status || o.orderStatus || 'PLACED';
+                  const itemsCount = o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 0;
+                  
+                  return (
+                    <tr key={o.id || Math.random()}>
+                      <td className="font-medium">{o.orderId || o.id || 'N/A'}</td>
+                      <td>{o.customerName || 'Customer'}</td>
+                      <td>{o.vendorName || o.sellerName || 'Local Seller'}</td>
+                      <td>
+                        <span className="font-medium">{itemsCount} items</span>
+                        <small style={{ display: 'block', color: '#6b7280' }}>
+                          {o.items && o.items[0] ? o.items[0].name : 'N/A'}
+                        </small>
+                      </td>
+                      <td className="font-medium text-primary">₹{(o.total || 0).toFixed(2)}</td>
+                      <td>
+                        <div style={{ fontSize: '13px' }}>
+                          <div>📅 {o.deliveryDate ? o.deliveryDate : (o.date ? new Date(o.date).toLocaleDateString() : 'N/A')}</div>
+                          <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: '500' }}>🕒 {o.deliveryTimeSlot || 'Standard Slot'}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <StatusBadge status={currentSt} />
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '12px', color: '#4b5563', fontWeight: '500' }}>
+                          {o.deliveryStatus || 'Pending'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="badge badge-secondary" style={{ fontSize: '11px' }}>
+                          {o.aggregationStatus || 'Not Assigned'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="btn btn-sm btn-outline" onClick={() => setSelectedOrder(o)}>
+                          <Eye size={14} /> Details
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
