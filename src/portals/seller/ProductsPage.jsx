@@ -1,0 +1,399 @@
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAppContext } from '../../context/AppContext';
+import { Search, Plus, Edit2, Trash2, ShoppingCart, Clock, Store, Eye, Check, X, Filter } from 'lucide-react';
+import StatusBadge from '../../components/common/StatusBadge';
+import './ProductsPage.css';
+
+const ProductsPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { products, vendors, currentUser, addToCart, addProduct, updateProduct, deleteProduct } = useAppContext();
+
+  const isCustomer = currentUser?.role === 'customer';
+  const initialVendorId = location.state?.vendorId || 'all';
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedVendorFilter, setSelectedVendorFilter] = useState(initialVendorId);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
+  
+  // Quantities state per product for customer view
+  const [quantities, setQuantities] = useState({});
+
+  // Product Add/Edit Modal state for seller/vendor
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [productForm, setProductForm] = useState({
+    name: '',
+    category: 'Dairy',
+    price: '',
+    stock: '',
+    prepTime: '15 mins',
+    description: '',
+    image: ''
+  });
+
+  const handleQtyChange = (productId, delta) => {
+    const currentQty = quantities[productId] || 1;
+    const newQty = Math.max(1, currentQty + delta);
+    setQuantities({ ...quantities, [productId]: newQty });
+  };
+
+  const handleAddToCart = (product) => {
+    const qty = quantities[product.id] || 1;
+    addToCart(product, qty);
+  };
+
+  const openAddModal = () => {
+    setEditingProduct(null);
+    setProductForm({
+      name: '',
+      category: 'Dairy',
+      price: '',
+      stock: '20',
+      prepTime: '15 mins',
+      description: '',
+      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=80'
+    });
+    setShowProductModal(true);
+  };
+
+  const openEditModal = (product) => {
+    setEditingProduct(product);
+    setProductForm({
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      stock: product.stock,
+      prepTime: product.prepTime || '15 mins',
+      description: product.description || '',
+      image: product.image || ''
+    });
+    setShowProductModal(true);
+  };
+
+  const handleSaveProduct = (e) => {
+    e.preventDefault();
+    if (!productForm.name || !productForm.price) return;
+
+    if (editingProduct) {
+      updateProduct(editingProduct.id, {
+        name: productForm.name,
+        category: productForm.category,
+        price: parseFloat(productForm.price),
+        stock: parseInt(productForm.stock),
+        prepTime: productForm.prepTime,
+        description: productForm.description,
+        image: productForm.image
+      });
+    } else {
+      addProduct({
+        name: productForm.name,
+        category: productForm.category,
+        price: parseFloat(productForm.price),
+        stock: parseInt(productForm.stock),
+        prepTime: productForm.prepTime,
+        description: productForm.description,
+        image: productForm.image
+      });
+    }
+    setShowProductModal(false);
+  };
+
+  // Filter products list
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          product.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesVendor = selectedVendorFilter === 'all' || product.vendorId === selectedVendorFilter;
+    const matchesCategory = selectedCategoryFilter === 'All' || product.category === selectedCategoryFilter;
+    const matchesSellerUser = !isCustomer && currentUser?.role === 'vendor' ? product.vendorId === currentUser.id : true;
+
+    return matchesSearch && matchesVendor && matchesCategory && matchesSellerUser;
+  });
+
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <div>
+          <h2>{isCustomer ? 'Browse Local Products' : 'Product Inventory Management'}</h2>
+          <p>{isCustomer ? 'Select fresh items from neighborhood sellers and add to cart.' : 'Manage your store catalog, stock quantities, and availability.'}</p>
+        </div>
+        {!isCustomer && (
+          <button className="btn btn-primary flex items-center gap-2" onClick={openAddModal}>
+            <Plus size={18} /> Add New Product
+          </button>
+        )}
+      </div>
+
+      {/* Controls / Filter Bar */}
+      <div className="products-controls-bar">
+        <div className="search-box-wrap">
+          <Search size={18} className="search-icon" />
+          <input 
+            type="text" 
+            placeholder="Search products by name or category..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="filters-group-row">
+          {isCustomer && (
+            <select 
+              value={selectedVendorFilter} 
+              onChange={e => setSelectedVendorFilter(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">All Local Sellers</option>
+              {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+          )}
+
+          <select 
+            value={selectedCategoryFilter} 
+            onChange={e => setSelectedCategoryFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="All">All Categories</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Bakery">Bakery</option>
+            <option value="Grains">Grains & Pulses</option>
+            <option value="Vegetables">Vegetables & Fruits</option>
+            <option value="Oil & Ghee">Oil & Ghee</option>
+            <option value="Pharmacy">Pharmacy</option>
+            <option value="Electronics">Electronics</option>
+          </select>
+        </div>
+      </div>
+
+      {/* CUSTOMER VIEW: Product Cards Grid */}
+      {isCustomer ? (
+        <div className="products-card-grid">
+          {filteredProducts.length === 0 ? (
+            <div className="no-products-box full-width">
+              <Store size={48} className="text-secondary" />
+              <h3>No Products Found</h3>
+              <p>Try clearing filters or searching another keyword.</p>
+            </div>
+          ) : (
+            filteredProducts.map(product => {
+              const vendor = vendors.find(v => v.id === product.vendorId);
+              const qty = quantities[product.id] || 1;
+              const isAvailable = product.stock > 0;
+
+              return (
+                <div key={product.id} className="product-item-card">
+                  <div className="product-image-wrap">
+                    <img src={product.image} alt={product.name} />
+                    <span className={`product-status-tag ${isAvailable ? 'in-stock' : 'out-of-stock'}`}>
+                      {isAvailable ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  </div>
+
+                  <div className="product-card-details">
+                    <span className="product-category-tag">{product.category}</span>
+                    <h3 className="product-title">{product.name}</h3>
+                    <div className="product-seller-info">
+                      <Store size={14} className="text-secondary" />
+                      <span>{vendor?.name || product.vendorName || 'Local Seller'}</span>
+                    </div>
+                    <p className="product-desc">{product.description}</p>
+
+                    <div className="product-meta">
+                      <span className="product-price">₹{product.price.toFixed(2)}</span>
+                      <span className="product-prep-time"><Clock size={12} /> {product.prepTime || '15 mins'}</span>
+                    </div>
+                  </div>
+
+                  <div className="product-card-footer">
+                    <div className="qty-selector">
+                      <button onClick={() => handleQtyChange(product.id, -1)} disabled={!isAvailable}>-</button>
+                      <span>{qty}</span>
+                      <button onClick={() => handleQtyChange(product.id, 1)} disabled={!isAvailable}>+</button>
+                    </div>
+
+                    <button 
+                      className="btn btn-primary add-cart-btn"
+                      onClick={() => handleAddToCart(product)}
+                      disabled={!isAvailable}
+                    >
+                      <ShoppingCart size={16} /> Add to Cart
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        /* SELLER / VENDOR VIEW: Product Management Table */
+        <div className="table-container card">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock Qty</th>
+                <th>Prep Time</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.length === 0 ? (
+                <tr><td colSpan="7" className="empty-state">No products found in store catalog. Click "Add New Product" to create one.</td></tr>
+              ) : (
+                filteredProducts.map(product => (
+                  <tr key={product.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <img src={product.image} alt={product.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
+                        <div>
+                          <span className="font-medium" style={{ display: 'block' }}>{product.name}</span>
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>ID: {product.id}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{product.category}</td>
+                    <td className="font-medium">₹{product.price.toFixed(2)}</td>
+                    <td>
+                      <input 
+                        type="number" 
+                        value={product.stock}
+                        style={{ width: '70px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+                        onChange={(e) => updateProduct(product.id, { 
+                          stock: parseInt(e.target.value) || 0
+                        })}
+                      />
+                    </td>
+                    <td>{product.prepTime || '15 mins'}</td>
+                    <td>
+                      <span className={`badge badge-${product.status.replace(/\s+/g, '').toLowerCase()}`}>
+                        {product.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex gap-2">
+                        <button className="icon-btn-small" onClick={() => openEditModal(product)} title="Edit Product">
+                          <Edit2 size={16} />
+                        </button>
+                        <button className="icon-btn-small text-danger" onClick={() => deleteProduct(product.id)} title="Delete Product">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Seller Add/Edit Modal */}
+      {showProductModal && (
+        <div className="modal-backdrop" onClick={() => setShowProductModal(false)}>
+          <div className="product-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+              <button className="close-btn" onClick={() => setShowProductModal(false)}><X size={20} /></button>
+            </div>
+
+            <form onSubmit={handleSaveProduct} className="product-modal-form">
+              <div className="form-group">
+                <label>Product Name *</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={productForm.name}
+                  onChange={e => setProductForm({ ...productForm, name: e.target.value })}
+                  required 
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Category *</label>
+                <select 
+                  className="form-control"
+                  value={productForm.category}
+                  onChange={e => setProductForm({ ...productForm, category: e.target.value })}
+                >
+                  <option value="Dairy">Dairy</option>
+                  <option value="Bakery">Bakery</option>
+                  <option value="Grains">Grains & Pulses</option>
+                  <option value="Vegetables">Vegetables & Fruits</option>
+                  <option value="Oil & Ghee">Oil & Ghee</option>
+                  <option value="Pharmacy">Pharmacy</option>
+                  <option value="Electronics">Electronics</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Price (₹) *</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  className="form-control" 
+                  value={productForm.price}
+                  onChange={e => setProductForm({ ...productForm, price: e.target.value })}
+                  required 
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Stock Quantity *</label>
+                <input 
+                  type="number" 
+                  className="form-control" 
+                  value={productForm.stock}
+                  onChange={e => setProductForm({ ...productForm, stock: e.target.value })}
+                  required 
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Preparation Time</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  placeholder="15 mins"
+                  value={productForm.prepTime}
+                  onChange={e => setProductForm({ ...productForm, prepTime: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Image URL</label>
+                <input 
+                  type="url" 
+                  className="form-control" 
+                  value={productForm.image}
+                  onChange={e => setProductForm({ ...productForm, image: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group full-width">
+                <label>Description</label>
+                <textarea 
+                  className="form-control"
+                  rows="2"
+                  value={productForm.description}
+                  onChange={e => setProductForm({ ...productForm, description: e.target.value })}
+                ></textarea>
+              </div>
+
+              <div className="modal-footer full-width">
+                <button type="button" className="btn btn-outline" onClick={() => setShowProductModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Product</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ProductsPage;
+

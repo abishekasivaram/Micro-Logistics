@@ -2,52 +2,52 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import DashboardLayout from './layouts/DashboardLayout';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Public Pages
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import CustomerRegisterPage from './pages/CustomerRegisterPage';
-import SellerRegisterPage from './pages/SellerRegisterPage';
+import LandingPage from './auth/LandingPage';
+import LoginPage from './auth/LoginPage';
+import CustomerRegisterPage from './auth/CustomerRegisterPage';
+import SellerRegisterPage from './auth/SellerRegisterPage';
 
 // Customer Pages
-import CustomerDashboard from './pages/CustomerDashboard';
-import BrowseSellersPage from './pages/BrowseSellersPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import TrackDeliveryPage from './pages/TrackDeliveryPage';
-import DeliverySchedulePage from './pages/DeliverySchedulePage';
-import ProfilePage from './pages/ProfilePage';
+import CustomerDashboard from './portals/customer/CustomerDashboard';
+import BrowseSellersPage from './portals/customer/BrowseSellersPage';
+import CartPage from './portals/customer/CartPage';
+import CheckoutPage from './portals/customer/CheckoutPage';
+import TrackDeliveryPage from './portals/customer/TrackDeliveryPage';
+import DeliverySchedulePage from './portals/customer/DeliverySchedulePage';
+import ProfilePage from './portals/customer/ProfilePage';
 
 // Seller / Vendor Pages
-import DashboardOverview from './pages/DashboardOverview';
-import SellerAnalyticsPage from './pages/SellerAnalyticsPage';
-import BusinessProfilePage from './pages/BusinessProfilePage';
+import DashboardOverview from './portals/seller/DashboardOverview';
+import SellerAnalyticsPage from './portals/seller/SellerAnalyticsPage';
+import BusinessProfilePage from './portals/seller/BusinessProfilePage';
 
 // Admin Dedicated Pages (Stage 2)
-import AdminDashboard from './pages/AdminDashboard';
-import AdminSellersPage from './pages/AdminSellersPage';
-import AdminCustomersPage from './pages/AdminCustomersPage';
-import AdminCentralOrdersPage from './pages/AdminCentralOrdersPage';
-import OrderAggregationPage from './pages/OrderAggregationPage';
-import DeliveryManagementPage from './pages/DeliveryManagementPage';
-import DeliveryAgentsPage from './pages/DeliveryAgentsPage';
-import AdminRoutesPage from './pages/AdminRoutesPage';
-import AdminNotificationsPage from './pages/AdminNotificationsPage';
-import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
-import AdminReportsPage from './pages/AdminReportsPage';
-import AdminSettingsPage from './pages/AdminSettingsPage';
+import AdminDashboard from './portals/admin/AdminDashboard';
+import AdminSellersPage from './portals/admin/AdminSellersPage';
+import AdminCustomersPage from './portals/admin/AdminCustomersPage';
+import AdminCentralOrdersPage from './portals/admin/AdminCentralOrdersPage';
+import OrderAggregationPage from './portals/admin/OrderAggregationPage';
+import DeliveryManagementPage from './portals/admin/DeliveryManagementPage';
+import DeliveryAgentsPage from './portals/admin/DeliveryAgentsPage';
+import AdminRoutesPage from './portals/admin/AdminRoutesPage';
+import AdminNotificationsPage from './portals/admin/AdminNotificationsPage';
+import AdminAnalyticsPage from './portals/admin/AdminAnalyticsPage';
+import AdminReportsPage from './portals/admin/AdminReportsPage';
+import AdminSettingsPage from './portals/admin/AdminSettingsPage';
 
 // Common / Shared Pages (Stage 1 Preservation)
-import OrdersPage from './pages/OrdersPage';
-import ProductsPage from './pages/ProductsPage';
-import InventoryPage from './pages/InventoryPage';
-import DeliveriesPage from './pages/DeliveriesPage';
-import MapPlanning from './pages/MapPlanning';
-import CustomersPage from './pages/CustomersPage';
-import NotificationsPage from './pages/NotificationsPage';
-import SettingsPage from './pages/SettingsPage';
-import HelpPage from './pages/HelpPage';
+import OrdersPage from './portals/customer/OrdersPage';
+import ProductsPage from './portals/seller/ProductsPage';
+import InventoryPage from './portals/seller/InventoryPage';
+import DeliveriesPage from './portals/seller/DeliveriesPage';
+import MapPlanning from './portals/admin/MapPlanning';
+import CustomersPage from './portals/seller/CustomersPage';
+import NotificationsPage from './portals/customer/NotificationsPage';
+import SettingsPage from './portals/customer/SettingsPage';
+import HelpPage from './portals/customer/HelpPage';
 
 import './styles/global.css';
 
