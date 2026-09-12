@@ -125,8 +125,37 @@
 }
 
 @media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .login-split {
+    flex: none;
+    width: 100%;
+  }
+
   .login-left {
-    display: none;
+    padding: var(--spacing-6) var(--spacing-4);
+    align-items: center;
+    text-align: center;
+  }
+
+  .login-branding h1 {
+    font-size: 2rem;
+  }
+
+  .login-branding p {
+    font-size: var(--font-size-base);
+  }
+
+  .login-right {
+    padding: var(--spacing-4);
+  }
+
+  .login-card {
+    padding: var(--spacing-6) var(--spacing-4);
   }
 }
 

@@ -4,11 +4,11 @@ import { useAppContext } from '../../context/AppContext';
 import { 
   LayoutDashboard, ShoppingBag, Package, Truck, Layers, Users, Bell, 
   Settings, HelpCircle, LogOut, Map, User, Navigation, Calendar, 
-  Store, BarChart3, ShoppingCart, FileText
+  Store, BarChart3, ShoppingCart, FileText, X
 } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
   const { currentUser, setCurrentUser, cart, notifications } = useAppContext();
   const navigate = useNavigate();
   const role = currentUser?.role || 'vendor'; 
@@ -157,16 +157,27 @@ const Sidebar = () => {
     </>
   );
 
+  const handleLinkClick = () => {
+    if (setIsOpen) setIsOpen(false);
+  };
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
       <div className="sidebar-brand">
-        <h1>MicroLogi</h1>
-        <span style={{ fontSize: '12px', opacity: 0.8, display: 'block', textTransform: 'capitalize' }}>
-          {role === 'vendor' ? 'Seller Panel' : `${role} Panel`}
-        </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1>MicroLogi</h1>
+            <span style={{ fontSize: '12px', opacity: 0.8, display: 'block', textTransform: 'capitalize' }}>
+              {role === 'vendor' ? 'Seller Panel' : `${role} Panel`}
+            </span>
+          </div>
+          <button className="icon-btn mobile-close-btn" onClick={() => setIsOpen(false)} style={{ width: '32px', height: '32px' }}>
+            <X size={18} />
+          </button>
+        </div>
       </div>
       
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" onClick={handleLinkClick}>
         <div className="nav-section">
           {role === 'admin' && renderAdminLinks()}
           {role === 'customer' && renderCustomerLinks()}

@@ -37,6 +37,7 @@
   justify-content: space-between;
   padding: var(--spacing-4);
   gap: var(--spacing-4);
+  flex-wrap: wrap;
 }
 
 .search-box, .filter-box {
@@ -47,6 +48,8 @@
   border-radius: var(--radius-md);
   padding: var(--spacing-2) var(--spacing-3);
   background-color: var(--color-background);
+  flex: 1;
+  min-width: 200px;
 }
 
 .search-box input {
@@ -54,7 +57,7 @@
   background: transparent;
   outline: none;
   font-size: var(--font-size-sm);
-  width: 250px;
+  width: 100%;
 }
 
 .filter-box select {

@@ -8,6 +8,8 @@
   height: 100vh;
   position: sticky;
   top: 0;
+  z-index: 50;
+  transition: transform var(--transition-normal);
 }
 
 .sidebar-brand {
@@ -86,3 +88,24 @@
   margin-top: auto;
 }
 
+.mobile-close-btn {
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-xl);
+  }
+  
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+  
+  .mobile-close-btn {
+    display: flex;
+  }
+}

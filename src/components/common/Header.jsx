@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Bell, ShoppingCart, User, Check, X } from 'lucide-react';
+import { Search, Bell, ShoppingCart, User, Check, X, Menu } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import './Header.css';
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   const { currentUser, notifications, cart, markNotificationAsRead, markAllNotificationsAsRead } = useAppContext();
   const navigate = useNavigate();
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -22,15 +22,20 @@ const Header = () => {
 
   return (
     <header className="header">
-      <div className="header-greeting">
-        <h2>Welcome, {userGreetingName} 👋</h2>
+      <div className="header-greeting" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+        <button className="icon-btn mobile-menu-btn" onClick={onMenuClick}>
+          <Menu size={20} />
+        </button>
+        <div>
+          <h2>Welcome, {userGreetingName} 👋</h2>
         <p>
           {currentUser?.role === 'customer' 
             ? "Explore local sellers and track your delivery orders." 
             : currentUser?.role === 'vendor'
             ? "Manage orders, products, and delivery coordination status."
             : "Platform administrative overview and settings."}
-        </p>
+          </p>
+        </div>
       </div>
 
       <div className="header-actions">

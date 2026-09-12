@@ -7,6 +7,14 @@
   padding: 0;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--font-family-sans);
   background-color: var(--color-background);
@@ -30,6 +38,8 @@ button {
 
 input, textarea, select {
   font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -44,6 +54,7 @@ ul, ol {
 
 img {
   max-width: 100%;
+  height: auto;
   display: block;
 }
 
@@ -61,11 +72,36 @@ img {
 /* Layout helpers */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
 .gap-2 { gap: var(--spacing-2); }
+.gap-3 { gap: var(--spacing-3); }
 .gap-4 { gap: var(--spacing-4); }
 
 .w-full { width: 100%; }
 .h-full { height: 100%; }
+
+/* Global Responsive Table Container */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Modal Base */
+.modal-backdrop {
+  padding: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}

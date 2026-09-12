@@ -55,8 +55,9 @@ const CartPage = () => {
             )}
 
             <div className="cart-items-card">
-              <table className="cart-table">
-                <thead>
+              <div className="table-container">
+                <table className="cart-table">
+                  <thead>
                   <tr>
                     <th>Product & Seller</th>
                     <th style={{ textAlign: 'center' }}>Quantity</th>
@@ -112,6 +113,7 @@ const CartPage = () => {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
 
             <div className="cart-actions-row">
