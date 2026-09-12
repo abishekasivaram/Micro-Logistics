@@ -118,6 +118,8 @@ export const AppProvider = ({ children }) => {
     const newSeller = {
       id: `v${Date.now()}`,
       name: data.businessName,
+      shopName: data.businessName,
+      password: data.password,
       ownerName: data.ownerName,
       username: data.username,
       email: data.email,

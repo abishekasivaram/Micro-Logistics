@@ -6,8 +6,8 @@ import './SellerAnalyticsPage.css';
 const SellerAnalyticsPage = () => {
   const { orders, products, currentUser } = useAppContext();
 
-  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : 'v1';
-  const sellerOrders = orders.filter(o => o.vendorId === sellerId || currentUser?.role === 'admin');
+  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
+  const sellerOrders = orders.filter(o => currentUser?.role === 'admin' || o.vendorId === sellerId);
 
   const totalOrders = sellerOrders.length;
   const completedOrders = sellerOrders.filter(o => (o.orderStatus || o.status) === 'DELIVERED').length;

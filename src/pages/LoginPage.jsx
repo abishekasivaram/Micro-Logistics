@@ -39,14 +39,17 @@ const LoginPage = () => {
       setCurrentUser(userToSet);
       navigate('/customer-dashboard');
     } else if (selectedRole === 'vendor') { // Seller
-      userToSet = vendors.find(v => v.email === usernameOrEmail || v.username === usernameOrEmail) || {
-        id: 'v1',
-        name: 'Namma Chennai Grocers',
-        role: 'vendor',
-        email: usernameOrEmail || 'contact@nammachennai.com',
-        phone: '9840123456',
-        address: '12 T. Nagar Main Rd, Chennai'
-      };
+      const searchName = usernameOrEmail.trim().toLowerCase();
+      const shop = vendors.find(v => (v.shopName || v.name).trim().toLowerCase() === searchName);
+      if (!shop) {
+        alert("Shop not found. Please check your Shop Name.");
+        return;
+      }
+      if (shop.password && shop.password !== password) {
+        alert("Incorrect password. Please try again.");
+        return;
+      }
+      userToSet = { ...shop, role: 'vendor' };
       setCurrentUser(userToSet);
       navigate('/vendor-dashboard');
     } else if (selectedRole === 'admin') {
@@ -110,7 +113,7 @@ const LoginPage = () => {
             </button>
             <button 
               className={`role-btn ${selectedRole === 'vendor' ? 'active' : ''}`}
-              onClick={() => { setSelectedRole('vendor'); setUsernameOrEmail('contact@nammachennai.com'); }}
+              onClick={() => { setSelectedRole('vendor'); setUsernameOrEmail('Namma Chennai Grocers'); setPassword('password123'); }}
               type="button"
             >
               Seller
@@ -127,13 +130,13 @@ const LoginPage = () => {
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-group">
               <label htmlFor="identifier">
-                {selectedRole === 'admin' ? 'Admin ID / Email' : selectedRole === 'vendor' ? 'Seller Username / Email' : 'Customer Username / Email'}
+                {selectedRole === 'admin' ? 'Admin ID / Email' : selectedRole === 'vendor' ? 'Shop Name' : 'Customer Username / Email'}
               </label>
               <input 
                 type="text" 
                 id="identifier" 
                 className="form-control" 
-                placeholder={selectedRole === 'admin' ? 'admin@micrologi.com' : selectedRole === 'vendor' ? 'contact@nammachennai.com' : 'priya@example.com'}
+                placeholder={selectedRole === 'admin' ? 'admin@micrologi.com' : selectedRole === 'vendor' ? 'Namma Chennai Grocers' : 'priya@example.com'}
                 value={usernameOrEmail}
                 onChange={e => setUsernameOrEmail(e.target.value)}
                 required 
@@ -190,7 +193,7 @@ const LoginPage = () => {
           </form>
 
           {/* Customer & Seller Google Placeholder & Registration */}
-          {selectedRole !== 'admin' && (
+          {selectedRole === 'customer' && (
             <>
               <div className="divider">OR</div>
 
@@ -203,15 +206,17 @@ const LoginPage = () => {
                 </svg>
                 Continue with Google
               </button>
-              
-              <div className="login-footer">
-                {selectedRole === 'customer' ? (
-                  <p>Don't have an account? <Link to="/register-customer">Create Account</Link></p>
-                ) : (
-                  <p>New business partner? <Link to="/register-seller">Register as Seller</Link></p>
-                )}
-              </div>
             </>
+          )}
+          
+          {selectedRole !== 'admin' && (
+            <div className="login-footer">
+              {selectedRole === 'customer' ? (
+                <p>Don't have an account? <Link to="/register-customer">Create Account</Link></p>
+              ) : (
+                <p>New business partner? <Link to="/register-seller">Register as Seller</Link></p>
+              )}
+            </div>
           )}
 
           {/* Google Sign In Placeholder Notice Modal */}

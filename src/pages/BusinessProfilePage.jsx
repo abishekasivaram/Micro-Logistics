@@ -7,15 +7,15 @@ const BusinessProfilePage = () => {
   const { currentUser, updateSellerProfile } = useAppContext();
 
   const [formData, setFormData] = useState({
-    businessName: currentUser?.name || 'Namma Chennai Grocers',
-    ownerName: currentUser?.ownerName || 'Subramaniam V.',
-    email: currentUser?.email || 'contact@nammachennai.com',
-    phone: currentUser?.phone || '9840123456',
+    businessName: currentUser?.shopName || currentUser?.name || '',
+    ownerName: currentUser?.ownerName || '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
     category: currentUser?.category || 'Local Grocery Store',
-    businessAddress: currentUser?.address || '12 T. Nagar Main Rd, Chennai',
-    operatingHours: currentUser?.operatingHours || '7:00 AM - 9:00 PM',
-    description: currentUser?.description || 'Fresh daily essentials, rice, pulses, masalas, and household goods.',
-    logo: currentUser?.logo || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&auto=format&fit=crop&q=80'
+    businessAddress: currentUser?.address || '',
+    operatingHours: currentUser?.operatingHours || '',
+    description: currentUser?.description || '',
+    logo: currentUser?.logo || ''
   });
 
   const [successMsg, setSuccessMsg] = useState('');

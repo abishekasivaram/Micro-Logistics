@@ -49,26 +49,26 @@ const OrderAggregationPage = () => {
       </div>
 
       {/* Visual Workflow Steps Callout */}
-      <div className="card" style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: '#ffffff' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <span style={{ fontSize: '12px', textTransform: 'uppercase', tracking: '1px', color: '#93c5fd', fontWeight: '700' }}>
-              CENTRAL LOGISTICS ENGINE
-            </span>
-            <h3 style={{ margin: '4px 0 0', color: '#ffffff' }}>Smart Order Aggregation Pipeline</h3>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#cbd5e1', flexWrap: 'wrap' }}>
-            <span className="badge badge-primary">1. Ready Orders</span> →
-            <span className="badge badge-warning">2. Suggested Group</span> →
-            <span className="badge badge-success">3. Confirm Batch</span> →
-            <span className="badge badge-secondary">4. Assign Agent</span>
-          </div>
+      <div className="card" style={{ marginBottom: '20px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', borderLeft: '4px solid var(--color-primary)' }}>
+        <div>
+          <h3 style={{ margin: '0', fontSize: '16px', color: 'var(--color-text-primary)' }}>Aggregation Workflow</h3>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', flexWrap: 'wrap', fontWeight: '500' }}>
+          <span className="badge badge-primary">Ready Orders</span>
+          <ChevronRight size={14} className="text-secondary" />
+          <span className="badge badge-warning">Suitable Orders</span>
+          <ChevronRight size={14} className="text-secondary" />
+          <span className="badge badge-success">Suggested Group</span>
+          <ChevronRight size={14} className="text-secondary" />
+          <span className="badge" style={{ backgroundColor: '#e0e7ff', color: '#4f46e5' }}>Confirm Batch</span>
+          <ChevronRight size={14} className="text-secondary" />
+          <span className="badge badge-secondary">Assign Agent</span>
         </div>
       </div>
 
       {/* Section 1: Suggested Groups (Recommendations) */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Zap size={20} className="text-primary" /> Suggested Order Groups ({suggestedGroups.length})
@@ -148,8 +148,8 @@ const OrderAggregationPage = () => {
       </div>
 
       {/* Section 2: Ready Orders Table */}
-      <div className="card" style={{ marginBottom: '32px' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="card" style={{ marginBottom: '24px' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '17px' }}>Ready Orders Queue ({readyOrders.length})</h3>
             <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>

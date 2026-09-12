@@ -11,8 +11,8 @@ const DashboardOverview = () => {
   const navigate = useNavigate();
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : 'v1';
-  const sellerOrders = orders.filter(o => o.vendorId === sellerId || currentUser?.role === 'admin');
+  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
+  const sellerOrders = orders.filter(o => currentUser?.role === 'admin' || o.vendorId === sellerId);
 
   const totalOrders = sellerOrders.length;
   const newOrders = sellerOrders.filter(o => (o.orderStatus || o.status) === 'PLACED').length;
@@ -42,9 +42,9 @@ const DashboardOverview = () => {
             <span className="badge" style={{ backgroundColor: '#059669', color: '#ffffff', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '12px' }}>
               SELLER DASHBOARD
             </span>
-            <span style={{ fontSize: '12px', color: '#6b7280' }}>Store ID: {sellerId}</span>
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>Store ID: {sellerId || 'N/A'}</span>
           </div>
-          <h2>{currentUser?.name || 'Local Seller Store'}</h2>
+          <h2>{currentUser?.shopName || currentUser?.name || 'Local Seller Store'}</h2>
           <p>Smarter Local Orders. Better Delivery Coordination.</p>
         </div>
 

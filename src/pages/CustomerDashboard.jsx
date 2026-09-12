@@ -23,12 +23,6 @@ const CustomerDashboard = () => {
 
   return (
     <div className="page-container">
-      <div className="page-header" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '4px' }}>
-        <div>
-          <h2>Welcome back, {currentUser?.name || 'Customer'}! 👋</h2>
-          <p>Smarter Local Orders. Better Delivery Coordination.</p>
-        </div>
-      </div>
 
       {/* Customer Quick Navigation Cards */}
       <div className="dashboard-charts" style={{ gridTemplateColumns: '1fr 2fr', marginBottom: '24px' }}>

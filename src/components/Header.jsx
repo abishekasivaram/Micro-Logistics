@@ -18,7 +18,7 @@ const Header = () => {
     ? 'Customer' 
     : 'Admin';
 
-  const userGreetingName = currentUser?.name || (currentUser?.role === 'vendor' ? 'Seller' : 'User');
+  const userGreetingName = currentUser?.shopName || currentUser?.name || (currentUser?.role === 'vendor' ? 'Seller' : 'User');
 
   return (
     <header className="header">
@@ -127,7 +127,7 @@ const Header = () => {
             )}
           </div>
           <div className="user-info">
-            <span className="user-name">{currentUser?.name || 'User'}</span>
+            <span className="user-name">{currentUser?.shopName || currentUser?.name || 'User'}</span>
             <span className="user-role">{roleLabel}</span>
           </div>
         </div>

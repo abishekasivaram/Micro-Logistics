@@ -4,13 +4,13 @@ import { Search, Map as MapIcon, ChevronRight } from 'lucide-react';
 import './OrdersPage.css'; // Reusing table styles
 
 const DeliveriesPage = () => {
-  const { deliveryGroups, deliveryPersonnel, orders, customers, updateDeliveryGroupStatus } = useAppContext();
+  const { deliveryBatches = [], deliveryAgents = [], orders = [], customers = [], updateBatchStatus } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
 
   // Enrich delivery groups
-  const enrichedGroups = deliveryGroups.map(group => {
-    const groupOrders = group.orderIds.map(id => orders.find(o => o.id === id)).filter(Boolean);
-    const personnel = deliveryPersonnel.find(dp => dp.id === group.personnelId);
+  const enrichedGroups = deliveryBatches.map(group => {
+    const groupOrders = (group.orderIds || []).map(id => orders.find(o => o.id === id)).filter(Boolean);
+    const agent = deliveryAgents.find(da => da.id === group.agentId);
     
     // Get unique customers in this delivery
     const uniqueCustomerIds = [...new Set(groupOrders.map(o => o.customerId))];
@@ -18,7 +18,7 @@ const DeliveriesPage = () => {
     
     return {
       ...group,
-      personnel,
+      personnel: agent,
       orders: groupOrders,
       customers: groupCustomers
     };
@@ -87,15 +87,16 @@ const DeliveriesPage = () => {
                   </td>
                   <td>
                     <select 
-                      className={`status-badge badge-${group.status.toLowerCase()}`}
+                      className={`status-badge badge-${group.status.replace(/\s+/g, '-').toLowerCase()}`}
                       value={group.status}
-                      onChange={(e) => updateDeliveryGroupStatus(group.id, e.target.value)}
-                      disabled={group.status === 'Delivered'}
+                      onChange={(e) => updateBatchStatus(group.id, e.target.value)}
+                      disabled={group.status === 'Delivered' || group.status === 'Completed'}
                     >
+                      <option value="Pending Assignment">Pending Assignment</option>
                       <option value="Assigned">Assigned</option>
-                      <option value="Picked Up">Picked Up</option>
+                      <option value="Pickup in Progress">Pickup in Progress</option>
                       <option value="Out for Delivery">Out for Delivery</option>
-                      <option value="Delivered">Delivered</option>
+                      <option value="Completed">Completed</option>
                     </select>
                   </td>
                   <td>
