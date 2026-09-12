@@ -9,7 +9,7 @@ import './OrdersPage.css';
 const OrdersPage = () => {
   const { orders, customers, vendors, currentUser, updateOrderStatus } = useAppContext();
   const navigate = useNavigate();
-  
+
   const isCustomer = currentUser?.role === 'customer';
   const isSeller = currentUser?.role === 'vendor';
 
@@ -30,8 +30,8 @@ const OrdersPage = () => {
   });
 
   const filteredOrders = userOrders.filter(order => {
-    const matchesSearch = 
-      (order.id || order.orderId || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch =
+      (order.id || order.orderId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.vendorName || '').toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -62,7 +62,7 @@ const OrdersPage = () => {
   };
 
   const statusOptions = [
-    'PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY', 
+    'PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY',
     'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'
   ];
 
@@ -72,11 +72,11 @@ const OrdersPage = () => {
         <div>
           <h2>{isCustomer ? 'My Orders' : isSeller ? 'Seller Order Management' : 'All Platform Orders'}</h2>
           <p>
-            {isCustomer 
-              ? 'Track order progress, view delivery slots, and monitor live tracking.' 
-              : isSeller 
-              ? 'Confirm incoming customer orders, update prep status, and release for delivery coordination.' 
-              : 'System-wide order management and fulfillment overview.'}
+            {isCustomer
+              ? 'Track order progress, view delivery slots, and monitor live tracking.'
+              : isSeller
+                ? 'Confirm incoming customer orders, update prep status, and release for delivery coordination.'
+                : 'System-wide order management and fulfillment overview.'}
           </p>
         </div>
 
@@ -97,9 +97,9 @@ const OrdersPage = () => {
       <div className="controls-bar card">
         <div className="search-box">
           <Search size={18} className="text-secondary" />
-          <input 
-            type="text" 
-            placeholder={isCustomer ? "Search by Order ID or Seller..." : "Search by Order ID, Customer or Seller..."} 
+          <input
+            type="text"
+            placeholder={isCustomer ? "Search by Order ID or Seller..." : "Search by Order ID, Customer or Seller..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -110,7 +110,7 @@ const OrdersPage = () => {
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="All">All Statuses</option>
             {statusOptions.map(s => (
-               <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+              <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
             ))}
           </select>
         </div>
@@ -153,11 +153,11 @@ const OrdersPage = () => {
                   <tr key={order.id} className={selectedOrders.includes(order.id) ? 'selected-row' : ''}>
                     {!isCustomer && (
                       <td>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           disabled={!!order.deliveryGroupId}
-                          checked={selectedOrders.includes(order.id)} 
-                          onChange={() => toggleSelectOrder(order.id)} 
+                          checked={selectedOrders.includes(order.id)}
+                          onChange={() => toggleSelectOrder(order.id)}
                         />
                       </td>
                     )}
@@ -204,8 +204,8 @@ const OrdersPage = () => {
                     <td>
                       {isCustomer ? (
                         <div className="flex gap-2">
-                          <button 
-                            className="btn btn-outline" 
+                          <button
+                            className="btn btn-outline"
                             style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                             onClick={() => setViewingOrder(order)}
                           >
@@ -213,8 +213,8 @@ const OrdersPage = () => {
                           </button>
 
                           {['READY_FOR_DELIVERY', 'ASSIGNED', 'OUT_FOR_DELIVERY'].includes(currentSt) && (
-                            <button 
-                              className="btn btn-primary" 
+                            <button
+                              className="btn btn-primary"
                               style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                               onClick={() => navigate('/track-delivery')}
                             >
@@ -223,8 +223,8 @@ const OrdersPage = () => {
                           )}
 
                           {currentSt === 'PLACED' && (
-                            <button 
-                              className="btn btn-outline text-danger" 
+                            <button
+                              className="btn btn-outline text-danger"
                               style={{ padding: '4px 8px', fontSize: '12px' }}
                               onClick={() => updateOrderStatus(order.id, 'CANCELLED')}
                             >
@@ -236,8 +236,8 @@ const OrdersPage = () => {
                         /* SELLER ACTION BUTTONS */
                         <div className="flex gap-1 flex-wrap">
                           {currentSt === 'PLACED' && (
-                            <button 
-                              className="btn btn-primary" 
+                            <button
+                              className="btn btn-primary"
                               style={{ padding: '4px 8px', fontSize: '11px' }}
                               onClick={() => updateOrderStatus(order.id, 'CONFIRMED')}
                             >
@@ -246,8 +246,8 @@ const OrdersPage = () => {
                           )}
 
                           {currentSt === 'CONFIRMED' && (
-                            <button 
-                              className="btn btn-outline" 
+                            <button
+                              className="btn btn-outline"
                               style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: '#fef3c7', color: '#92400e' }}
                               onClick={() => updateOrderStatus(order.id, 'PREPARING')}
                             >
@@ -256,8 +256,8 @@ const OrdersPage = () => {
                           )}
 
                           {currentSt === 'PREPARING' && (
-                            <button 
-                              className="btn btn-primary" 
+                            <button
+                              className="btn btn-primary"
                               style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: '#10b981', borderColor: '#10b981' }}
                               onClick={() => updateOrderStatus(order.id, 'READY_FOR_DELIVERY')}
                             >
@@ -266,8 +266,8 @@ const OrdersPage = () => {
                           )}
 
                           {['PLACED', 'CONFIRMED'].includes(currentSt) && (
-                            <button 
-                              className="btn btn-outline text-danger" 
+                            <button
+                              className="btn btn-outline text-danger"
                               style={{ padding: '4px 8px', fontSize: '11px' }}
                               onClick={() => updateOrderStatus(order.id, 'CANCELLED')}
                             >
@@ -275,9 +275,9 @@ const OrdersPage = () => {
                             </button>
                           )}
 
-                          <button 
-                            className="icon-btn-small" 
-                            style={{ padding: '4px' }} 
+                          <button
+                            className="icon-btn-small"
+                            style={{ padding: '4px' }}
                             onClick={() => setViewingOrder(order)}
                             title="View Details"
                           >
@@ -303,4 +303,3 @@ const OrdersPage = () => {
 };
 
 export default OrdersPage;
-sPage;
