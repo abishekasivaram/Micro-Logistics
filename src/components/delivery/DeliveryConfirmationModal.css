@@ -1,0 +1,41 @@
+.otp-section {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.otp-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.otp-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 5px 15px;
+}
+
+.otp-input {
+  border: none;
+  outline: none;
+  font-size: 1.5rem;
+  letter-spacing: 5px;
+  width: 100px;
+  font-weight: 600;
+}
+
+.order-summary-box {
+  padding: 10px;
+  border-left: 4px solid #007bff;
+  background-color: #f4f6f8;
+  margin-bottom: 10px;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}

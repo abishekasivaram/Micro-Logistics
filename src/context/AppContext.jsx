@@ -518,6 +518,27 @@ export const AppProvider = ({ children }) => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   };
 
+  // --- Delivery Partner Helpers ---
+  const getAgentBatches = (agentId) => {
+    return deliveryBatches.filter(b => b.agentId === agentId);
+  };
+
+  const getAgentOrders = (agentId) => {
+    const batches = getAgentBatches(agentId);
+    const orderIds = batches.flatMap(b => b.orderIds);
+    return orders.filter(o => orderIds.includes(o.id));
+  };
+
+  const confirmOrderPickup = (orderId) => {
+    updateOrderStatus(orderId, 'PICKED_UP');
+  };
+
+  const confirmOrderDelivery = (orderId) => {
+    updateOrderStatus(orderId, 'DELIVERED');
+    // We should also check if the batch is complete and update it.
+    // For simplicity, updateBatchStatus will be called by the component if needed.
+  };
+
   return (
     <AppContext.Provider value={{
       orders, setOrders, updateOrderStatus, requestDeliverySlotChange,
@@ -532,7 +553,8 @@ export const AppProvider = ({ children }) => {
       cart, addToCart, removeFromCart, updateCartQty, clearCart,
       registerCustomer, registerSeller, placeOrder,
       updateUserProfile, updateSellerProfile,
-      adminSettings, updateAdminSettings
+      adminSettings, updateAdminSettings,
+      getAgentBatches, getAgentOrders, confirmOrderPickup, confirmOrderDelivery
     }}>
       {children}
     </AppContext.Provider>

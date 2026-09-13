@@ -17,6 +17,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       return <Navigate to="/vendor-dashboard" replace />;
     } else if (currentUser.role === 'admin') {
       return <Navigate to="/admin-dashboard" replace />;
+    } else if (currentUser.role === 'delivery_partner') {
+      return <Navigate to="/delivery-dashboard" replace />;
     } else {
       return <Navigate to="/login" replace />;
     }

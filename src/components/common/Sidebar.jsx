@@ -149,6 +149,44 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     </>
   );
 
+  const renderDeliveryPartnerLinks = () => (
+    <>
+      <NavLink to="/delivery-dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <LayoutDashboard size={20} />
+        <span>Dashboard</span>
+      </NavLink>
+      <NavLink to="/delivery/deliveries" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Package size={20} />
+        <span>My Deliveries</span>
+      </NavLink>
+      <NavLink to="/delivery/pickup" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Store size={20} />
+        <span>Pickup</span>
+      </NavLink>
+      <NavLink to="/delivery/route" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Navigation size={20} />
+        <span>Route</span>
+      </NavLink>
+      <NavLink to="/delivery/status" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Truck size={20} />
+        <span>Delivery Status</span>
+      </NavLink>
+      <NavLink to="/delivery/history" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <FileText size={20} />
+        <span>History</span>
+      </NavLink>
+      <NavLink to="/delivery/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Bell size={20} />
+        <span>Notifications</span>
+        {unreadNotifCount > 0 && <span className="nav-badge">{unreadNotifCount}</span>}
+      </NavLink>
+      <NavLink to="/delivery/profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+        <User size={20} />
+        <span>Profile & Status</span>
+      </NavLink>
+    </>
+  );
+
   const handleLinkClick = () => {
     if (setIsOpen) setIsOpen(false);
   };
@@ -160,7 +198,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           <div>
             <h1>MicroLogi</h1>
             <span style={{ fontSize: '12px', opacity: 0.8, display: 'block', textTransform: 'capitalize' }}>
-              {role === 'vendor' ? 'Seller Panel' : `${role} Panel`}
+              {role === 'vendor' ? 'Seller Panel' : role === 'delivery_partner' ? 'Delivery Partner' : `${role} Panel`}
             </span>
           </div>
           <button className="icon-btn mobile-close-btn" onClick={() => setIsOpen(false)} style={{ width: '32px', height: '32px' }}>
@@ -174,12 +212,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           {role === 'admin' && renderAdminLinks()}
           {role === 'customer' && renderCustomerLinks()}
           {role === 'vendor' && renderVendorLinks()}
+          {role === 'delivery_partner' && renderDeliveryPartnerLinks()}
         </div>
 
         <div className="nav-divider"></div>
 
         <div className="nav-section">
-          {role !== 'admin' && (
+          {role !== 'admin' && role !== 'delivery_partner' && (
             <>
               <NavLink to="/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
                 <Settings size={20} />
@@ -190,6 +229,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 <span>Help & Support</span>
               </NavLink>
             </>
+          )}
+          {role === 'delivery_partner' && (
+            <NavLink to="/delivery/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+              <HelpCircle size={20} />
+              <span>Help & Support</span>
+            </NavLink>
           )}
           <Link to="/login" onClick={handleLogout} className="nav-item text-danger mt-auto">
             <LogOut size={20} />

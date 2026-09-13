@@ -7,7 +7,7 @@ import './LoginPage.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { setCurrentUser, customers, vendors } = useAppContext();
+  const { setCurrentUser, customers, vendors, deliveryAgents } = useAppContext();
   
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,11 +40,17 @@ const LoginPage = () => {
       (u.id.toLowerCase() === searchId || (u.username && u.username.toLowerCase() === searchId))
     );
 
+    // 4. Check Delivery Partner
+    const deliveryMatch = deliveryAgents && deliveryAgents.find(d => 
+      d.id.toLowerCase() === searchId || 
+      (d.name && d.name.toLowerCase() === searchId)
+    );
+
     // The application automatically determines the account type by searching the existing account data
-    let foundUser = customerMatch || sellerMatch || adminMatch;
+    let foundUser = customerMatch || sellerMatch || adminMatch || deliveryMatch;
 
     if (!foundUser) {
-      alert("Account not found. Please check your User ID or Shop Name.");
+      alert("Account not found. Please check your User ID, Shop Name, or Agent ID.");
       return;
     }
 
@@ -63,6 +69,9 @@ const LoginPage = () => {
     } else if (adminMatch) {
       setCurrentUser({ ...foundUser, role: 'admin' });
       navigate('/admin-dashboard');
+    } else if (deliveryMatch) {
+      setCurrentUser({ ...foundUser, role: 'delivery_partner' });
+      navigate('/delivery-dashboard');
     }
   };
 

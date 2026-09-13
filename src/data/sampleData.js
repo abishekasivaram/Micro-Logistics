@@ -211,10 +211,10 @@ export const customers = [
 ];
 
 export const deliveryAgents = [
-  { id: 'da1', name: 'Muthu Vel', phone: '9988776655', currentArea: 'Adyar / Mylapore', capacity: 5, currentOrders: 3, availability: 'Available', status: 'Available', vehicle: 'TVS XL 100', rating: 4.9 },
-  { id: 'da2', name: 'Suresh Babu', phone: '9988776656', currentArea: 'T. Nagar', capacity: 4, currentOrders: 2, availability: 'On Delivery', status: 'On Delivery', vehicle: 'Hero Electric Scooter', rating: 4.7 },
-  { id: 'da3', name: 'Vijay Anand', phone: '9988776657', currentArea: 'Anna Nagar', capacity: 6, currentOrders: 0, availability: 'Available', status: 'Available', vehicle: 'Ather 450X', rating: 4.8 },
-  { id: 'da4', name: 'Rajesh Kannan', phone: '9988776658', currentArea: 'Velachery', capacity: 5, currentOrders: 0, availability: 'Offline', status: 'Offline', vehicle: 'Bajaj Chetak EV', rating: 4.6 }
+  { id: 'da1', name: 'Muthu Vel', password: 'password123', role: 'delivery_partner', phone: '9988776655', currentArea: 'Adyar / Mylapore', capacity: 5, currentOrders: 3, availability: 'Available', status: 'Available', vehicle: 'TVS XL 100', rating: 4.9 },
+  { id: 'da2', name: 'Suresh Babu', password: 'password123', role: 'delivery_partner', phone: '9988776656', currentArea: 'T. Nagar', capacity: 4, currentOrders: 2, availability: 'On Delivery', status: 'On Delivery', vehicle: 'Hero Electric Scooter', rating: 4.7 },
+  { id: 'da3', name: 'Vijay Anand', password: 'password123', role: 'delivery_partner', phone: '9988776657', currentArea: 'Anna Nagar', capacity: 6, currentOrders: 0, availability: 'Available', status: 'Available', vehicle: 'Ather 450X', rating: 4.8 },
+  { id: 'da4', name: 'Rajesh Kannan', password: 'password123', role: 'delivery_partner', phone: '9988776658', currentArea: 'Velachery', capacity: 5, currentOrders: 0, availability: 'Offline', status: 'Offline', vehicle: 'Bajaj Chetak EV', rating: 4.6 }
 ];
 
 export const deliveryPersonnel = deliveryAgents; // Backward compatibility

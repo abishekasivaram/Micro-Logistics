@@ -49,6 +49,17 @@ import NotificationsPage from './portals/customer/NotificationsPage';
 import SettingsPage from './portals/customer/SettingsPage';
 import HelpPage from './portals/customer/HelpPage';
 
+// Delivery Partner Pages
+import DeliveryDashboard from './portals/delivery/DeliveryDashboard';
+import MyDeliveriesPage from './portals/delivery/MyDeliveriesPage';
+import PickupPage from './portals/delivery/PickupPage';
+import RoutePage from './portals/delivery/RoutePage';
+import DeliveryStatusPage from './portals/delivery/DeliveryStatusPage';
+import DeliveryHistoryPage from './portals/delivery/DeliveryHistoryPage';
+import NotificationsPageDelivery from './portals/delivery/NotificationsPage';
+import DeliveryProfilePage from './portals/delivery/DeliveryProfilePage';
+import DeliveryHelpPage from './portals/delivery/HelpSupportPage';
+
 import './styles/global.css';
 
 function App() {
@@ -218,6 +229,53 @@ function App() {
             <Route path="/help" element={
               <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
                 <DashboardLayout><HelpPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+
+            {/* Delivery Partner Routes */}
+            <Route path="/delivery-dashboard" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><DeliveryDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/delivery/deliveries" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><MyDeliveriesPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/delivery/pickup" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><PickupPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/delivery/route" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><RoutePage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/delivery/status" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><DeliveryStatusPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/delivery/history" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><DeliveryHistoryPage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/delivery/notifications" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><NotificationsPageDelivery /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/delivery/profile" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><DeliveryProfilePage /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/delivery/help" element={
+              <ProtectedRoute allowedRoles={['delivery_partner']}>
+                <DashboardLayout><DeliveryHelpPage /></DashboardLayout>
               </ProtectedRoute>
             } />
 
