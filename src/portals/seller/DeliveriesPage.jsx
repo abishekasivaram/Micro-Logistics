@@ -44,6 +44,7 @@ const DeliveriesPage = () => {
           <input 
             type="text" 
             placeholder="Search by ID or Agent..." 
+            aria-label="Search deliveries by ID or Agent"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -87,6 +88,7 @@ const DeliveriesPage = () => {
                   </td>
                   <td>
                     <select 
+                      aria-label={`Update status for delivery ${group.id}`}
                       className={`status-badge badge-${group.status.replace(/\s+/g, '-').toLowerCase()}`}
                       value={group.status}
                       onChange={(e) => updateBatchStatus(group.id, e.target.value)}

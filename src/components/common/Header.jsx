@@ -16,14 +16,16 @@ const Header = ({ onMenuClick }) => {
     ? 'Seller' 
     : currentUser?.role === 'customer' 
     ? 'Customer' 
+    : currentUser?.role === 'delivery_partner'
+    ? 'Delivery Partner'
     : 'Admin';
 
-  const userGreetingName = currentUser?.shopName || currentUser?.name || (currentUser?.role === 'vendor' ? 'Seller' : 'User');
+  const userGreetingName = currentUser?.shopName || currentUser?.name || (currentUser?.role === 'vendor' ? 'Seller' : currentUser?.role === 'delivery_partner' ? 'Delivery Partner' : 'User');
 
   return (
     <header className="header">
       <div className="header-greeting" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
-        <button className="icon-btn mobile-menu-btn" onClick={onMenuClick}>
+        <button className="icon-btn mobile-menu-btn" onClick={onMenuClick} aria-label="Open navigation sidebar">
           <Menu size={20} />
         </button>
         <div>
@@ -33,6 +35,8 @@ const Header = ({ onMenuClick }) => {
             ? "Explore local sellers and track your delivery orders." 
             : currentUser?.role === 'vendor'
             ? "Manage orders, products, and delivery coordination status."
+            : currentUser?.role === 'delivery_partner'
+            ? "View assigned batches, confirm pickups, and manage delivery routes."
             : "Platform administrative overview and settings."}
           </p>
         </div>
@@ -44,6 +48,7 @@ const Header = ({ onMenuClick }) => {
             className="icon-btn cart-btn" 
             onClick={() => navigate('/cart')}
             title="View Shopping Cart"
+            aria-label="View Shopping Cart"
           >
             <ShoppingCart size={20} />
             {cartItemCount > 0 && <span className="cart-badge">{cartItemCount}</span>}
@@ -55,6 +60,7 @@ const Header = ({ onMenuClick }) => {
             className="icon-btn" 
             onClick={() => setShowNotifMenu(!showNotifMenu)}
             title="Notifications"
+            aria-label="Toggle notifications menu"
           >
             <Bell size={20} />
             {unreadCount > 0 && <span className="notification-dot"></span>}
@@ -77,7 +83,7 @@ const Header = ({ onMenuClick }) => {
                       Mark all read
                     </button>
                   )}
-                  <button className="btn-link" onClick={() => setShowNotifMenu(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>
+                  <button className="btn-link" onClick={() => setShowNotifMenu(false)} aria-label="Close notifications menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>
                     <X size={16} />
                   </button>
                 </div>

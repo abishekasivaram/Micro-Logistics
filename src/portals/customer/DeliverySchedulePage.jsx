@@ -116,11 +116,17 @@ const DeliverySchedulePage = () => {
 
       {/* Mock Slot Change Modal */}
       {slotChangeOrder && (
-        <div className="modal-backdrop" onClick={() => setSlotChangeOrder(null)}>
+        <div 
+          className="modal-backdrop" 
+          onClick={() => setSlotChangeOrder(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reschedule-modal-title"
+        >
           <div className="slot-modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Request Delivery Slot Change</h3>
-              <button className="close-btn" onClick={() => setSlotChangeOrder(null)}><X size={20} /></button>
+              <h3 id="reschedule-modal-title">Request Delivery Slot Change</h3>
+              <button className="close-btn" aria-label="Close dialog" onClick={() => setSlotChangeOrder(null)}><X size={20} /></button>
             </div>
 
             <form onSubmit={handleRequestChangeSubmit} className="slot-modal-body">
@@ -129,8 +135,9 @@ const DeliverySchedulePage = () => {
               </p>
 
               <div className="form-group" style={{ marginTop: '16px' }}>
-                <label>Select New Time Window *</label>
+                <label htmlFor="reschedule-slot-select">Select New Time Window *</label>
                 <select 
+                  id="reschedule-slot-select"
                   className="form-control"
                   value={selectedNewSlot}
                   onChange={e => setSelectedNewSlot(e.target.value)}

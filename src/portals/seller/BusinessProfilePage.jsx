@@ -79,9 +79,10 @@ const BusinessProfilePage = () => {
 
             <div className="profile-form-grid">
               <div className="form-group">
-                <label>Business / Store Name *</label>
+                <label htmlFor="bprof-bizname">Business / Store Name *</label>
                 <input 
                   type="text" 
+                  id="bprof-bizname"
                   className="form-control" 
                   value={formData.businessName}
                   onChange={e => setFormData({ ...formData, businessName: e.target.value })}
@@ -90,9 +91,10 @@ const BusinessProfilePage = () => {
               </div>
 
               <div className="form-group">
-                <label>Owner / Manager Name *</label>
+                <label htmlFor="bprof-ownername">Owner / Manager Name *</label>
                 <input 
                   type="text" 
+                  id="bprof-ownername"
                   className="form-control" 
                   value={formData.ownerName}
                   onChange={e => setFormData({ ...formData, ownerName: e.target.value })}
@@ -101,8 +103,9 @@ const BusinessProfilePage = () => {
               </div>
 
               <div className="form-group">
-                <label>Business Category *</label>
+                <label htmlFor="bprof-category">Business Category *</label>
                 <select 
+                  id="bprof-category"
                   className="form-control"
                   value={formData.category}
                   onChange={e => setFormData({ ...formData, category: e.target.value })}
@@ -117,9 +120,10 @@ const BusinessProfilePage = () => {
               </div>
 
               <div className="form-group">
-                <label>Operating Hours</label>
+                <label htmlFor="bprof-hours">Operating Hours</label>
                 <input 
                   type="text" 
+                  id="bprof-hours"
                   className="form-control" 
                   value={formData.operatingHours}
                   onChange={e => setFormData({ ...formData, operatingHours: e.target.value })}
@@ -127,9 +131,10 @@ const BusinessProfilePage = () => {
               </div>
 
               <div className="form-group">
-                <label>Contact Phone *</label>
+                <label htmlFor="bprof-phone">Contact Phone *</label>
                 <input 
                   type="tel" 
+                  id="bprof-phone"
                   className="form-control" 
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
@@ -138,9 +143,10 @@ const BusinessProfilePage = () => {
               </div>
 
               <div className="form-group">
-                <label>Business Email *</label>
+                <label htmlFor="bprof-email">Business Email *</label>
                 <input 
                   type="email" 
+                  id="bprof-email"
                   className="form-control" 
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -149,9 +155,10 @@ const BusinessProfilePage = () => {
               </div>
 
               <div className="form-group full-width">
-                <label>Pickup Location Address *</label>
+                <label htmlFor="bprof-address">Pickup Location Address *</label>
                 <input 
                   type="text" 
+                  id="bprof-address"
                   className="form-control" 
                   value={formData.businessAddress}
                   onChange={e => setFormData({ ...formData, businessAddress: e.target.value })}
@@ -160,9 +167,10 @@ const BusinessProfilePage = () => {
               </div>
 
               <div className="form-group full-width">
-                <label>Store Logo URL</label>
+                <label htmlFor="bprof-logo">Store Logo URL</label>
                 <input 
                   type="url" 
+                  id="bprof-logo"
                   className="form-control" 
                   value={formData.logo}
                   onChange={e => setFormData({ ...formData, logo: e.target.value })}
@@ -170,8 +178,9 @@ const BusinessProfilePage = () => {
               </div>
 
               <div className="form-group full-width">
-                <label>Store Description</label>
+                <label htmlFor="bprof-desc">Store Description</label>
                 <textarea 
+                  id="bprof-desc"
                   className="form-control"
                   rows="3"
                   value={formData.description}

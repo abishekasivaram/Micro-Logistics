@@ -1,290 +1,381 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import LoadingFallback from './components/common/LoadingFallback';
+import OfflineBanner from './components/common/OfflineBanner';
 
-// Public Pages
+// Public Pages (Static imports for instant initial paint)
 import LandingPage from './auth/LandingPage';
 import LoginPage from './auth/LoginPage';
 import CustomerRegisterPage from './auth/CustomerRegisterPage';
 import SellerRegisterPage from './auth/SellerRegisterPage';
+import NotFoundPage from './components/common/NotFoundPage';
 
-// Customer Pages
-import CustomerDashboard from './portals/customer/CustomerDashboard';
-import BrowseSellersPage from './portals/customer/BrowseSellersPage';
-import CartPage from './portals/customer/CartPage';
-import CheckoutPage from './portals/customer/CheckoutPage';
-import TrackDeliveryPage from './portals/customer/TrackDeliveryPage';
-import DeliverySchedulePage from './portals/customer/DeliverySchedulePage';
-import ProfilePage from './portals/customer/ProfilePage';
+// Customer Pages (Lazy loaded chunks)
+const CustomerDashboard = lazy(() => import('./portals/customer/CustomerDashboard'));
+const BrowseSellersPage = lazy(() => import('./portals/customer/BrowseSellersPage'));
+const CartPage = lazy(() => import('./portals/customer/CartPage'));
+const CheckoutPage = lazy(() => import('./portals/customer/CheckoutPage'));
+const TrackDeliveryPage = lazy(() => import('./portals/customer/TrackDeliveryPage'));
+const DeliverySchedulePage = lazy(() => import('./portals/customer/DeliverySchedulePage'));
+const ProfilePage = lazy(() => import('./portals/customer/ProfilePage'));
+const OrdersPage = lazy(() => import('./portals/customer/OrdersPage'));
+const NotificationsPage = lazy(() => import('./portals/customer/NotificationsPage'));
+const SettingsPage = lazy(() => import('./portals/customer/SettingsPage'));
+const HelpPage = lazy(() => import('./portals/customer/HelpPage'));
 
-// Seller / Vendor Pages
-import DashboardOverview from './portals/seller/DashboardOverview';
-import SellerAnalyticsPage from './portals/seller/SellerAnalyticsPage';
-import BusinessProfilePage from './portals/seller/BusinessProfilePage';
+// Seller / Vendor Pages (Lazy loaded chunks)
+const DashboardOverview = lazy(() => import('./portals/seller/DashboardOverview'));
+const ProductsPage = lazy(() => import('./portals/seller/ProductsPage'));
+const InventoryPage = lazy(() => import('./portals/seller/InventoryPage'));
+const CustomersPage = lazy(() => import('./portals/seller/CustomersPage'));
+const DeliveriesPage = lazy(() => import('./portals/seller/DeliveriesPage'));
+const SellerAnalyticsPage = lazy(() => import('./portals/seller/SellerAnalyticsPage'));
+const BusinessProfilePage = lazy(() => import('./portals/seller/BusinessProfilePage'));
 
-// Admin Dedicated Pages (Stage 2)
-import AdminDashboard from './portals/admin/AdminDashboard';
-import AdminSellersPage from './portals/admin/AdminSellersPage';
-import AdminCustomersPage from './portals/admin/AdminCustomersPage';
-import AdminCentralOrdersPage from './portals/admin/AdminCentralOrdersPage';
-import OrderAggregationPage from './portals/admin/OrderAggregationPage';
-import DeliveryManagementPage from './portals/admin/DeliveryManagementPage';
-import DeliveryAgentsPage from './portals/admin/DeliveryAgentsPage';
-import AdminRoutesPage from './portals/admin/AdminRoutesPage';
-import AdminNotificationsPage from './portals/admin/AdminNotificationsPage';
-import AdminAnalyticsPage from './portals/admin/AdminAnalyticsPage';
-import AdminReportsPage from './portals/admin/AdminReportsPage';
-import AdminSettingsPage from './portals/admin/AdminSettingsPage';
+// Admin Dedicated Pages (Lazy loaded chunks)
+const AdminDashboard = lazy(() => import('./portals/admin/AdminDashboard'));
+const AdminSellersPage = lazy(() => import('./portals/admin/AdminSellersPage'));
+const AdminCustomersPage = lazy(() => import('./portals/admin/AdminCustomersPage'));
+const AdminCentralOrdersPage = lazy(() => import('./portals/admin/AdminCentralOrdersPage'));
+const OrderAggregationPage = lazy(() => import('./portals/admin/OrderAggregationPage'));
+const DeliveryManagementPage = lazy(() => import('./portals/admin/DeliveryManagementPage'));
+const DeliveryAgentsPage = lazy(() => import('./portals/admin/DeliveryAgentsPage'));
+const AdminRoutesPage = lazy(() => import('./portals/admin/AdminRoutesPage'));
+const AdminNotificationsPage = lazy(() => import('./portals/admin/AdminNotificationsPage'));
+const AdminAnalyticsPage = lazy(() => import('./portals/admin/AdminAnalyticsPage'));
+const AdminReportsPage = lazy(() => import('./portals/admin/AdminReportsPage'));
+const AdminSettingsPage = lazy(() => import('./portals/admin/AdminSettingsPage'));
 
-// Common / Shared Pages (Stage 1 Preservation)
-import OrdersPage from './portals/customer/OrdersPage';
-import ProductsPage from './portals/seller/ProductsPage';
-import InventoryPage from './portals/seller/InventoryPage';
-import DeliveriesPage from './portals/seller/DeliveriesPage';
-import MapPlanning from './portals/admin/MapPlanning';
-import CustomersPage from './portals/seller/CustomersPage';
-import NotificationsPage from './portals/customer/NotificationsPage';
-import SettingsPage from './portals/customer/SettingsPage';
-import HelpPage from './portals/customer/HelpPage';
-
-// Delivery Partner Pages
-import DeliveryDashboard from './portals/delivery/DeliveryDashboard';
-import MyDeliveriesPage from './portals/delivery/MyDeliveriesPage';
-import PickupPage from './portals/delivery/PickupPage';
-import RoutePage from './portals/delivery/RoutePage';
-import DeliveryStatusPage from './portals/delivery/DeliveryStatusPage';
-import DeliveryHistoryPage from './portals/delivery/DeliveryHistoryPage';
-import NotificationsPageDelivery from './portals/delivery/NotificationsPage';
-import DeliveryProfilePage from './portals/delivery/DeliveryProfilePage';
-import DeliveryHelpPage from './portals/delivery/HelpSupportPage';
+// Delivery Partner Pages (Lazy loaded chunks)
+const DeliveryDashboard = lazy(() => import('./portals/delivery/DeliveryDashboard'));
+const MyDeliveriesPage = lazy(() => import('./portals/delivery/MyDeliveriesPage'));
+const PickupPage = lazy(() => import('./portals/delivery/PickupPage'));
+const RoutePage = lazy(() => import('./portals/delivery/RoutePage'));
+const DeliveryStatusPage = lazy(() => import('./portals/delivery/DeliveryStatusPage'));
+const DeliveryHistoryPage = lazy(() => import('./portals/delivery/DeliveryHistoryPage'));
+const NotificationsPageDelivery = lazy(() => import('./portals/delivery/NotificationsPage'));
+const DeliveryProfilePage = lazy(() => import('./portals/delivery/DeliveryProfilePage'));
+const DeliveryHelpPage = lazy(() => import('./portals/delivery/HelpSupportPage'));
 
 import './styles/global.css';
 
 function App() {
   return (
-    <AppProvider>
-      <Router>
-        <div className="app-container">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register-customer" element={<CustomerRegisterPage />} />
-            <Route path="/register-seller" element={<SellerRegisterPage />} />
+    <ErrorBoundary>
+      <AppProvider>
+        <OfflineBanner />
+        <Router>
+          <div className="app-container">
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register-customer" element={<CustomerRegisterPage />} />
+                <Route path="/register-seller" element={<SellerRegisterPage />} />
 
-            {/* Customer Routes */}
-            <Route path="/customer-dashboard" element={
-              <ProtectedRoute allowedRoles={['customer']}>
-                <DashboardLayout><CustomerDashboard /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/browse-sellers" element={
-              <ProtectedRoute allowedRoles={['customer']}>
-                <DashboardLayout><BrowseSellersPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/cart" element={
-              <ProtectedRoute allowedRoles={['customer']}>
-                <DashboardLayout><CartPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/checkout" element={
-              <ProtectedRoute allowedRoles={['customer']}>
-                <DashboardLayout><CheckoutPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/track-delivery" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><TrackDeliveryPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery-schedule" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><DeliverySchedulePage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><ProfilePage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
+                {/* Legacy / Direct Route Aliases */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><CustomerDashboard /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/browse-sellers" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><BrowseSellersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/products" element={
+                  <ProtectedRoute allowedRoles={['customer', 'vendor']}>
+                    <DashboardLayout><ProductsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/cart" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><CartPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/checkout" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><CheckoutPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/track-delivery" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><TrackDeliveryPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery-schedule" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><DeliverySchedulePage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/orders" element={
+                  <ProtectedRoute allowedRoles={['customer', 'vendor']}>
+                    <DashboardLayout><OrdersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/inventory" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><InventoryPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customers" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><CustomersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/deliveries" element={
+                  <ProtectedRoute allowedRoles={['vendor', 'admin']}>
+                    <DashboardLayout><DeliveriesPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/notifications" element={
+                  <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin', 'delivery_partner']}>
+                    <DashboardLayout><NotificationsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin', 'delivery_partner']}>
+                    <DashboardLayout><ProfilePage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute allowedRoles={['customer', 'vendor']}>
+                    <DashboardLayout><SettingsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/help" element={
+                  <ProtectedRoute allowedRoles={['customer', 'vendor']}>
+                    <DashboardLayout><HelpPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
 
-            {/* Seller Routes */}
-            <Route path="/vendor-dashboard" element={
-              <ProtectedRoute allowedRoles={['vendor']}>
-                <DashboardLayout><DashboardOverview /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
-                <DashboardLayout><DashboardOverview /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/seller-analytics" element={
-              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
-                <DashboardLayout><SellerAnalyticsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/business-profile" element={
-              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
-                <DashboardLayout><BusinessProfilePage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
+                {/* Customer Dedicated Portal Routes */}
+                <Route path="/customer-dashboard" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><CustomerDashboard /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/browse-sellers" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><BrowseSellersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/cart" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><CartPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/checkout" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><CheckoutPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/track-delivery" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><TrackDeliveryPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/delivery-schedule" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><DeliverySchedulePage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/orders" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><OrdersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/profile" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><ProfilePage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/notifications" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><NotificationsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/settings" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><SettingsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/customer/help" element={
+                  <ProtectedRoute allowedRoles={['customer']}>
+                    <DashboardLayout><HelpPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
 
-            {/* Admin Dedicated Routes (Stage 2) */}
-            <Route path="/admin-dashboard" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminDashboard /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/sellers" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminSellersPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/customers" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminCustomersPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/orders" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminCentralOrdersPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/order-aggregation" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><OrderAggregationPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/delivery-management" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><DeliveryManagementPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/delivery-agents" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><DeliveryAgentsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/routes" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminRoutesPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/notifications" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminNotificationsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/analytics" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminAnalyticsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/reports" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminReportsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/settings" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <DashboardLayout><AdminSettingsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
+                {/* Seller / Vendor Dedicated Portal Routes */}
+                <Route path="/vendor-dashboard" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><DashboardOverview /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller/products" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><ProductsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller/inventory" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><InventoryPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller/orders" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><OrdersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller/customers" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><CustomersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller/deliveries" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><DeliveriesPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller/analytics" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><SellerAnalyticsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller/business-profile" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><BusinessProfilePage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller/notifications" element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <DashboardLayout><NotificationsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
 
-            {/* Shared / Role-aware Routes (Stage 1 Preservation) */}
-            <Route path="/orders" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><OrdersPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/products" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><ProductsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/inventory" element={
-              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
-                <DashboardLayout><InventoryPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/customers" element={
-              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
-                <DashboardLayout><CustomersPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/notifications" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><NotificationsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><SettingsPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/help" element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
-                <DashboardLayout><HelpPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
+                {/* Admin Dedicated Portal Routes */}
+                <Route path="/admin-dashboard" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminDashboard /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/sellers" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminSellersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/customers" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminCustomersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/orders" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminCentralOrdersPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/order-aggregation" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><OrderAggregationPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/delivery-management" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><DeliveryManagementPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/delivery-agents" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><DeliveryAgentsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/routes" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminRoutesPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/notifications" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminNotificationsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/analytics" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminAnalyticsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/reports" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminReportsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/settings" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout><AdminSettingsPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
 
-            {/* Delivery Partner Routes */}
-            <Route path="/delivery-dashboard" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><DeliveryDashboard /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/deliveries" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><MyDeliveriesPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/pickup" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><PickupPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/route" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><RoutePage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/status" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><DeliveryStatusPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/history" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><DeliveryHistoryPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/notifications" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><NotificationsPageDelivery /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/profile" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><DeliveryProfilePage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/help" element={
-              <ProtectedRoute allowedRoles={['delivery_partner']}>
-                <DashboardLayout><DeliveryHelpPage /></DashboardLayout>
-              </ProtectedRoute>
-            } />
+                {/* Delivery Partner Dedicated Portal Routes */}
+                <Route path="/delivery-dashboard" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><DeliveryDashboard /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery/deliveries" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><MyDeliveriesPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery/pickup" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><PickupPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery/route" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><RoutePage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery/status" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><DeliveryStatusPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery/history" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><DeliveryHistoryPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery/notifications" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><NotificationsPageDelivery /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery/profile" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><DeliveryProfilePage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/delivery/help" element={
+                  <ProtectedRoute allowedRoles={['delivery_partner']}>
+                    <DashboardLayout><DeliveryHelpPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
-      </Router>
-    </AppProvider>
+                {/* Catch-All Fallback */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </Router>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 

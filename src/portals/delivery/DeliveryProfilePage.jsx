@@ -56,11 +56,12 @@ const DeliveryProfilePage = () => {
           </div>
 
           <div className="form-group" style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Phone Number</label>
+            <label htmlFor="del-phone" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Phone Number</label>
             <div style={{ display: 'flex', alignItems: 'center', background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '4px', padding: '8px 12px' }}>
               <Phone size={16} className="text-secondary" style={{ marginRight: '10px' }} />
               <input 
                 type="text" 
+                id="del-phone"
                 value={phone} 
                 onChange={(e) => setPhone(e.target.value)}
                 style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%' }}
@@ -69,11 +70,12 @@ const DeliveryProfilePage = () => {
           </div>
 
           <div className="form-group" style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Service Area</label>
+            <label htmlFor="del-area" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Service Area</label>
             <div style={{ display: 'flex', alignItems: 'center', background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '4px', padding: '8px 12px' }}>
               <MapPin size={16} className="text-secondary" style={{ marginRight: '10px' }} />
               <input 
                 type="text" 
+                id="del-area"
                 value={currentArea} 
                 onChange={(e) => setCurrentArea(e.target.value)}
                 style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%' }}
@@ -82,11 +84,12 @@ const DeliveryProfilePage = () => {
           </div>
 
           <div className="form-group" style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Vehicle Information</label>
+            <label htmlFor="del-vehicle" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Vehicle Information</label>
             <div style={{ display: 'flex', alignItems: 'center', background: '#e9ecef', border: '1px solid #dee2e6', borderRadius: '4px', padding: '8px 12px', color: '#495057' }}>
               <Truck size={16} className="text-secondary" style={{ marginRight: '10px' }} />
               <input 
                 type="text" 
+                id="del-vehicle"
                 value={currentUser?.vehicle || 'N/A'} 
                 readOnly
                 style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', color: '#495057' }}
@@ -103,8 +106,9 @@ const DeliveryProfilePage = () => {
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: '500' }}>Set Availability</label>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'Available' ? '#28a745' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'Available' ? '#f0fff4' : 'transparent' }}>
+              <label htmlFor="avail-available" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'Available' ? '#28a745' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'Available' ? '#f0fff4' : 'transparent' }}>
                 <input 
+                  id="avail-available"
                   type="radio" 
                   name="availability" 
                   value="Available"
@@ -117,8 +121,9 @@ const DeliveryProfilePage = () => {
                 </div>
               </label>
               
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'On Delivery' ? '#007bff' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'On Delivery' ? '#e6f2ff' : 'transparent' }}>
+              <label htmlFor="avail-ondelivery" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'On Delivery' ? '#007bff' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'On Delivery' ? '#e6f2ff' : 'transparent' }}>
                 <input 
+                  id="avail-ondelivery"
                   type="radio" 
                   name="availability" 
                   value="On Delivery"
@@ -131,8 +136,9 @@ const DeliveryProfilePage = () => {
                 </div>
               </label>
               
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'Offline' ? '#6c757d' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'Offline' ? '#f8f9fa' : 'transparent' }}>
+              <label htmlFor="avail-offline" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'Offline' ? '#6c757d' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'Offline' ? '#f8f9fa' : 'transparent' }}>
                 <input 
+                  id="avail-offline"
                   type="radio" 
                   name="availability" 
                   value="Offline"

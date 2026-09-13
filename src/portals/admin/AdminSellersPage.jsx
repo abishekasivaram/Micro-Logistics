@@ -46,25 +46,44 @@ const AdminSellersPage = () => {
               className="form-control" 
               placeholder="Search by store name, owner, email..."
               value={searchTerm}
+              aria-label="Search local sellers by store name, owner, or email"
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: '38px' }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <select className="form-control" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={{ width: 'auto' }}>
+            <select 
+              className="form-control" 
+              value={categoryFilter} 
+              aria-label="Filter sellers by category"
+              onChange={e => setCategoryFilter(e.target.value)} 
+              style={{ width: 'auto' }}
+            >
               <option value="ALL">All Categories</option>
               {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
             </select>
 
-            <select className="form-control" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ width: 'auto' }}>
+            <select 
+              className="form-control" 
+              value={statusFilter} 
+              aria-label="Filter sellers by status"
+              onChange={e => setStatusFilter(e.target.value)} 
+              style={{ width: 'auto' }}
+            >
               <option value="ALL">All Statuses</option>
               <option value="Active">Active</option>
               <option value="Pending">Pending Approval</option>
               <option value="Suspended">Suspended</option>
             </select>
 
-            <select className="form-control" value={areaFilter} onChange={e => setAreaFilter(e.target.value)} style={{ width: 'auto' }}>
+            <select 
+              className="form-control" 
+              value={areaFilter} 
+              aria-label="Filter sellers by area"
+              onChange={e => setAreaFilter(e.target.value)} 
+              style={{ width: 'auto' }}
+            >
               <option value="ALL">All Areas</option>
               {areas.map(area => <option key={area} value={area}>{area}</option>)}
             </select>
@@ -121,17 +140,41 @@ const AdminSellersPage = () => {
                             <Eye size={14} /> View
                           </button>
                           {sellerStatus === 'Pending' && (
-                            <button className="btn btn-sm btn-primary" onClick={() => updateSellerStatus(v.id, 'Active')} title="Approve Onboarding">
+                            <button 
+                              className="btn btn-sm btn-primary" 
+                              onClick={() => {
+                                if (window.confirm(`Approve seller onboarding for "${v.name}"?`)) {
+                                  updateSellerStatus(v.id, 'Active');
+                                }
+                              }} 
+                              title="Approve Onboarding"
+                            >
                               <CheckCircle size={14} /> Approve
                             </button>
                           )}
                           {sellerStatus === 'Active' && (
-                            <button className="btn btn-sm btn-outline text-danger" onClick={() => updateSellerStatus(v.id, 'Suspended')} title="Suspend Store">
+                            <button 
+                              className="btn btn-sm btn-outline text-danger" 
+                              onClick={() => {
+                                if (window.confirm(`Are you sure you want to suspend "${v.name}"? Store will be hidden from customer browse views.`)) {
+                                  updateSellerStatus(v.id, 'Suspended');
+                                }
+                              }} 
+                              title="Suspend Store"
+                            >
                               <Ban size={14} /> Suspend
                             </button>
                           )}
                           {sellerStatus === 'Suspended' && (
-                            <button className="btn btn-sm btn-outline text-success" onClick={() => updateSellerStatus(v.id, 'Active')} title="Activate Store">
+                            <button 
+                              className="btn btn-sm btn-outline text-success" 
+                              onClick={() => {
+                                if (window.confirm(`Reactivate store "${v.name}"?`)) {
+                                  updateSellerStatus(v.id, 'Active');
+                                }
+                              }} 
+                              title="Activate Store"
+                            >
                               <CheckCircle size={14} /> Activate
                             </button>
                           )}

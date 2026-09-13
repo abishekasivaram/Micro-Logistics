@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { ArrowLeft, UserCheck, Eye, EyeOff, Info, CheckCircle2 } from 'lucide-react';
@@ -23,6 +23,16 @@ const CustomerRegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showGoogleNotice, setShowGoogleNotice] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showGoogleNotice) {
+        setShowGoogleNotice(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showGoogleNotice]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -69,16 +79,17 @@ const CustomerRegisterPage = () => {
         </div>
 
         {errorMsg && (
-          <div className="auth-error-banner">
+          <div className="auth-error-banner" role="alert">
             <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="auth-form-grid">
           <div className="form-group">
-            <label>Full Name *</label>
+            <label htmlFor="reg-fullname">Full Name *</label>
             <input 
               type="text" 
+              id="reg-fullname"
               name="fullName" 
               className="form-control" 
               placeholder="e.g. Priya Rajan"
@@ -89,9 +100,10 @@ const CustomerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Username *</label>
+            <label htmlFor="reg-username">Username *</label>
             <input 
               type="text" 
+              id="reg-username"
               name="username" 
               className="form-control" 
               placeholder="e.g. priyarajan"
@@ -102,9 +114,10 @@ const CustomerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Email Address *</label>
+            <label htmlFor="reg-email">Email Address *</label>
             <input 
               type="email" 
+              id="reg-email"
               name="email" 
               className="form-control" 
               placeholder="priya@example.com"
@@ -115,9 +128,10 @@ const CustomerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Phone Number *</label>
+            <label htmlFor="reg-phone">Phone Number *</label>
             <input 
               type="tel" 
+              id="reg-phone"
               name="phone" 
               className="form-control" 
               placeholder="9876543210"
@@ -128,10 +142,11 @@ const CustomerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Password *</label>
+            <label htmlFor="reg-password">Password *</label>
             <div className="password-input-wrapper">
               <input 
                 type={showPassword ? "text" : "password"} 
+                id="reg-password"
                 name="password" 
                 className="form-control" 
                 placeholder="Minimum 6 characters"
@@ -143,6 +158,8 @@ const CustomerRegisterPage = () => {
                 type="button" 
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -150,9 +167,10 @@ const CustomerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Confirm Password *</label>
+            <label htmlFor="reg-confirm">Confirm Password *</label>
             <input 
               type={showPassword ? "text" : "password"} 
+              id="reg-confirm"
               name="confirmPassword" 
               className="form-control" 
               placeholder="Re-enter password"
@@ -163,9 +181,10 @@ const CustomerRegisterPage = () => {
           </div>
 
           <div className="form-group full-width">
-            <label>Delivery Address *</label>
+            <label htmlFor="reg-address">Delivery Address *</label>
             <input 
               type="text" 
+              id="reg-address"
               name="address" 
               className="form-control" 
               placeholder="Door No, Street Name, Landmark"
@@ -176,8 +195,9 @@ const CustomerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>City / Area *</label>
+            <label htmlFor="reg-cityarea">City / Area *</label>
             <select 
+              id="reg-cityarea"
               name="cityArea" 
               className="form-control" 
               value={formData.cityArea} 
@@ -193,9 +213,10 @@ const CustomerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Profile Image URL (Optional)</label>
+            <label htmlFor="reg-avatar">Profile Image URL (Optional)</label>
             <input 
               type="url" 
+              id="reg-avatar"
               name="avatar" 
               className="form-control" 
               placeholder="https://..."
@@ -232,10 +253,16 @@ const CustomerRegisterPage = () => {
         {/* Google Placeholder Modal */}
         {showGoogleNotice && (
           <div className="modal-backdrop" onClick={() => setShowGoogleNotice(false)}>
-            <div className="notice-modal-card" onClick={e => e.stopPropagation()}>
+            <div 
+              className="notice-modal-card" 
+              role="dialog" 
+              aria-modal="true" 
+              aria-labelledby="google-notice-title"
+              onClick={e => e.stopPropagation()}
+            >
               <div className="notice-header text-primary">
                 <Info size={24} />
-                <h3>Frontend Placeholder Notice</h3>
+                <h3 id="google-notice-title">Frontend Placeholder Notice</h3>
               </div>
               <p>Google Sign-In will be available after backend authentication is configured.</p>
               <button className="btn btn-primary w-full mt-4" onClick={() => setShowGoogleNotice(false)}>
@@ -244,6 +271,7 @@ const CustomerRegisterPage = () => {
             </div>
           </div>
         )}
+
 
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { Users, Search, Eye, X, Phone, Mail, MapPin, CheckCircle, Ban } from 'lucide-react';
 import { getStatusBadgeClass } from '../../utils/aggregationUtils';
@@ -11,6 +11,16 @@ const AdminCustomersPage = () => {
   const [areaFilter, setAreaFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && selectedCustomer) {
+        setSelectedCustomer(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCustomer]);
 
   const areas = Array.from(new Set(customers.map(c => c.area))).filter(Boolean);
 
@@ -42,18 +52,31 @@ const AdminCustomersPage = () => {
               className="form-control" 
               placeholder="Search by customer name, email, phone..."
               value={searchTerm}
+              aria-label="Search customers by name, email, or phone"
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: '38px' }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <select className="form-control" value={areaFilter} onChange={e => setAreaFilter(e.target.value)} style={{ width: 'auto' }}>
+            <select 
+              className="form-control" 
+              value={areaFilter} 
+              aria-label="Filter customers by delivery area"
+              onChange={e => setAreaFilter(e.target.value)} 
+              style={{ width: 'auto' }}
+            >
               <option value="ALL">All Delivery Areas</option>
               {areas.map(area => <option key={area} value={area}>{area}</option>)}
             </select>
 
-            <select className="form-control" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ width: 'auto' }}>
+            <select 
+              className="form-control" 
+              value={statusFilter} 
+              aria-label="Filter customers by account status"
+              onChange={e => setStatusFilter(e.target.value)} 
+              style={{ width: 'auto' }}
+            >
               <option value="ALL">All Account Statuses</option>
               <option value="Active">Active</option>
               <option value="Suspended">Suspended</option>
@@ -133,13 +156,20 @@ const AdminCustomersPage = () => {
 
       {/* Customer Details Modal */}
       {selectedCustomer && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '600px' }}>
+        <div className="modal-backdrop" onClick={() => setSelectedCustomer(null)}>
+          <div 
+            className="modal-content" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="cust-modal-title"
+            style={{ maxWidth: '600px' }} 
+            onClick={e => e.stopPropagation()}
+          >
             <div className="modal-header">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+              <h3 id="cust-modal-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
                 <Users size={22} className="text-primary" /> {selectedCustomer.name} Profile
               </h3>
-              <button className="modal-close" onClick={() => setSelectedCustomer(null)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setSelectedCustomer(null)} aria-label="Close modal"><X size={20} /></button>
             </div>
             
             <div style={{ padding: '20px' }}>

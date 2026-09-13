@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, MapPin, Store, Calendar, Clock, Package, CheckCircle, Truck } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import './OrderDetailsModal.css';
@@ -14,6 +14,16 @@ const STEPS = [
 ];
 
 const OrderDetailsModal = ({ order, onClose }) => {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (!order) return null;
 
   const currentStatus = (order.orderStatus || order.status || 'PLACED').toUpperCase();
@@ -36,13 +46,19 @@ const OrderDetailsModal = ({ order, onClose }) => {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="order-modal-container" onClick={e => e.stopPropagation()}>
+      <div 
+        className="order-modal-container" 
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="order-modal-title"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="modal-header">
           <div>
-            <h3>Order Details</h3>
+            <h3 id="order-modal-title">Order Details</h3>
             <span className="modal-subtitle">{order.id || order.orderId}</span>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" onClick={onClose} aria-label="Close modal">
             <X size={20} />
           </button>
         </div>

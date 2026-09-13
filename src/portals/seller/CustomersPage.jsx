@@ -38,6 +38,7 @@ const CustomersPage = () => {
             type="text" 
             placeholder="Search by name or phone..." 
             value={searchTerm}
+            aria-label="Search customers by name or phone"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
@@ -70,7 +71,7 @@ const CustomersPage = () => {
                   </td>
                   <td>{customer.address}</td>
                   <td>{customer.orderCount}</td>
-                  <td className="font-medium">${customer.totalSpent.toFixed(2)}</td>
+                  <td className="font-medium">₹{customer.totalSpent.toFixed(2)}</td>
                   <td><span className="badge badge-instock">Active</span></td>
                 </tr>
               ))

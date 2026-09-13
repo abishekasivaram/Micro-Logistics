@@ -54,44 +54,60 @@ const CheckoutPage = () => {
       </div>
 
       {!placedOrders ? (
-        <div className="checkout-grid">
-          <form onSubmit={handlePlaceOrderSubmit} className="checkout-form-column">
-            
-            {/* Delivery Address & Contact Section */}
-            <div className="checkout-card">
-              <h3 className="card-title"><MapPin size={20} className="text-primary" /> Delivery Destination</h3>
-              
-              <div className="form-group">
-                <label>Delivery Address *</label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  value={deliveryAddress}
-                  onChange={e => setDeliveryAddress(e.target.value)}
-                  required 
-                />
+        <div>
+          {cart.length === 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', color: '#92400e', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Info size={20} />
+                <span>Your cart is currently empty. Please add items from local sellers before checking out.</span>
               </div>
-
-              <div className="form-group">
-                <label>Contact Number *</label>
-                <input 
-                  type="tel" 
-                  className="form-control" 
-                  value={contactPhone}
-                  onChange={e => setContactPhone(e.target.value)}
-                  required 
-                />
-              </div>
+              <button className="btn btn-sm btn-primary" onClick={() => navigate('/browse-sellers')}>
+                Browse Sellers
+              </button>
             </div>
+          )}
+
+          <div className="checkout-grid">
+            <form onSubmit={handlePlaceOrderSubmit} className="checkout-form-column">
+              
+              {/* Delivery Address & Contact Section */}
+              <div className="checkout-card">
+                <h3 className="card-title"><MapPin size={20} className="text-primary" /> Delivery Destination</h3>
+                
+                <div className="form-group">
+                  <label htmlFor="chk-address">Delivery Address *</label>
+                  <input 
+                    type="text" 
+                    id="chk-address"
+                    className="form-control" 
+                    value={deliveryAddress}
+                    onChange={e => setDeliveryAddress(e.target.value)}
+                    required 
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="chk-phone">Contact Number *</label>
+                  <input 
+                    type="tel" 
+                    id="chk-phone"
+                    className="form-control" 
+                    value={contactPhone}
+                    onChange={e => setContactPhone(e.target.value)}
+                    required 
+                  />
+                </div>
+              </div>
 
             {/* Delivery Date & Time Window Selector */}
             <div className="checkout-card">
               <h3 className="card-title"><Calendar size={20} className="text-primary" /> Delivery Schedule & Window</h3>
               
               <div className="form-group">
-                <label>Select Delivery Date *</label>
+                <label htmlFor="chk-delivery-date">Select Delivery Date *</label>
                 <input 
                   type="date" 
+                  id="chk-delivery-date"
                   className="form-control" 
                   min={todayStr}
                   value={deliveryDate}
@@ -165,6 +181,7 @@ const CheckoutPage = () => {
               </div>
             </div>
           </div>
+        </div>
         </div>
       ) : (
         /* Order Placed Success Confirmation Modal/Screen */

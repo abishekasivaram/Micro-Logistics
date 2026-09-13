@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle } from 'lucide-react';
 import './DeliveryConfirmationModal.css';
 
 const DeliveryConfirmationModal = ({ order, onClose, onConfirm }) => {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleConfirm = () => {
     // Demo OTP check as per instructions
@@ -16,11 +26,17 @@ const DeliveryConfirmationModal = ({ order, onClose, onConfirm }) => {
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card">
+    <div className="modal-backdrop" onClick={onClose}>
+      <div 
+        className="modal-card" 
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="confirm-modal-title"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="modal-header">
-          <h3>Confirm Delivery</h3>
-          <button className="close-btn" onClick={onClose}>&times;</button>
+          <h3 id="confirm-modal-title">Confirm Delivery</h3>
+          <button className="close-btn" onClick={onClose} aria-label="Close modal">&times;</button>
         </div>
         
         <div className="modal-body">

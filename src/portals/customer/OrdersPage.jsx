@@ -101,13 +101,18 @@ const OrdersPage = () => {
             type="text"
             placeholder={isCustomer ? "Search by Order ID or Seller..." : "Search by Order ID, Customer or Seller..."}
             value={searchTerm}
+            aria-label="Search orders by ID, seller, or customer"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         <div className="filter-box">
           <Filter size={18} className="text-secondary" />
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select 
+            value={statusFilter} 
+            aria-label="Filter by order status"
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
             <option value="All">All Statuses</option>
             {statusOptions.map(s => (
               <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
@@ -123,7 +128,11 @@ const OrdersPage = () => {
             <tr>
               {!isCustomer && (
                 <th>
-                  <input type="checkbox" onChange={handleSelectAll} />
+                  <input 
+                    type="checkbox" 
+                    aria-label="Select all orders"
+                    onChange={handleSelectAll} 
+                  />
                 </th>
               )}
               <th>Order ID</th>
@@ -155,6 +164,7 @@ const OrdersPage = () => {
                       <td>
                         <input
                           type="checkbox"
+                          aria-label={`Select order ${order.id || order.orderId}`}
                           disabled={!!order.deliveryGroupId}
                           checked={selectedOrders.includes(order.id)}
                           onChange={() => toggleSelectOrder(order.id)}

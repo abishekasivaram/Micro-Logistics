@@ -201,7 +201,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               {role === 'vendor' ? 'Seller Panel' : role === 'delivery_partner' ? 'Delivery Partner' : `${role} Panel`}
             </span>
           </div>
-          <button className="icon-btn mobile-close-btn" onClick={() => setIsOpen(false)} style={{ width: '32px', height: '32px' }}>
+          <button className="icon-btn mobile-close-btn" onClick={() => setIsOpen(false)} aria-label="Close sidebar menu" style={{ width: '32px', height: '32px' }}>
             <X size={18} />
           </button>
         </div>

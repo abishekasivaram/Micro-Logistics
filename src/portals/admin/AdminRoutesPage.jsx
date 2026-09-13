@@ -53,8 +53,9 @@ const AdminRoutesPage = () => {
         {/* Batch Selector & Sequence Sidebar */}
         <div>
           <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-            <label className="form-label" style={{ fontWeight: '600' }}>Select Delivery Batch</label>
+            <label htmlFor="admin-routes-batch-select" className="form-label" style={{ fontWeight: '600' }}>Select Delivery Batch</label>
             <select 
+              id="admin-routes-batch-select"
               className="form-control" 
               value={selectedBatchId || ''} 
               onChange={e => setSelectedBatchId(e.target.value)}

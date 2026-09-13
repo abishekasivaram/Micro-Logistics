@@ -157,8 +157,9 @@ const MapPlanning = () => {
                 </div>
 
                 <div className="assignment-section">
-                  <label>Assign Personnel (Optional):</label>
+                  <label htmlFor="map-assign-personnel">Assign Personnel (Optional):</label>
                   <select 
+                    id="map-assign-personnel"
                     className="form-control"
                     value={selectedDriver}
                     onChange={(e) => setSelectedDriver(e.target.value)}

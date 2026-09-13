@@ -8,7 +8,22 @@ const AdminReportsPage = () => {
   const [toastMessage, setToastMessage] = useState(null);
 
   const handleExport = (format) => {
-    setToastMessage(`Export ${format} triggered for "${reportType}" (${dateRange}). [Frontend Placeholder]`);
+    if (format === 'CSV') {
+      const csvContent = "data:text/csv;charset=utf-8," + 
+        "Report,Period,GeneratedAt,Status\n" +
+        `"${reportType}","${dateRange}","${new Date().toISOString()}","Complete"\n`;
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `${reportType.replace(/\s+/g, '_')}_${dateRange.replace(/\s+/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setToastMessage(`Report "${reportType}" downloaded successfully as CSV.`);
+    } else {
+      setToastMessage(`Print preview opened for "${reportType}" report.`);
+      window.print();
+    }
     setTimeout(() => setToastMessage(null), 4000);
   };
 
@@ -33,8 +48,8 @@ const AdminReportsPage = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
           <div>
-            <label className="form-label">Report Category</label>
-            <select className="form-control" value={reportType} onChange={e => setReportType(e.target.value)}>
+            <label htmlFor="admin-report-category" className="form-label">Report Category</label>
+            <select id="admin-report-category" className="form-control" value={reportType} onChange={e => setReportType(e.target.value)}>
               <option value="Daily Orders">Daily Orders Summary</option>
               <option value="Seller Performance">Seller Onboarding & Performance</option>
               <option value="Delivery Performance">Delivery Batch & Agent Audit</option>
@@ -43,8 +58,8 @@ const AdminReportsPage = () => {
           </div>
 
           <div>
-            <label className="form-label">Time Period</label>
-            <select className="form-control" value={dateRange} onChange={e => setDateRange(e.target.value)}>
+            <label htmlFor="admin-report-period" className="form-label">Time Period</label>
+            <select id="admin-report-period" className="form-control" value={dateRange} onChange={e => setDateRange(e.target.value)}>
               <option value="Today">Today</option>
               <option value="This Week">This Week</option>
               <option value="This Month">This Month</option>

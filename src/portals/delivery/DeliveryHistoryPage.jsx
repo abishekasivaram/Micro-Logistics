@@ -36,6 +36,7 @@ const DeliveryHistoryPage = () => {
             <input 
               type="text" 
               placeholder="Search Order ID, Batch..." 
+              aria-label="Search Order ID or Batch"
               style={{ border: 'none', outline: 'none', background: 'transparent', width: '200px' }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

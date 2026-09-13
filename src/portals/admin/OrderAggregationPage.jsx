@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { 
@@ -16,6 +16,16 @@ const OrderAggregationPage = () => {
 
   const [confirmingGroup, setConfirmingGroup] = useState(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && confirmingGroup) {
+        setConfirmingGroup(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [confirmingGroup]);
 
   // 1. Ready & Unbatched Orders
   const readyOrders = orders.filter(o => 
@@ -214,13 +224,19 @@ const OrderAggregationPage = () => {
 
       {/* Confirmation Modal before creating batch */}
       {confirmingGroup && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '520px' }}>
+        <div 
+          className="modal-overlay" 
+          onClick={() => setConfirmingGroup(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-batch-title"
+        >
+          <div className="modal-content" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 id="confirm-batch-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ShieldCheck className="text-primary" size={22} /> Confirm Delivery Batch Creation
               </h3>
-              <button className="modal-close" onClick={() => setConfirmingGroup(null)}><X size={20} /></button>
+              <button className="modal-close" aria-label="Close dialog" onClick={() => setConfirmingGroup(null)}><X size={20} /></button>
             </div>
             <div style={{ padding: '20px' }}>
               <p style={{ fontSize: '14px', color: '#334155', marginTop: 0 }}>

@@ -41,11 +41,7 @@
 }
 
 .landing-nav .btn {
-  color: inherit;
-}
-
-.landing-nav .btn-primary {
-  color: white;
+  margin-left: 8px;
 }
 
 /* Hero Section */

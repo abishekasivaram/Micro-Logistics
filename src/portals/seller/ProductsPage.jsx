@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Search, Plus, Edit2, Trash2, ShoppingCart, Clock, Store, Eye, Check, X, Filter } from 'lucide-react';
@@ -32,6 +32,16 @@ const ProductsPage = () => {
     description: '',
     image: ''
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showProductModal) {
+        setShowProductModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showProductModal]);
 
   const handleQtyChange = (productId, delta) => {
     const currentQty = quantities[productId] || 1;
@@ -133,6 +143,7 @@ const ProductsPage = () => {
             type="text" 
             placeholder="Search products by name or category..." 
             value={searchTerm}
+            aria-label="Search products by name or category"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
@@ -140,6 +151,7 @@ const ProductsPage = () => {
         <div className="filters-group-row">
           {isCustomer && (
             <select 
+              aria-label="Filter products by local seller"
               value={selectedVendorFilter} 
               onChange={e => setSelectedVendorFilter(e.target.value)}
               className="filter-select"
@@ -150,6 +162,7 @@ const ProductsPage = () => {
           )}
 
           <select 
+            aria-label="Filter products by category"
             value={selectedCategoryFilter} 
             onChange={e => setSelectedCategoryFilter(e.target.value)}
             className="filter-select"
@@ -261,6 +274,7 @@ const ProductsPage = () => {
                       <input 
                         type="number" 
                         value={product.stock}
+                        aria-label={`Stock count for ${product.name}`}
                         style={{ width: '70px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #d1d5db' }}
                         onChange={(e) => updateProduct(product.id, { 
                           stock: parseInt(e.target.value) || 0
@@ -294,17 +308,24 @@ const ProductsPage = () => {
       {/* Seller Add/Edit Modal */}
       {showProductModal && (
         <div className="modal-backdrop" onClick={() => setShowProductModal(false)}>
-          <div className="product-modal-card" onClick={e => e.stopPropagation()}>
+          <div 
+            className="product-modal-card" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="product-modal-title"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="modal-header">
-              <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-              <button className="close-btn" onClick={() => setShowProductModal(false)}><X size={20} /></button>
+              <h3 id="product-modal-title">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+              <button className="close-btn" onClick={() => setShowProductModal(false)} aria-label="Close modal"><X size={20} /></button>
             </div>
 
             <form onSubmit={handleSaveProduct} className="product-modal-form">
               <div className="form-group">
-                <label>Product Name *</label>
+                <label htmlFor="prod-name">Product Name *</label>
                 <input 
                   type="text" 
+                  id="prod-name"
                   className="form-control" 
                   value={productForm.name}
                   onChange={e => setProductForm({ ...productForm, name: e.target.value })}
@@ -313,8 +334,9 @@ const ProductsPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Category *</label>
+                <label htmlFor="prod-cat">Category *</label>
                 <select 
+                  id="prod-cat"
                   className="form-control"
                   value={productForm.category}
                   onChange={e => setProductForm({ ...productForm, category: e.target.value })}
@@ -330,10 +352,11 @@ const ProductsPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Price (₹) *</label>
+                <label htmlFor="prod-price">Price (₹) *</label>
                 <input 
                   type="number" 
-                  step="0.01"
+                  id="prod-price"
+                  step="0.01" 
                   className="form-control" 
                   value={productForm.price}
                   onChange={e => setProductForm({ ...productForm, price: e.target.value })}
@@ -342,9 +365,10 @@ const ProductsPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Stock Quantity *</label>
+                <label htmlFor="prod-stock">Stock Quantity *</label>
                 <input 
                   type="number" 
+                  id="prod-stock"
                   className="form-control" 
                   value={productForm.stock}
                   onChange={e => setProductForm({ ...productForm, stock: e.target.value })}
@@ -353,9 +377,10 @@ const ProductsPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Preparation Time</label>
+                <label htmlFor="prod-prep">Preparation Time</label>
                 <input 
                   type="text" 
+                  id="prod-prep"
                   className="form-control" 
                   placeholder="15 mins"
                   value={productForm.prepTime}
@@ -364,9 +389,10 @@ const ProductsPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Image URL</label>
+                <label htmlFor="prod-img">Image URL</label>
                 <input 
                   type="url" 
+                  id="prod-img"
                   className="form-control" 
                   value={productForm.image}
                   onChange={e => setProductForm({ ...productForm, image: e.target.value })}
@@ -374,8 +400,9 @@ const ProductsPage = () => {
               </div>
 
               <div className="form-group full-width">
-                <label>Description</label>
+                <label htmlFor="prod-desc">Description</label>
                 <textarea 
+                  id="prod-desc"
                   className="form-control"
                   rows="2"
                   value={productForm.description}

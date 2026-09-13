@@ -65,15 +65,33 @@ const DeliveryDashboard = () => {
             <Link to="/delivery/deliveries" className="btn btn-outline text-left">
               View All My Deliveries
             </Link>
-            <Link to="/delivery/pickup" className="btn btn-outline text-left" disabled={!activeBatch}>
-              Start / View Pickups
-            </Link>
-            <Link to="/delivery/route" className="btn btn-outline text-left" disabled={!activeBatch}>
-              View Current Route
-            </Link>
-            <Link to="/delivery/status" className="btn btn-outline text-left" disabled={!activeBatch}>
-              Update Delivery Status
-            </Link>
+            {activeBatch ? (
+              <Link to="/delivery/pickup" className="btn btn-outline text-left">
+                Start / View Pickups
+              </Link>
+            ) : (
+              <button type="button" className="btn btn-outline text-left" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                Start / View Pickups (No Active Batch)
+              </button>
+            )}
+            {activeBatch ? (
+              <Link to="/delivery/route" className="btn btn-outline text-left">
+                View Current Route
+              </Link>
+            ) : (
+              <button type="button" className="btn btn-outline text-left" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                View Current Route (No Active Batch)
+              </button>
+            )}
+            {activeBatch ? (
+              <Link to="/delivery/status" className="btn btn-outline text-left">
+                Update Delivery Status
+              </Link>
+            ) : (
+              <button type="button" className="btn btn-outline text-left" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                Update Delivery Status (No Active Batch)
+              </button>
+            )}
           </div>
 
           {upcomingBatches.length > 0 && (

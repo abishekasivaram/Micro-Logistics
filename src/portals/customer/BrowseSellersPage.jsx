@@ -63,6 +63,7 @@ const BrowseSellersPage = () => {
             type="text" 
             placeholder="Search sellers or products (e.g. Rice, Milk, Bakery)..." 
             value={searchTerm}
+            aria-label="Search sellers or products"
             onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
@@ -70,21 +71,30 @@ const BrowseSellersPage = () => {
         <div className="filters-group">
           <div className="filter-select-wrapper">
             <Filter size={16} className="filter-icon" />
-            <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+            <select 
+              value={selectedCategory} 
+              aria-label="Filter by business category"
+              onChange={e => setSelectedCategory(e.target.value)}
+            >
               {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
             </select>
           </div>
 
           <div className="filter-select-wrapper">
             <MapPin size={16} className="filter-icon" />
-            <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)}>
+            <select 
+              value={selectedLocation} 
+              aria-label="Filter by neighborhood location"
+              onChange={e => setSelectedLocation(e.target.value)}
+            >
               {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
             </select>
           </div>
 
-          <label className="open-filter-checkbox">
+          <label htmlFor="chk-openonly" className="open-filter-checkbox">
             <input 
               type="checkbox" 
+              id="chk-openonly"
               checked={openOnly} 
               onChange={e => setOpenOnly(e.target.checked)} 
             />

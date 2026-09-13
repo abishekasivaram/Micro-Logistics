@@ -36,14 +36,24 @@ const ProfilePage = () => {
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
+    const expectedCurrentPassword = currentUser?.password || 'password123';
+    if (passwordForm.currentPassword !== expectedCurrentPassword) {
+      setErrorMsg('Current password is incorrect.');
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setErrorMsg('New password must be at least 6 characters.');
+      return;
+    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setErrorMsg('New passwords do not match.');
       return;
     }
     setErrorMsg('');
+    updateUserProfile({ password: passwordForm.newPassword });
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    setSuccessMsg('Password updated successfully!');
-    setTimeout(() => setSuccessMsg(''), 3000);
+    setSuccessMsg('Password updated successfully! Next login will require your new password.');
+    setTimeout(() => setSuccessMsg(''), 4000);
   };
 
   return (
@@ -107,8 +117,9 @@ const ProfilePage = () => {
 
               <div className="profile-form-grid">
                 <div className="form-group">
-                  <label>Full Name *</label>
+                  <label htmlFor="customer-profile-name">Full Name *</label>
                   <input 
+                    id="customer-profile-name"
                     type="text" 
                     className="form-control" 
                     value={formData.name}
@@ -118,8 +129,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Username *</label>
+                  <label htmlFor="customer-profile-username">Username *</label>
                   <input 
+                    id="customer-profile-username"
                     type="text" 
                     className="form-control" 
                     value={formData.username}
@@ -129,8 +141,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Email Address *</label>
+                  <label htmlFor="customer-profile-email">Email Address *</label>
                   <input 
+                    id="customer-profile-email"
                     type="email" 
                     className="form-control" 
                     value={formData.email}
@@ -140,8 +153,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Phone Number *</label>
+                  <label htmlFor="customer-profile-phone">Phone Number *</label>
                   <input 
+                    id="customer-profile-phone"
                     type="tel" 
                     className="form-control" 
                     value={formData.phone}
@@ -151,8 +165,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group full-width">
-                  <label>Default Delivery Address *</label>
+                  <label htmlFor="customer-profile-address">Default Delivery Address *</label>
                   <input 
+                    id="customer-profile-address"
                     type="text" 
                     className="form-control" 
                     value={formData.address}
@@ -162,8 +177,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>City / Area Hub *</label>
+                  <label htmlFor="customer-profile-area">City / Area Hub *</label>
                   <input 
+                    id="customer-profile-area"
                     type="text" 
                     className="form-control" 
                     value={formData.area}
@@ -173,8 +189,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Avatar / Image URL</label>
+                  <label htmlFor="customer-profile-avatar">Avatar / Image URL</label>
                   <input 
+                    id="customer-profile-avatar"
                     type="url" 
                     className="form-control" 
                     value={formData.avatar}
@@ -195,8 +212,9 @@ const ProfilePage = () => {
 
               <div className="profile-form-grid" style={{ gridTemplateColumns: '1fr' }}>
                 <div className="form-group">
-                  <label>Current Password *</label>
+                  <label htmlFor="customer-profile-curr-pass">Current Password *</label>
                   <input 
+                    id="customer-profile-curr-pass"
                     type="password" 
                     className="form-control" 
                     placeholder="••••••••"
@@ -207,8 +225,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>New Password *</label>
+                  <label htmlFor="customer-profile-new-pass">New Password *</label>
                   <input 
+                    id="customer-profile-new-pass"
                     type="password" 
                     className="form-control" 
                     placeholder="Minimum 6 characters"
@@ -219,8 +238,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Confirm New Password *</label>
+                  <label htmlFor="customer-profile-conf-pass">Confirm New Password *</label>
                   <input 
+                    id="customer-profile-conf-pass"
                     type="password" 
                     className="form-control" 
                     placeholder="Re-enter new password"

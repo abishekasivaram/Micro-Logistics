@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { mockUsers } from '../data/sampleData';
-import { Eye, EyeOff, ArrowLeft, Lock } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -13,11 +13,24 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
   
   const [showForgotModal, setShowForgotModal] = useState(false);
 
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showForgotModal) {
+        setShowForgotModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showForgotModal]);
+
   const handleLogin = (e) => {
     e.preventDefault();
+    setErrorMsg('');
     
     const searchId = usernameOrEmail.trim().toLowerCase();
 
@@ -50,13 +63,13 @@ const LoginPage = () => {
     let foundUser = customerMatch || sellerMatch || adminMatch || deliveryMatch;
 
     if (!foundUser) {
-      alert("Account not found. Please check your User ID, Shop Name, or Agent ID.");
+      setErrorMsg("Account not found. Please check your User ID, Shop Name, or Agent ID.");
       return;
     }
 
     const expectedPassword = foundUser.password || 'password123';
     if (password !== expectedPassword) {
-      alert("Incorrect password.");
+      setErrorMsg("Incorrect password. Please try again.");
       return;
     }
 
@@ -73,6 +86,12 @@ const LoginPage = () => {
       setCurrentUser({ ...foundUser, role: 'delivery_partner' });
       navigate('/delivery-dashboard');
     }
+  };
+
+  const fillDemoAccount = (id, pwd) => {
+    setUsernameOrEmail(id);
+    setPassword(pwd);
+    setErrorMsg('');
   };
 
   return (
@@ -102,6 +121,13 @@ const LoginPage = () => {
             </div>
             <p className="login-subtitle">Sign in to continue</p>
           </div>
+
+          {errorMsg && (
+            <div className="auth-error-banner" role="alert">
+              <AlertCircle size={18} />
+              <span>{errorMsg}</span>
+            </div>
+          )}
           
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-group">
@@ -112,7 +138,10 @@ const LoginPage = () => {
                 className="form-control" 
                 placeholder="Enter your ID or shop name"
                 value={usernameOrEmail}
-                onChange={e => setUsernameOrEmail(e.target.value)}
+                onChange={e => {
+                  setUsernameOrEmail(e.target.value);
+                  if (errorMsg) setErrorMsg('');
+                }}
                 required 
               />
             </div>
@@ -126,13 +155,17 @@ const LoginPage = () => {
                   className="form-control" 
                   placeholder="Enter your password" 
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={e => {
+                    setPassword(e.target.value);
+                    if (errorMsg) setErrorMsg('');
+                  }}
                   required 
                 />
                 <button 
                   type="button" 
                   className="password-toggle-btn"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -141,8 +174,9 @@ const LoginPage = () => {
             </div>
             
             <div className="form-options">
-              <label className="checkbox-label">
+              <label htmlFor="rememberMe" className="checkbox-label">
                 <input 
+                  id="rememberMe"
                   type="checkbox" 
                   checked={rememberMe} 
                   onChange={e => setRememberMe(e.target.checked)} 
@@ -166,6 +200,45 @@ const LoginPage = () => {
             </button>
           </form>
 
+          {/* Demo Quick Logins */}
+          <div className="demo-accounts-section">
+            <span className="demo-title">Quick Demo Login:</span>
+            <div className="demo-pills">
+              <button 
+                type="button" 
+                className="demo-pill" 
+                onClick={() => fillDemoAccount('priyarajan', 'password123')}
+                title="Fill Customer Demo"
+              >
+                Customer
+              </button>
+              <button 
+                type="button" 
+                className="demo-pill" 
+                onClick={() => fillDemoAccount('v1', 'password123')}
+                title="Fill Vendor Demo"
+              >
+                Seller
+              </button>
+              <button 
+                type="button" 
+                className="demo-pill" 
+                onClick={() => fillDemoAccount('admin', 'password123')}
+                title="Fill Admin Demo"
+              >
+                Admin
+              </button>
+              <button 
+                type="button" 
+                className="demo-pill" 
+                onClick={() => fillDemoAccount('da1', 'password123')}
+                title="Fill Delivery Agent Demo"
+              >
+                Delivery
+              </button>
+            </div>
+          </div>
+
           <div className="login-footer">
             <p>Don't have an account? <Link to="/register-customer">Create Account</Link> | <Link to="/register-seller">Register as Seller</Link></p>
           </div>
@@ -173,12 +246,19 @@ const LoginPage = () => {
           {/* Forgot Password Modal */}
           {showForgotModal && (
             <div className="modal-backdrop" onClick={() => setShowForgotModal(false)}>
-              <div className="notice-modal-card" onClick={e => e.stopPropagation()}>
+              <div 
+                className="notice-modal-card" 
+                role="dialog" 
+                aria-modal="true" 
+                aria-labelledby="recovery-title"
+                onClick={e => e.stopPropagation()}
+              >
                 <div className="notice-header">
                   <Lock size={24} className="text-warning" />
-                  <h3>Password Recovery</h3>
+                  <h3 id="recovery-title">Password Recovery</h3>
                 </div>
-                <p>For demonstration purposes in Stage 1, use password <strong>password123</strong> to sign in.</p>
+                <p>For demonstration purposes, default passwords are set to <strong>password123</strong>.</p>
+                <p className="text-sm text-secondary mt-2">Press <kbd>Esc</kbd> or click Close to dismiss.</p>
                 <button className="btn btn-primary w-full mt-4" onClick={() => setShowForgotModal(false)}>
                   Close
                 </button>

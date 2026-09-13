@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import MapPlaceholder from '../../components/common/MapPlaceholder';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -12,23 +13,12 @@ const TrackDeliveryPage = () => {
   const customerOrders = orders.filter(o => o.customerId === currentUser?.id || o.customerName === currentUser?.name || currentUser?.role === 'admin' || currentUser?.role === 'vendor');
   
   const [selectedOrderId, setSelectedOrderId] = useState(
-    customerOrders[0]?.id || customerOrders[0]?.orderId || 'ORD-1025'
+    customerOrders[0]?.id || customerOrders[0]?.orderId || ''
   );
 
-  const activeOrder = customerOrders.find(o => (o.id === selectedOrderId || o.orderId === selectedOrderId)) || customerOrders[0] || {
-    id: 'ORD-1025',
-    vendorName: 'Sri Lakshmi Organics',
-    pickupLocation: '45 Adyar Bridge Rd, Chennai',
-    deliveryLocation: '101 Anna Nagar East, Chennai',
-    deliveryDate: '2026-09-12',
-    deliveryTimeSlot: '9:00 AM – 1:00 PM',
-    orderStatus: 'READY_FOR_DELIVERY',
-    deliveryStatus: 'Grouped & Assigned',
-    assignedAgent: 'Muthu Vel (DA014)',
-    total: 890.00
-  };
+  const activeOrder = customerOrders.find(o => (o.id === selectedOrderId || o.orderId === selectedOrderId)) || customerOrders[0];
 
-  const status = (activeOrder.orderStatus || activeOrder.status || 'PLACED').toUpperCase();
+  const status = (activeOrder?.orderStatus || activeOrder?.status || 'PLACED').toUpperCase();
 
   const getProgressPercentage = (st) => {
     switch (st) {
@@ -55,8 +45,10 @@ const TrackDeliveryPage = () => {
 
         {customerOrders.length > 1 && (
           <div className="order-select-header-box">
-            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#4b5563' }}>Select Order:</label>
+            <label htmlFor="track-select-order" style={{ fontSize: '12px', fontWeight: 'bold', color: '#4b5563' }}>Select Order:</label>
             <select 
+              id="track-select-order"
+              aria-label="Select order to track"
               value={selectedOrderId} 
               onChange={e => setSelectedOrderId(e.target.value)}
               className="filter-select"
@@ -71,7 +63,19 @@ const TrackDeliveryPage = () => {
         )}
       </div>
 
-      {/* Main Track Layout */}
+      {!activeOrder ? (
+        <div className="empty-state-card" style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', marginTop: '20px' }}>
+          <Package size={48} className="text-secondary" style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+          <h3>No Orders to Track</h3>
+          <p style={{ color: '#64748b', maxWidth: '400px', margin: '8px auto 24px' }}>
+            You don't have any active deliveries to track right now. Discover fresh products from neighborhood sellers and place your first order!
+          </p>
+          <Link to="/browse-sellers" className="btn btn-primary">
+            Browse Local Sellers
+          </Link>
+        </div>
+      ) : (
+      /* Main Track Layout */
       <div className="tracking-layout-grid">
         
         {/* Left Column: Interactive Map Placeholder */}
@@ -171,6 +175,7 @@ const TrackDeliveryPage = () => {
         </div>
 
       </div>
+      )}
     </div>
   );
 };

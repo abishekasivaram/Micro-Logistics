@@ -44,8 +44,9 @@ const HelpSupportPage = () => {
           ) : (
             <form onSubmit={handleSubmit}>
               <div className="form-group" style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Issue Type</label>
+                <label htmlFor="delivery-issue-type" style={{ display: 'block', marginBottom: '5px' }}>Issue Type</label>
                 <select 
+                  id="delivery-issue-type"
                   className="form-control" 
                   value={issueType}
                   onChange={(e) => setIssueType(e.target.value)}
@@ -61,8 +62,9 @@ const HelpSupportPage = () => {
               </div>
 
               <div className="form-group" style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Related Order / Batch ID (Optional)</label>
+                <label htmlFor="delivery-order-id" style={{ display: 'block', marginBottom: '5px' }}>Related Order / Batch ID (Optional)</label>
                 <input 
+                  id="delivery-order-id"
                   type="text" 
                   className="form-control" 
                   placeholder="e.g., ORD-1021 or B-1002"
@@ -72,8 +74,9 @@ const HelpSupportPage = () => {
               </div>
 
               <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Description</label>
+                <label htmlFor="delivery-ticket-description" style={{ display: 'block', marginBottom: '5px' }}>Description</label>
                 <textarea 
+                  id="delivery-ticket-description"
                   className="form-control" 
                   rows="4" 
                   placeholder="Please describe the issue in detail..."

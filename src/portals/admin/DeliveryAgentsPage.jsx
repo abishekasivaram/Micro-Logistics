@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { Navigation, Plus, Search, UserCheck, Phone, Edit, X, Star, Truck } from 'lucide-react';
 import { getStatusBadgeClass } from '../../utils/aggregationUtils';
@@ -11,6 +11,16 @@ const DeliveryAgentsPage = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newAgent, setNewAgent] = useState({ name: '', phone: '', currentArea: 'T. Nagar', capacity: 5, vehicle: 'Electric Scooter' });
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isAddModalOpen) {
+        setIsAddModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAddModalOpen]);
 
   const filteredAgents = deliveryAgents.filter(a => {
     const sTerm = searchTerm.toLowerCase();
@@ -33,8 +43,8 @@ const DeliveryAgentsPage = () => {
     <div className="page-container">
       <div className="page-header">
         <div>
-          <h2>Delivery Personnel & Fleet Directory</h2>
-          <p>Onboard local delivery agents, configure order carrying capacities, monitor active routes, and update availability.</p>
+          <h2>Delivery Fleet & Agent Operations</h2>
+          <p>Manage active field delivery agents, real-time vehicle allocation, and capacity.</p>
         </div>
         <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Plus size={18} /> Add New Delivery Agent
@@ -51,12 +61,19 @@ const DeliveryAgentsPage = () => {
               className="form-control" 
               placeholder="Search by agent name, phone, operating area..."
               value={searchTerm}
+              aria-label="Search delivery agents by name, phone, or operating area"
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: '38px' }}
             />
           </div>
 
-          <select className="form-control" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ width: 'auto' }}>
+          <select 
+            className="form-control" 
+            value={statusFilter} 
+            aria-label="Filter delivery agents by status"
+            onChange={e => setStatusFilter(e.target.value)} 
+            style={{ width: 'auto' }}
+          >
             <option value="ALL">All Statuses</option>
             <option value="Available">Available</option>
             <option value="On Delivery">On Delivery</option>
@@ -125,19 +142,27 @@ const DeliveryAgentsPage = () => {
 
       {/* Add Agent Modal */}
       {isAddModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '500px' }}>
+        <div className="modal-backdrop" onClick={() => setIsAddModalOpen(false)}>
+          <div 
+            className="modal-content" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="agent-modal-title"
+            style={{ maxWidth: '500px' }}
+            onClick={e => e.stopPropagation()}
+          >
             <div className="modal-header">
-              <h3 style={{ margin: 0 }}>Onboard New Delivery Agent</h3>
-              <button className="modal-close" onClick={() => setIsAddModalOpen(false)}><X size={20} /></button>
+              <h3 id="agent-modal-title" style={{ margin: 0 }}>Onboard New Delivery Agent</h3>
+              <button className="modal-close" onClick={() => setIsAddModalOpen(false)} aria-label="Close modal"><X size={20} /></button>
             </div>
             
             <form onSubmit={handleAddSubmit}>
               <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label className="form-label">Full Name *</label>
+                  <label htmlFor="agent-name" className="form-label">Full Name *</label>
                   <input 
                     type="text" 
+                    id="agent-name"
                     className="form-control" 
                     required 
                     placeholder="e.g. Arun Kumar"
@@ -147,9 +172,10 @@ const DeliveryAgentsPage = () => {
                 </div>
 
                 <div>
-                  <label className="form-label">Phone Number *</label>
+                  <label htmlFor="agent-phone" className="form-label">Phone Number *</label>
                   <input 
                     type="tel" 
+                    id="agent-phone"
                     className="form-control" 
                     required 
                     placeholder="e.g. 9876543210"
@@ -159,9 +185,10 @@ const DeliveryAgentsPage = () => {
                 </div>
 
                 <div>
-                  <label className="form-label">Operating Area / Hub</label>
+                  <label htmlFor="agent-area" className="form-label">Operating Area / Hub</label>
                   <input 
                     type="text" 
+                    id="agent-area"
                     className="form-control" 
                     placeholder="e.g. Adyar / Mylapore"
                     value={newAgent.currentArea}
@@ -170,9 +197,10 @@ const DeliveryAgentsPage = () => {
                 </div>
 
                 <div>
-                  <label className="form-label">Max Order Carrying Capacity</label>
+                  <label htmlFor="agent-capacity" className="form-label">Max Order Carrying Capacity</label>
                   <input 
                     type="number" 
+                    id="agent-capacity"
                     className="form-control" 
                     min="1" 
                     max="10" 
@@ -182,9 +210,10 @@ const DeliveryAgentsPage = () => {
                 </div>
 
                 <div>
-                  <label className="form-label">Vehicle Type</label>
+                  <label htmlFor="agent-vehicle" className="form-label">Vehicle Type</label>
                   <input 
                     type="text" 
+                    id="agent-vehicle"
                     className="form-control" 
                     placeholder="e.g. Ather 450X EV / TVS XL 100"
                     value={newAgent.vehicle}

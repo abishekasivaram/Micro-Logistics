@@ -35,7 +35,7 @@ export const AppProvider = ({ children }) => {
   const [products, setProducts] = useState(() => getStorageItem('products', initialProducts));
   const [notifications, setNotifications] = useState(() => getStorageItem('notifications', initialNotifications));
   const [cart, setCart] = useState(() => getStorageItem('cart', []));
-  const [currentUser, setCurrentUser] = useState(() => getStorageItem('currentUser', mockUsers.find(u => u.role === 'customer')));
+  const [currentUser, setCurrentUser] = useState(() => getStorageItem('currentUser', null));
   const [adminSettings, setAdminSettings] = useState(() => getStorageItem('adminSettings', adminSettingsInitial));
 
   // Legacy alias for deliveryGroups
@@ -96,6 +96,7 @@ export const AppProvider = ({ children }) => {
       name: data.fullName,
       username: data.username,
       email: data.email,
+      password: data.password || 'password123',
       phone: data.phone,
       address: data.address,
       area: data.cityArea || 'Local',
@@ -219,6 +220,9 @@ export const AppProvider = ({ children }) => {
         } else if (status === 'ASSIGNED') {
           deliveryStatus = 'Assigned for Delivery';
           aggregationStatus = 'Assigned';
+        } else if (status === 'PICKED_UP') {
+          deliveryStatus = 'Picked Up - In Transit to Delivery';
+          aggregationStatus = 'Out for Delivery';
         } else if (status === 'OUT_FOR_DELIVERY') {
           deliveryStatus = 'Out for Delivery';
           aggregationStatus = 'Out for Delivery';
@@ -409,6 +413,9 @@ export const AppProvider = ({ children }) => {
           }
           return a;
         }));
+        if (currentUser && currentUser.id === targetBatch.agentId) {
+          setCurrentUser(prev => ({ ...prev, status: 'Available', availability: 'Available' }));
+        }
       }
     }
 
@@ -434,6 +441,9 @@ export const AppProvider = ({ children }) => {
 
   const updateDeliveryAgent = (agentId, fields) => {
     setDeliveryAgents(prev => prev.map(a => a.id === agentId ? { ...a, ...fields } : a));
+    if (currentUser && (currentUser.id === agentId || currentUser.role === 'delivery_partner')) {
+      setCurrentUser(prev => ({ ...prev, ...fields }));
+    }
     addNotification(`Agent details updated.`, 'system');
   };
 
@@ -452,15 +462,23 @@ export const AppProvider = ({ children }) => {
       setCustomers(prev => prev.map(c => c.id === currentUser.id ? { ...c, ...updatedFields } : c));
     } else if (currentUser.role === 'vendor') {
       setVendors(prev => prev.map(v => v.id === currentUser.id ? { ...v, ...updatedFields } : v));
+    } else if (currentUser.role === 'delivery_partner') {
+      setDeliveryAgents(prev => prev.map(a => a.id === currentUser.id ? { ...a, ...updatedFields } : a));
     }
     addNotification(`Profile updated successfully.`, 'system');
   };
 
   const updateSellerProfile = (updatedVendorFields) => {
     if (!currentUser || currentUser.role !== 'vendor') return;
-    const updatedUser = { ...currentUser, ...updatedVendorFields };
+    const patch = { ...updatedVendorFields };
+    if (patch.name && !patch.shopName) {
+      patch.shopName = patch.name;
+    } else if (patch.shopName && !patch.name) {
+      patch.name = patch.shopName;
+    }
+    const updatedUser = { ...currentUser, ...patch };
     setCurrentUser(updatedUser);
-    setVendors(prev => prev.map(v => v.id === currentUser.id ? { ...v, ...updatedVendorFields } : v));
+    setVendors(prev => prev.map(v => v.id === currentUser.id ? { ...v, ...patch } : v));
     addNotification(`Business profile updated successfully.`, 'system');
   };
 

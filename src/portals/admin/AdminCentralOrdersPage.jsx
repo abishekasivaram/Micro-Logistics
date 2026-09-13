@@ -61,6 +61,7 @@ const AdminCentralOrdersPage = () => {
               type="text" 
               className="form-control" 
               placeholder="Search by Order ID, Seller, Customer..."
+              aria-label="Search orders by Order ID, Seller, or Customer"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: '38px' }}
@@ -68,12 +69,12 @@ const AdminCentralOrdersPage = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <select className="form-control" value={sellerFilter} onChange={e => setSellerFilter(e.target.value)} style={{ width: 'auto' }}>
+            <select aria-label="Filter orders by seller" className="form-control" value={sellerFilter} onChange={e => setSellerFilter(e.target.value)} style={{ width: 'auto' }}>
               <option value="ALL">All Sellers</option>
               {sellersList.map(s => <option key={s.id} value={s.id}>{s.name || 'Unknown Seller'}</option>)}
             </select>
 
-            <select className="form-control" value={orderStatusFilter} onChange={e => setOrderStatusFilter(e.target.value)} style={{ width: 'auto' }}>
+            <select aria-label="Filter orders by status" className="form-control" value={orderStatusFilter} onChange={e => setOrderStatusFilter(e.target.value)} style={{ width: 'auto' }}>
               <option value="ALL">All Order Statuses</option>
               <option value="PLACED">Order Placed</option>
               <option value="CONFIRMED">Order Confirmed</option>
@@ -84,7 +85,7 @@ const AdminCentralOrdersPage = () => {
               <option value="DELIVERED">Delivered</option>
             </select>
 
-            <select className="form-control" value={aggregationFilter} onChange={e => setAggregationFilter(e.target.value)} style={{ width: 'auto' }}>
+            <select aria-label="Filter orders by aggregation status" className="form-control" value={aggregationFilter} onChange={e => setAggregationFilter(e.target.value)} style={{ width: 'auto' }}>
               <option value="ALL">All Aggregation Statuses</option>
               <option value="Waiting for Aggregation">Waiting for Aggregation</option>
               <option value="Suitable for Grouping">Suitable for Grouping</option>
@@ -119,12 +120,12 @@ const AdminCentralOrdersPage = () => {
               {filteredOrders.length === 0 ? (
                 <tr><td colSpan="10" className="empty-state">No central orders match your search and filter criteria.</td></tr>
               ) : (
-                filteredOrders.map(o => {
+                filteredOrders.map((o, idx) => {
                   const currentSt = o.status || o.orderStatus || 'PLACED';
                   const itemsCount = o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 0;
                   
                   return (
-                    <tr key={o.id || Math.random()}>
+                    <tr key={o.id || o.orderId || `order-${idx}`}>
                       <td className="font-medium">{o.orderId || o.id || 'N/A'}</td>
                       <td>{o.customerName || 'Customer'}</td>
                       <td>{o.vendorName || o.sellerName || 'Local Seller'}</td>

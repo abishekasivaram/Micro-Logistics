@@ -24,6 +24,7 @@ const MyDeliveriesPage = () => {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <Filter size={18} className="text-secondary" />
           <select 
+            aria-label="Filter deliveries by status"
             className="form-control" 
             style={{ width: 'auto', display: 'inline-block' }}
             value={filter}

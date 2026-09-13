@@ -90,18 +90,152 @@ img {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ==========================================================================
+   BUTTON DESIGN SYSTEM
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition-fast, 150ms ease-in-out);
+  white-space: nowrap;
+  user-select: none;
+  gap: 0.5rem;
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Primary Button - Vivid Brand Blue (#2563eb) */
+.btn-primary {
+  background-color: var(--color-primary, #2563eb) !important;
+  color: #ffffff !important;
+  border-color: var(--color-primary, #2563eb) !important;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover, #1d4ed8) !important;
+  border-color: var(--color-primary-hover, #1d4ed8) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  background-color: var(--color-primary-dark, #1e40af) !important;
+  border-color: var(--color-primary-dark, #1e40af) !important;
+}
+
+/* Secondary Button - Vibrant Emerald (#10b981) */
+.btn-secondary {
+  background-color: var(--color-secondary, #10b981) !important;
+  color: #ffffff !important;
+  border-color: var(--color-secondary, #10b981) !important;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-hover, #059669) !important;
+  border-color: var(--color-secondary-hover, #059669) !important;
+  color: #ffffff !important;
+}
+
+/* Outline Button */
+.btn-outline {
+  background-color: #ffffff !important;
+  color: var(--color-primary, #2563eb) !important;
+  border: 1px solid var(--color-border, #d1d5db) !important;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--color-primary-light, #eff6ff) !important;
+  border-color: var(--color-primary, #2563eb) !important;
+  color: var(--color-primary, #2563eb) !important;
+}
+
+/* Danger Button */
+.btn-danger {
+  background-color: var(--color-danger, #ef4444) !important;
+  color: #ffffff !important;
+  border-color: var(--color-danger, #ef4444) !important;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/* Button Sizing */
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: var(--font-size-xs, 0.75rem);
+  border-radius: var(--radius-sm, 6px);
+}
+
+.btn-lg {
+  padding: 0.875rem 1.75rem;
+  font-size: var(--font-size-base, 1rem);
+  border-radius: var(--radius-lg, 10px);
+}
+
+/* Form Controls */
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: var(--font-size-sm, 0.875rem);
+  line-height: 1.5;
+  color: var(--color-text-primary, #111827);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: var(--radius-md, 8px);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: var(--color-primary, #2563eb);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
 /* Responsive Modal Base */
-.modal-backdrop {
+.modal-backdrop, .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
   padding: var(--spacing-4);
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  z-index: 1200;
 }
 
-.modal-content {
+.modal-content, .modal-card {
+  background: var(--color-surface, #ffffff);
+  border-radius: var(--radius-xl, 16px);
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
 }

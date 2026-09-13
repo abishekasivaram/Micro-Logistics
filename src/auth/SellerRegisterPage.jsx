@@ -76,16 +76,17 @@ const SellerRegisterPage = () => {
         </div>
 
         {errorMsg && (
-          <div className="auth-error-banner">
+          <div className="auth-error-banner" role="alert">
             <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="auth-form-grid">
           <div className="form-group">
-            <label>Business / Store Name *</label>
+            <label htmlFor="seller-bizname">Business / Store Name *</label>
             <input 
               type="text" 
+              id="seller-bizname"
               name="businessName" 
               className="form-control" 
               placeholder="e.g. Namma Chennai Grocers"
@@ -96,9 +97,10 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Owner / Manager Name *</label>
+            <label htmlFor="seller-ownername">Owner / Manager Name *</label>
             <input 
               type="text" 
+              id="seller-ownername"
               name="ownerName" 
               className="form-control" 
               placeholder="e.g. Subramaniam V."
@@ -109,9 +111,10 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Seller Username *</label>
+            <label htmlFor="seller-username">Seller Username *</label>
             <input 
               type="text" 
+              id="seller-username"
               name="username" 
               className="form-control" 
               placeholder="e.g. nammachennai"
@@ -122,9 +125,10 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Business Email *</label>
+            <label htmlFor="seller-email">Business Email *</label>
             <input 
               type="email" 
+              id="seller-email"
               name="email" 
               className="form-control" 
               placeholder="contact@store.com"
@@ -135,8 +139,9 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Business Category *</label>
+            <label htmlFor="seller-cat">Business Category *</label>
             <select 
+              id="seller-cat"
               name="category" 
               className="form-control" 
               value={formData.category} 
@@ -153,9 +158,10 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Contact Phone *</label>
+            <label htmlFor="seller-phone">Contact Phone *</label>
             <input 
               type="tel" 
+              id="seller-phone"
               name="phone" 
               className="form-control" 
               placeholder="9840123456"
@@ -166,10 +172,11 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Password *</label>
+            <label htmlFor="seller-pwd">Password *</label>
             <div className="password-input-wrapper">
               <input 
                 type={showPassword ? "text" : "password"} 
+                id="seller-pwd"
                 name="password" 
                 className="form-control" 
                 placeholder="••••••••"
@@ -181,6 +188,8 @@ const SellerRegisterPage = () => {
                 type="button" 
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -188,9 +197,10 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Confirm Password *</label>
+            <label htmlFor="seller-confirmpwd">Confirm Password *</label>
             <input 
               type={showPassword ? "text" : "password"} 
+              id="seller-confirmpwd"
               name="confirmPassword" 
               className="form-control" 
               placeholder="Re-enter password"
@@ -201,9 +211,10 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group full-width">
-            <label>Business Pickup Address *</label>
+            <label htmlFor="seller-address">Business Pickup Address *</label>
             <input 
               type="text" 
+              id="seller-address"
               name="businessAddress" 
               className="form-control" 
               placeholder="Store Address, Street Name, Landmark"
@@ -214,8 +225,9 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>City / Area Hub *</label>
+            <label htmlFor="seller-cityarea">City / Area Hub *</label>
             <select 
+              id="seller-cityarea"
               name="cityArea" 
               className="form-control" 
               value={formData.cityArea} 
@@ -231,9 +243,10 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label>Operating Hours</label>
+            <label htmlFor="seller-hours">Operating Hours</label>
             <input 
               type="text" 
+              id="seller-hours"
               name="operatingHours" 
               className="form-control" 
               placeholder="7:00 AM - 9:00 PM"
@@ -243,8 +256,9 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group full-width">
-            <label>Business Description</label>
+            <label htmlFor="seller-desc">Business Description</label>
             <textarea 
+              id="seller-desc"
               name="description" 
               className="form-control" 
               rows="2"
@@ -255,9 +269,10 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group full-width">
-            <label>Business Logo URL (Optional)</label>
+            <label htmlFor="seller-logo">Business Logo URL (Optional)</label>
             <input 
               type="url" 
+              id="seller-logo"
               name="logo" 
               className="form-control" 
               placeholder="https://..."
@@ -267,8 +282,9 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="form-group full-width checkboxes-group">
-            <label className="checkbox-label">
+            <label htmlFor="seller-accept-terms" className="checkbox-label">
               <input 
+                id="seller-accept-terms"
                 type="checkbox" 
                 name="acceptTerms" 
                 checked={formData.acceptTerms} 
@@ -277,8 +293,9 @@ const SellerRegisterPage = () => {
               />
               <span>I accept the Terms & Conditions for micro-logistics sellers *</span>
             </label>
-            <label className="checkbox-label">
+            <label htmlFor="seller-agree-network" className="checkbox-label">
               <input 
+                id="seller-agree-network"
                 type="checkbox" 
                 name="agreeNetwork" 
                 checked={formData.agreeNetwork} 
