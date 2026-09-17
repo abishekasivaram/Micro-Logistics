@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const delivery_controller_1 = require("../controllers/delivery.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.requireAuth);
+router.get('/agents', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.getAgents);
+router.get('/agents/:id', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.getAgentById);
+router.get('/batches', delivery_controller_1.getBatches);
+router.get('/batches/:id', delivery_controller_1.getBatchById);
+router.post('/batches', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.createBatch);
+router.post('/batches/:id/assign', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.assignBatch);
+router.patch('/batches/:id/status', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.updateBatchStatus);
+exports.default = router;

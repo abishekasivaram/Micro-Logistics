@@ -24,14 +24,14 @@ vi.mock('../src/config/supabase', () => {
 
 // Mock Auth Middleware to bypass token checks in basic routing tests
 vi.mock('../src/middleware/auth.middleware', async (importOriginal) => {
-  const actual = await importOriginal<any>();
+  const actual = await importOriginal();
   return {
     ...actual,
     requireAuth: vi.fn((req, res, next) => {
       req.user = { id: 'u1', role: 'admin' };
       next();
     }),
-    requireRole: vi.fn(() => (req: any, res: any, next: any) => next())
+    requireRole: vi.fn(() => (req, res, next) => next())
   };
 });
 

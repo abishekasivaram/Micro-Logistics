@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin, Store, Calendar, Clock, Package, CheckCircle, Truck } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import './OrderDetailsModal.css';
@@ -44,7 +45,7 @@ const OrderDetailsModal = ({ order, onClose }) => {
   const currentStepIdx = getStepIndex(currentStatus);
   const isCancelled = currentStatus === 'CANCELLED';
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div 
         className="order-modal-container" 
@@ -173,7 +174,8 @@ const OrderDetailsModal = ({ order, onClose }) => {
           <button className="btn btn-primary" onClick={onClose}>Close</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

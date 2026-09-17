@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { 
-  ShoppingBag, Truck, CheckCircle, Clock, Users, Store, 
+  ShoppingBag, Truck, CheckCircle2, Clock, Users, Store, 
   Layers, ChevronRight, AlertCircle, RefreshCw, Boxes, ArrowRight,
-  Zap, Navigation, TrendingUp, ShieldAlert, ArrowUpRight
+  Zap, Navigation, TrendingUp, ShieldAlert, ArrowUpRight,
+  Sparkles, UserCheck, Send, CheckCircle, Package
 } from 'lucide-react';
 import { findSuitableOrderGroups } from '../../utils/aggregationUtils';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -34,38 +35,109 @@ const AdminDashboard = () => {
   const outForDeliveryCount = orders.filter(o => o.status === 'OUT_FOR_DELIVERY' || o.orderStatus === 'OUT_FOR_DELIVERY').length;
   const completedCount = orders.filter(o => o.status === 'DELIVERED' || o.orderStatus === 'DELIVERED').length;
 
-  // Pipeline configuration with semantic progress styling
+  // Pipeline configuration with semantic progress styling and dedicated icons
   const pipelineSteps = [
-    { label: 'Waiting Aggregation', count: waitingAggregationCount, path: '/admin/order-aggregation', color: '#D97706', bg: '#FEF3C7' },
-    { label: 'Suitable to Group', count: suitableToGroupCount, path: '/admin/order-aggregation', color: '#0284C7', bg: '#E0F2FE' },
-    { label: 'Batch Created', count: groupedBatchCreatedCount, path: '/admin/delivery-management', color: '#7C3AED', bg: '#EDE9FE' },
-    { label: 'Agent Assigned', count: agentAssignedCount, path: '/admin/delivery-management', color: '#2563EB', bg: '#DBEAFE' },
-    { label: 'Out for Delivery', count: outForDeliveryCount, path: '/admin/routes', color: '#4F46E5', bg: '#EEF2FF' },
-    { label: 'Delivered', count: completedCount, path: '/admin/orders', color: '#059669', bg: '#D1FAE5' }
+    { 
+      label: 'Waiting Aggregation', 
+      count: waitingAggregationCount, 
+      path: '/admin/order-aggregation', 
+      stage: 'Stage 01',
+      icon: Clock,
+      color: '#D97706', 
+      bg: '#FEF3C7',
+      themeClass: 'theme-amber',
+      desc: 'Pending clustering'
+    },
+    { 
+      label: 'Suitable to Group', 
+      count: suitableToGroupCount, 
+      path: '/admin/order-aggregation', 
+      stage: 'Stage 02',
+      icon: Sparkles,
+      color: '#0284C7', 
+      bg: '#E0F2FE',
+      themeClass: 'theme-sky',
+      desc: 'Clustered by locality'
+    },
+    { 
+      label: 'Batch Created', 
+      count: groupedBatchCreatedCount, 
+      path: '/admin/delivery-management', 
+      stage: 'Stage 03',
+      icon: Layers,
+      color: '#7C3AED', 
+      bg: '#EDE9FE',
+      themeClass: 'theme-purple',
+      desc: 'Bundled packages'
+    },
+    { 
+      label: 'Agent Assigned', 
+      count: agentAssignedCount, 
+      path: '/admin/delivery-management', 
+      stage: 'Stage 04',
+      icon: UserCheck,
+      color: '#2563EB', 
+      bg: '#DBEAFE',
+      themeClass: 'theme-blue',
+      desc: 'Couriers dispatched'
+    },
+    { 
+      label: 'Out for Delivery', 
+      count: outForDeliveryCount, 
+      path: '/admin/routes', 
+      stage: 'Stage 05',
+      icon: Send,
+      color: '#E11D48', 
+      bg: '#FFE4E6',
+      themeClass: 'theme-rose',
+      desc: 'Live transit route'
+    },
+    { 
+      label: 'Delivered', 
+      count: completedCount, 
+      path: '/admin/orders', 
+      stage: 'Stage 06',
+      icon: CheckCircle2,
+      color: '#059669', 
+      bg: '#D1FAE5',
+      themeClass: 'theme-emerald',
+      desc: 'Fulfilled orders'
+    }
   ];
 
   const availableAgentsCount = deliveryAgents.filter(a => a.status === 'Available').length;
   const activeSellersCount = vendors.filter(v => v.status === 'Active' && v.isOpen).length;
+  const todayOrdersCount = orders.filter(o => new Date(o.date).toDateString() === new Date().toDateString()).length;
+  const pendingPrepCount = orders.filter(o => ['PLACED', 'CONFIRMED', 'PREPARING'].includes(o.status || o.orderStatus)).length;
+  const pendingSellersCount = vendors.filter(v => v.status === 'Pending').length;
+
+  const fleetPct = deliveryAgents.length > 0 ? Math.round((availableAgentsCount / deliveryAgents.length) * 100) : 0;
+  const sellerPct = vendors.length > 0 ? Math.round((activeSellersCount / vendors.length) * 100) : 0;
+
+  const totalActionsCount = (suggestedGroups.length > 0 ? 1 : 0) + 
+                            (groupedBatchCreatedCount > 0 ? 1 : 0) + 
+                            (pendingSellersCount > 0 ? 1 : 0);
 
   return (
     <div className="page-container admin-dashboard-page">
       {/* Dashboard Top Header */}
-      <div className="page-header">
-        <div className="page-title-group">
-          <h2>
-            Central Logistics Command Tower
-            <span className="telemetry-tag">
-              <span className="telemetry-pulse" /> LIVE MESH
-            </span>
-          </h2>
-          <p className="page-subtitle">
-            Global real-time telemetry across multi-seller networks, automated order batching, and coordinated local fleet dispatch.
+      <div className="dashboard-hero-banner">
+        <div className="hero-banner-content">
+          <div className="hero-live-pill">
+            <span className="hero-pulse-dot" />
+            <span>Operations Live</span>
+          </div>
+          <h1 className="hero-banner-title">
+            Logistics Command Center
+          </h1>
+          <p className="hero-banner-subtitle">
+            Centralized orchestration across multi-seller networks, intelligent order batching, and fleet dispatch.
           </p>
         </div>
         
-        <div className="header-actions">
+        <div className="hero-banner-actions">
           <button className="btn btn-outline" onClick={() => navigate('/admin/routes')}>
-            <Navigation size={16} /> Live Route Mesh
+            <Navigation size={16} /> Route Map
           </button>
           <button className="btn btn-primary" onClick={() => navigate('/admin/order-aggregation')}>
             <Boxes size={16} /> Run Aggregation Hub
@@ -77,7 +149,7 @@ const AdminDashboard = () => {
       <div className="command-kpi-grid">
         <div className="kpi-command-card" onClick={() => navigate('/admin/sellers')} role="button" tabIndex={0}>
           <div className="kpi-header-row">
-            <span className="kpi-label">Total Sellers</span>
+            <span className="kpi-label">TOTAL SELLERS</span>
             <div className="kpi-icon-squircle emerald">
               <Store size={18} />
             </div>
@@ -90,7 +162,7 @@ const AdminDashboard = () => {
 
         <div className="kpi-command-card" onClick={() => navigate('/admin/customers')} role="button" tabIndex={0}>
           <div className="kpi-header-row">
-            <span className="kpi-label">Total Customers</span>
+            <span className="kpi-label">TOTAL CUSTOMERS</span>
             <div className="kpi-icon-squircle indigo">
               <Users size={18} />
             </div>
@@ -103,20 +175,20 @@ const AdminDashboard = () => {
 
         <div className="kpi-command-card" onClick={() => navigate('/admin/orders')} role="button" tabIndex={0}>
           <div className="kpi-header-row">
-            <span className="kpi-label">Total Orders</span>
+            <span className="kpi-label">TOTAL ORDERS</span>
             <div className="kpi-icon-squircle purple">
               <ShoppingBag size={18} />
             </div>
           </div>
           <div className="kpi-metric-number">{totalOrders}</div>
           <div className="kpi-meta-badge">
-            <span className="meta-highlight">{orders.filter(o => new Date(o.date).toDateString() === new Date().toDateString()).length} placed</span> today
+            <span className="meta-highlight">{todayOrdersCount} placed</span> today
           </div>
         </div>
 
         <div className="kpi-command-card" onClick={() => navigate('/admin/orders')} role="button" tabIndex={0}>
           <div className="kpi-header-row">
-            <span className="kpi-label">Active Orders</span>
+            <span className="kpi-label">ACTIVE ORDERS</span>
             <div className="kpi-icon-squircle amber">
               <Clock size={18} />
             </div>
@@ -129,7 +201,7 @@ const AdminDashboard = () => {
 
         <div className="kpi-command-card" onClick={() => navigate('/admin/order-aggregation')} role="button" tabIndex={0}>
           <div className="kpi-header-row">
-            <span className="kpi-label">Ready for Delivery</span>
+            <span className="kpi-label">READY FOR DELIVERY</span>
             <div className="kpi-icon-squircle sky">
               <CheckCircle size={18} />
             </div>
@@ -142,7 +214,7 @@ const AdminDashboard = () => {
 
         <div className="kpi-command-card" onClick={() => navigate('/admin/order-aggregation')} role="button" tabIndex={0}>
           <div className="kpi-header-row">
-            <span className="kpi-label">Aggregated Orders</span>
+            <span className="kpi-label">AGGREGATED ORDERS</span>
             <div className="kpi-icon-squircle teal">
               <Boxes size={18} />
             </div>
@@ -155,7 +227,7 @@ const AdminDashboard = () => {
 
         <div className="kpi-command-card" onClick={() => navigate('/admin/delivery-management')} role="button" tabIndex={0}>
           <div className="kpi-header-row">
-            <span className="kpi-label">Active Batches</span>
+            <span className="kpi-label">ACTIVE BATCHES</span>
             <div className="kpi-icon-squircle orange">
               <Truck size={18} />
             </div>
@@ -168,7 +240,7 @@ const AdminDashboard = () => {
 
         <div className="kpi-command-card" onClick={() => navigate('/admin/delivery-management')} role="button" tabIndex={0}>
           <div className="kpi-header-row">
-            <span className="kpi-label">Completed Deliveries</span>
+            <span className="kpi-label">COMPLETED DELIVERIES</span>
             <div className="kpi-icon-squircle green">
               <CheckCircle size={18} />
             </div>
@@ -180,153 +252,184 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Horizontal ORDER AGGREGATION PIPELINE Stepper / Funnel */}
+      {/* State-of-the-Art Order Aggregation Pipeline Flow Strip */}
       <div className="pipeline-command-card">
         <div className="pipeline-card-header">
-          <div>
-            <h3 className="card-title">
-              <Boxes size={18} className="text-accent" />
-              Order Aggregation Pipeline
-            </h3>
-            <p className="pipeline-desc">
-              Central coordination lifecycle from ready order detection to cluster grouping and final fleet handover.
-            </p>
+          <div className="pipeline-title-group">
+            <div className="pipeline-icon-badge">
+              <Boxes size={18} />
+            </div>
+            <div>
+              <h3 className="card-title">Order Aggregation Pipeline</h3>
+              <p className="pipeline-desc">
+                Central coordination lifecycle from ready order detection to cluster grouping and final fleet handover.
+              </p>
+            </div>
           </div>
           <button 
-            className="btn btn-outline btn-sm" 
+            className="btn-hub-pill" 
             onClick={() => navigate('/admin/order-aggregation')}
           >
-            Go to Aggregation Hub <ArrowRight size={14} />
+            <span>Go to Aggregation Hub</span>
+            <ArrowRight size={14} className="hub-arrow-icon" />
           </button>
         </div>
 
-        <div className="pipeline-funnel-track">
-          {pipelineSteps.map((step, idx) => (
-            <React.Fragment key={step.label}>
-              <div 
-                className="pipeline-funnel-node"
-                onClick={() => navigate(step.path)}
-                role="button"
-                tabIndex={0}
-                title={`Filter: ${step.label}`}
-              >
-                <div className="node-badge-circle" style={{ backgroundColor: step.bg, color: step.color }}>
-                  <span className="node-count">{step.count}</span>
+        <div className="pipeline-funnel-ribbon">
+          {pipelineSteps.map((step, idx) => {
+            const IconComp = step.icon;
+            const hasCount = step.count > 0;
+            return (
+              <React.Fragment key={step.label}>
+                <div 
+                  className={`pipeline-ribbon-node ${step.themeClass} ${hasCount ? 'is-active' : 'is-idle'}`}
+                >
+                  <div className="node-stage-header">
+                    <span className="node-stage-tag">{step.stage}</span>
+                    <span 
+                      className={`node-counter-pill ${hasCount ? 'has-active-count' : ''}`} 
+                      style={hasCount ? { backgroundColor: step.bg, color: step.color } : {}}
+                    >
+                      {step.count}
+                    </span>
+                  </div>
+
+                  <div className="node-body-flex">
+                    <div 
+                      className="node-icon-circle"
+                      style={hasCount ? { color: step.color, backgroundColor: step.bg } : {}}
+                    >
+                      <IconComp size={16} />
+                    </div>
+                    <div className="node-text-column">
+                      <span className="node-main-title">{step.label}</span>
+                      <span className="node-sub-detail">{step.desc}</span>
+                    </div>
+                  </div>
+
+                  <div className="node-bottom-status">
+                    {hasCount ? (
+                      <span className="status-pill-active" style={{ color: step.color }}>
+                        <span className="pulse-dot-small" style={{ backgroundColor: step.color }} />
+                        {step.count} in queue
+                      </span>
+                    ) : (
+                      <span className="status-pill-idle">0 pending</span>
+                    )}
+                  </div>
                 </div>
-                <span className="node-step-number">Stage 0{idx + 1}</span>
-                <span className="node-step-label">{step.label}</span>
-              </div>
-              
-              {idx < pipelineSteps.length - 1 && (
-                <div className="pipeline-connector-line">
-                  <div className="connector-pulse-runner" />
-                </div>
-              )}
-            </React.Fragment>
-          ))}
+
+                {idx < pipelineSteps.length - 1 && (
+                  <div className="pipeline-ribbon-connector">
+                    <div className="connector-chevron-arrow">
+                      <ChevronRight size={16} />
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
 
       {/* Operational Overview & Prioritized Actions Required */}
       <div className="operational-panels-grid">
-        {/* System Operational Overview */}
-        <div className="card operational-telemetry-card">
+        {/* System Operational Health */}
+        <div className="card operational-health-card">
           <div className="card-header">
-            <h4 className="card-title">
-              <Zap size={16} className="text-accent" />
-              System Operational Telemetry
-            </h4>
-            <span className="badge-subtle">LIVE REAL-TIME</span>
+            <div className="card-title-group">
+              <div className="card-title-icon-badge emerald">
+                <Zap size={16} />
+              </div>
+              <h4 className="card-title">Operations & Fleet Capacity</h4>
+            </div>
+            <span className="live-status-pill">
+              <span className="live-pulse-dot" /> Real-time
+            </span>
           </div>
+
           <div className="card-body">
-            <div className="telemetry-stat-row">
-              <div className="telemetry-info">
-                <span className="telemetry-name">Orders Placed Today</span>
-                <span className="telemetry-detail">Customer checkout submissions</span>
+            {/* Quick Summary Stat Tiles */}
+            <div className="health-tiles-grid">
+              <div className="health-stat-tile">
+                <span className="stat-tile-label">Orders Placed Today</span>
+                <span className="stat-tile-number">{todayOrdersCount}</span>
+                <span className="stat-tile-note">Customer checkout submissions</span>
               </div>
-              <span className="telemetry-value-bold">
-                {orders.filter(o => new Date(o.date).toDateString() === new Date().toDateString()).length}
-              </span>
+              <div className="health-stat-tile highlight-amber">
+                <span className="stat-tile-label">Pending Merchant Fulfillment</span>
+                <span className="stat-tile-number amber">{pendingPrepCount}</span>
+                <span className="stat-tile-note">Items in merchant prep</span>
+              </div>
             </div>
 
-            <div className="telemetry-stat-row">
-              <div className="telemetry-info">
-                <span className="telemetry-name">Orders Pending Seller Prep</span>
-                <span className="telemetry-detail">Items currently in merchant fulfillment</span>
+            {/* Delivery Fleet Availability Progress */}
+            <div className="capacity-progress-group">
+              <div className="progress-label-row">
+                <span className="progress-title">Delivery Fleet Capacity</span>
+                <span className="progress-metric-highlight emerald">
+                  <strong>{availableAgentsCount} / {deliveryAgents.length}</strong> available ({fleetPct}%)
+                </span>
               </div>
-              <span className="telemetry-value-bold text-amber">
-                {orders.filter(o => ['PLACED', 'CONFIRMED', 'PREPARING'].includes(o.status || o.orderStatus)).length}
-              </span>
+              <div className="precision-progress-track">
+                <div 
+                  className="precision-progress-fill emerald" 
+                  style={{ width: `${fleetPct}%` }} 
+                />
+              </div>
             </div>
 
-            <div className="telemetry-stat-row">
-              <div className="telemetry-info">
-                <div className="telemetry-title-flex">
-                  <span className="telemetry-name">Delivery Fleet Availability</span>
-                  <span className="telemetry-rate">{deliveryAgents.length > 0 ? Math.round((availableAgentsCount / deliveryAgents.length) * 100) : 0}% available</span>
-                </div>
-                <div className="mini-progress-track">
-                  <div 
-                    className="mini-progress-fill" 
-                    style={{ width: `${deliveryAgents.length > 0 ? (availableAgentsCount / deliveryAgents.length) * 100 : 0}%` }} 
-                  />
-                </div>
+            {/* Active Seller Stores Online Progress */}
+            <div className="capacity-progress-group">
+              <div className="progress-label-row">
+                <span className="progress-title">Active Merchant Stores</span>
+                <span className="progress-metric-highlight indigo">
+                  <strong>{activeSellersCount} / {vendors.length}</strong> online ({sellerPct}%)
+                </span>
               </div>
-              <span className="telemetry-value-bold text-emerald">
-                {availableAgentsCount} / {deliveryAgents.length}
-              </span>
-            </div>
-
-            <div className="telemetry-stat-row">
-              <div className="telemetry-info">
-                <div className="telemetry-title-flex">
-                  <span className="telemetry-name">Active Seller Stores Online</span>
-                  <span className="telemetry-rate">{vendors.length > 0 ? Math.round((activeSellersCount / vendors.length) * 100) : 0}% operational</span>
-                </div>
-                <div className="mini-progress-track">
-                  <div 
-                    className="mini-progress-fill indigo" 
-                    style={{ width: `${vendors.length > 0 ? (activeSellersCount / vendors.length) * 100 : 0}%` }} 
-                  />
-                </div>
+              <div className="precision-progress-track">
+                <div 
+                  className="precision-progress-fill indigo" 
+                  style={{ width: `${sellerPct}%` }} 
+                />
               </div>
-              <span className="telemetry-value-bold">
-                {activeSellersCount} / {vendors.length}
-              </span>
             </div>
           </div>
         </div>
 
-        {/* Prioritized Actions Required */}
-        <div className="card urgent-actions-card">
-          <div className="card-header urgent-header">
-            <h4 className="card-title text-amber-urgent">
-              <AlertCircle size={18} />
-              Actions Required
-            </h4>
-            <span className="urgent-badge-pill">
-              {(suggestedGroups.length > 0 ? 1 : 0) + (groupedBatchCreatedCount > 0 ? 1 : 0) + (vendors.filter(v => v.status === 'Pending').length > 0 ? 1 : 0)} PENDING
+        {/* Priority Actions Required */}
+        <div className="card priority-actions-card">
+          <div className="card-header">
+            <div className="card-title-group">
+              <div className="card-title-icon-badge amber">
+                <AlertCircle size={16} />
+              </div>
+              <h4 className="card-title">Priority Action Queue</h4>
+            </div>
+            <span className={`priority-count-pill ${totalActionsCount > 0 ? 'glowing-amber' : ''}`}>
+              {totalActionsCount} Pending
             </span>
           </div>
-          <div className="card-body urgent-body">
-            <div className="urgent-items-list">
+
+          <div className="card-body">
+            <div className="priority-actions-list">
               {suggestedGroups.length > 0 && (
                 <div 
-                  className="urgent-action-row amber-border"
+                  className="priority-action-row amber-accent"
                   onClick={() => navigate('/admin/order-aggregation')}
                   role="button"
                   tabIndex={0}
                 >
-                  <div className="urgent-icon-pill amber">
-                    <Boxes size={16} />
+                  <div className="action-row-icon amber">
+                    <Boxes size={18} />
                   </div>
-                  <div className="urgent-text-block">
-                    <span className="urgent-main-text">
+                  <div className="action-row-content">
+                    <span className="action-row-headline">
                       <strong>{suggestedGroups.length} suggested order group(s)</strong> ready for batching
                     </span>
-                    <span className="urgent-sub-text">High-compatibility cluster identified across local sectors</span>
+                    <span className="action-row-caption">High-compatibility cluster identified across local sectors</span>
                   </div>
-                  <button className="btn btn-primary btn-sm">
+                  <button className="btn btn-primary btn-sm action-btn">
                     Review Hub <ArrowRight size={13} />
                   </button>
                 </div>
@@ -334,51 +437,51 @@ const AdminDashboard = () => {
 
               {groupedBatchCreatedCount > 0 && (
                 <div 
-                  className="urgent-action-row blue-border"
+                  className="priority-action-row blue-accent"
                   onClick={() => navigate('/admin/delivery-management')}
                   role="button"
                   tabIndex={0}
                 >
-                  <div className="urgent-icon-pill blue">
-                    <Truck size={16} />
+                  <div className="action-row-icon blue">
+                    <Truck size={18} />
                   </div>
-                  <div className="urgent-text-block">
-                    <span className="urgent-main-text">
+                  <div className="action-row-content">
+                    <span className="action-row-headline">
                       <strong>{groupedBatchCreatedCount} delivery batch(es)</strong> pending agent assignment
                     </span>
-                    <span className="urgent-sub-text">Orders packaged and waiting for courier dispatch</span>
+                    <span className="action-row-caption">Orders packaged and waiting for courier dispatch</span>
                   </div>
-                  <button className="btn btn-secondary btn-sm">
+                  <button className="btn btn-secondary btn-sm action-btn">
                     Assign Agent <ArrowRight size={13} />
                   </button>
                 </div>
               )}
 
-              {vendors.filter(v => v.status === 'Pending').length > 0 && (
+              {pendingSellersCount > 0 && (
                 <div 
-                  className="urgent-action-row emerald-border"
+                  className="priority-action-row emerald-accent"
                   onClick={() => navigate('/admin/sellers')}
                   role="button"
                   tabIndex={0}
                 >
-                  <div className="urgent-icon-pill emerald">
-                    <Store size={16} />
+                  <div className="action-row-icon emerald">
+                    <Store size={18} />
                   </div>
-                  <div className="urgent-text-block">
-                    <span className="urgent-main-text">
-                      <strong>{vendors.filter(v => v.status === 'Pending').length} pending seller</strong> onboarding request(s)
+                  <div className="action-row-content">
+                    <span className="action-row-headline">
+                      <strong>{pendingSellersCount} pending seller</strong> onboarding request(s)
                     </span>
-                    <span className="urgent-sub-text">Merchant documentation awaiting compliance check</span>
+                    <span className="action-row-caption">Merchant documentation awaiting compliance check</span>
                   </div>
-                  <button className="btn btn-outline btn-sm">
+                  <button className="btn btn-outline btn-sm action-btn">
                     Verify Store <ArrowRight size={13} />
                   </button>
                 </div>
               )}
 
-              {suggestedGroups.length === 0 && groupedBatchCreatedCount === 0 && vendors.filter(v => v.status === 'Pending').length === 0 && (
-                <div className="empty-actions-box">
-                  <CheckCircle size={32} className="text-emerald" />
+              {totalActionsCount === 0 && (
+                <div className="priority-empty-state">
+                  <CheckCircle2 size={36} className="text-emerald" />
                   <h4>All Systems Synchronized</h4>
                   <p>No blocking actions detected. Central order aggregation and fleet dispatch are running smoothly.</p>
                 </div>
@@ -388,148 +491,138 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Centered Tab Switcher for Operational Activity Tables */}
-      <div className="dashboard-tabs-center-wrapper">
-        <div className="dashboard-segmented-tabs">
-          <button 
-            type="button"
-            className={`dashboard-tab-btn ${activeTableTab === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveTableTab('orders')}
-          >
-            <ShoppingBag size={16} />
-            <span>Recent Orders Across Sellers</span>
-            <span className="tab-counter-badge">{orders.length}</span>
-          </button>
-          <button 
-            type="button"
-            className={`dashboard-tab-btn ${activeTableTab === 'batches' ? 'active' : ''}`}
-            onClick={() => setActiveTableTab('batches')}
-          >
-            <Truck size={16} />
-            <span>Active Delivery Batches</span>
-            <span className="tab-counter-badge">{deliveryBatches.length}</span>
-          </button>
-        </div>
-      </div>
+      {/* Integrated Tabbed Activity Data Grid */}
+      <div className="card table-command-card">
+        <div className="table-card-toolbar">
+          <div className="table-segmented-tabs">
+            <button 
+              type="button"
+              className={`table-tab-pill ${activeTableTab === 'orders' ? 'active' : ''}`}
+              onClick={() => setActiveTableTab('orders')}
+            >
+              <ShoppingBag size={15} />
+              <span>Recent Orders</span>
+              <span className="tab-numeric-counter">{orders.length}</span>
+            </button>
+            <button 
+              type="button"
+              className={`table-tab-pill ${activeTableTab === 'batches' ? 'active' : ''}`}
+              onClick={() => setActiveTableTab('batches')}
+            >
+              <Truck size={15} />
+              <span>Delivery Batches</span>
+              <span className="tab-numeric-counter">{deliveryBatches.length}</span>
+            </button>
+          </div>
 
-      {/* Active High-Density Operational Activity Table */}
-      <div className="dashboard-tab-content">
-        {activeTableTab === 'orders' ? (
-          <div className="table-card">
-            <div className="card-header">
-              <h3 className="card-title">
-                <ShoppingBag size={17} className="text-accent" />
-                Recent Orders Across Sellers
-              </h3>
+          <div className="table-toolbar-meta">
+            {activeTableTab === 'orders' ? (
               <button className="btn btn-outline btn-sm" onClick={() => navigate('/admin/orders')}>
                 View All Orders <ArrowUpRight size={13} />
               </button>
-            </div>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Order ID</th>
-                    <th>Seller</th>
-                    <th>Customer</th>
-                    <th>Order Status</th>
-                    <th>Aggregation</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.slice(0, 8).map(o => (
-                    <tr key={o.id}>
-                      <td>
-                        <span className="order-id-chip">{o.orderId || o.id}</span>
-                      </td>
-                      <td>
-                        <div className="seller-name-cell">
-                          <span className="seller-name">{o.vendorName || o.sellerName}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="customer-name">{o.customerName}</span>
-                      </td>
-                      <td>
-                        <StatusBadge status={o.status || o.orderStatus} />
-                      </td>
-                      <td>
-                        <span className="aggregation-tag">
-                          {o.aggregationStatus || 'Unassigned'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="monetary-amount">₹{Number(o.total || 0).toFixed(2)}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <div className="table-card">
-            <div className="card-header">
-              <h3 className="card-title">
-                <Truck size={17} className="text-accent" />
-                Active Delivery Batches
-              </h3>
+            ) : (
               <button className="btn btn-outline btn-sm" onClick={() => navigate('/admin/delivery-management')}>
                 Manage Batches <ArrowUpRight size={13} />
               </button>
-            </div>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Batch ID</th>
-                    <th>Orders</th>
-                    <th>Window</th>
-                    <th>Assigned Fleet</th>
-                    <th>Status</th>
+            )}
+          </div>
+        </div>
+
+        {/* Orders Table */}
+        {activeTableTab === 'orders' ? (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Seller</th>
+                  <th>Customer</th>
+                  <th>Order Status</th>
+                  <th>Aggregation</th>
+                  <th style={{ textAlign: 'right' }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.slice(0, 8).map(o => (
+                  <tr key={o.id}>
+                    <td>
+                      <span className="order-id-chip">{o.orderId || o.id}</span>
+                    </td>
+                    <td>
+                      <div className="seller-name-cell">
+                        <span className="seller-name">{o.vendorName || o.sellerName}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="customer-name">{o.customerName}</span>
+                    </td>
+                    <td>
+                      <StatusBadge status={o.status || o.orderStatus} />
+                    </td>
+                    <td>
+                      <span className="aggregation-tag">
+                        {o.aggregationStatus || 'Unassigned'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className="monetary-amount">₹{Number(o.total || 0).toFixed(2)}</span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {deliveryBatches.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="empty-state-box">
-                        <p>No delivery batches created yet.</p>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Batch ID</th>
+                  <th>Orders</th>
+                  <th>Window</th>
+                  <th>Assigned Fleet</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deliveryBatches.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="empty-state-box">
+                      <p>No delivery batches created yet.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  deliveryBatches.map(b => (
+                    <tr key={b.id}>
+                      <td>
+                        <span className="batch-id-chip">{b.batchId || b.id}</span>
+                      </td>
+                      <td>
+                        <span className="batch-order-count">
+                          {b.orderCount || b.orderIds?.length || 1} orders bundled
+                        </span>
+                      </td>
+                      <td>
+                        <span className="window-time-badge">{b.deliverySlot}</span>
+                      </td>
+                      <td>
+                        {b.agentName ? (
+                          <div className="agent-cell">
+                            <span className="agent-dot-active" />
+                            <span>{b.agentName}</span>
+                          </div>
+                        ) : (
+                          <span className="unassigned-fleet-chip">Unassigned</span>
+                        )}
+                      </td>
+                      <td>
+                        <StatusBadge status={b.status} />
                       </td>
                     </tr>
-                  ) : (
-                    deliveryBatches.map(b => (
-                      <tr key={b.id}>
-                        <td>
-                          <span className="batch-id-chip">{b.batchId || b.id}</span>
-                        </td>
-                        <td>
-                          <span className="batch-order-count">
-                            {b.orderCount || b.orderIds?.length || 1} orders bundled
-                          </span>
-                        </td>
-                        <td>
-                          <span className="window-time-badge">{b.deliverySlot}</span>
-                        </td>
-                        <td>
-                          {b.agentName ? (
-                            <div className="agent-cell">
-                              <span className="agent-dot-active" />
-                              <span>{b.agentName}</span>
-                            </div>
-                          ) : (
-                            <span className="unassigned-fleet-chip">Unassigned</span>
-                          )}
-                        </td>
-                        <td>
-                          <StatusBadge status={b.status} />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -66,15 +66,8 @@ const Header = ({ onMenuClick }) => {
         
         <div className="header-brand-info">
           <div className="header-title-row">
-            <h2 className="header-headline">Control Tower</h2>
-            <div className="header-system-pill">
-              <span className="telemetry-live-dot" />
-              <span className="telemetry-text">NETWORK ACTIVE</span>
-            </div>
+            <h2 className="header-headline">Welcome back, SuperAdmin</h2>
           </div>
-          <p className="header-subheadline">
-            Welcome back, <span className="text-white-strong">{userGreetingName}</span> • Real-time telemetry, automated order batching & fleet coordination.
-          </p>
         </div>
       </div>
 

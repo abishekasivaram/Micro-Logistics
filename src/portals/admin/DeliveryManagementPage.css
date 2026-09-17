@@ -1,16 +1,405 @@
 /* ==========================================================================
-   DELIVERY MANAGEMENT MISSION CONTROL STYLING
+   DELIVERY BATCH DISPATCH & FLEET COORDINATION — MISSION CONTROL STYLES
+   Executive SaaS design with frosted glassmorphism & dynamic waypoint corridor
    ========================================================================== */
+
 .delivery-mgmt-page {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1.5rem;
+  width: 100%;
 }
 
+/* --------------------------------------------------------------------------
+   1. Command Header
+   -------------------------------------------------------------------------- */
+.delivery-command-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.command-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 780px;
+}
+
+.command-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.command-page-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #0F172A;
+  margin: 0;
+}
+
+.live-fleet-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: #ECFDF5;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #065F46;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.live-ping-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: livePing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes livePing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.command-subtitle {
+  font-size: 0.875rem;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.command-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-command-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 180ms ease;
+}
+
+.btn-command-outline:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0F172A;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.btn-command-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+  border: 1px solid rgba(79, 70, 229, 0.4);
+  color: #FFFFFF;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+  transition: all 180ms ease;
+}
+
+.btn-command-primary:hover {
+  background: linear-gradient(135deg, #4338CA 0%, #3730A3 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   2. Fleet Telemetry Ribbon (KPI Cards)
+   -------------------------------------------------------------------------- */
+.fleet-telemetry-ribbon {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .fleet-telemetry-ribbon {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .fleet-telemetry-ribbon {
+    grid-template-columns: 1fr;
+  }
+}
+
+.telemetry-kpi-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.telemetry-kpi-card:hover {
+  transform: none;
+}
+
+.kpi-icon-pill {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.telemetry-kpi-card.theme-indigo .kpi-icon-pill {
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+.telemetry-kpi-card.theme-amber .kpi-icon-pill {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.telemetry-kpi-card.theme-sky .kpi-icon-pill {
+  background: #E0F2FE;
+  color: #0284C7;
+}
+
+.telemetry-kpi-card.theme-emerald .kpi-icon-pill {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.kpi-data-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpi-number-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.kpi-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0F172A;
+  line-height: 1;
+}
+
+.kpi-tag-trend {
+  font-size: 0.6875rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.kpi-tag-alert {
+  font-size: 0.6875rem;
+  color: #B45309;
+  background: #FEF3C7;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.kpi-tag-optimal {
+  font-size: 0.6875rem;
+  color: #065F46;
+  background: #DCFCE7;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   3. Toolbar: Filter Tabs & Search
+   -------------------------------------------------------------------------- */
+.missions-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.25rem;
+}
+
+.segmented-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #F1F5F9;
+  padding: 0.3rem;
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  flex-wrap: wrap;
+}
+
+.filter-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.filter-tab-pill:hover {
+  color: #0F172A;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.filter-tab-pill.is-active {
+  background: #FFFFFF;
+  color: #0F172A;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.filter-count-badge {
+  padding: 0.1rem 0.4rem;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.2);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.tab-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.tab-status-dot.amber {
+  background: #F59E0B;
+}
+
+.tab-status-dot.blue {
+  background: #3B82F6;
+}
+
+.tab-status-dot.emerald {
+  background: #10B981;
+}
+
+.missions-search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 0.45rem 0.85rem;
+  min-width: 320px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 180ms ease;
+}
+
+.missions-search-wrapper:focus-within {
+  border-color: #6366F1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.search-field-icon {
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+
+.missions-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  color: #0F172A;
+  width: 100%;
+}
+
+.missions-search-input::placeholder {
+  color: #94A3B8;
+}
+
+.search-clear-btn {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.search-clear-btn:hover {
+  color: #0F172A;
+  background: #F1F5F9;
+}
+
+/* --------------------------------------------------------------------------
+   4. Missions Grid & Mission Card Rebuild
+   -------------------------------------------------------------------------- */
 .mission-batches-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 1.5rem;
+  width: 100%;
 }
 
 @media (max-width: 640px) {
@@ -19,14 +408,619 @@
   }
 }
 
+.mission-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 20px;
+  padding: 1.45rem;
+  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.04), 0 8px 24px -4px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Card Header */
+.mission-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mission-id-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.mission-kicker {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.mission-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.mission-id-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0F172A;
+  margin: 0;
+  font-family: var(--font-family-mono, monospace);
+}
+
+.copy-batch-btn {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 150ms ease;
+}
+
+.copy-batch-btn:hover {
+  color: #4F46E5;
+  background: #EEF2FF;
+}
+
+.mission-header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* Schedule Info Pill */
+.mission-schedule-block {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.schedule-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  font-size: 0.75rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.schedule-pill.highlight {
+  background: #F1F5F9;
+  color: #0F172A;
+  font-weight: 600;
+}
+
+.schedule-icon {
+  color: #64748B;
+}
+
+/* --------------------------------------------------------------------------
+   5. Next-Gen Waypoint Route Corridor Timeline
+   -------------------------------------------------------------------------- */
+.waypoint-corridor-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 0.95rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  gap: 0.35rem;
+}
+
+.corridor-waypoint-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  position: relative;
+  z-index: 2;
+}
+
+.waypoint-marker {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.waypoint-marker.pickup {
+  background: #FEF3C7;
+  border: 1.5px solid #F59E0B;
+}
+
+.waypoint-marker.pickup .waypoint-dot-inner {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #D97706;
+}
+
+.waypoint-marker.dropoff {
+  background: #EEF2FF;
+  border: 1.5px solid #6366F1;
+}
+
+.marker-pin-icon {
+  color: #4F46E5;
+}
+
+.waypoint-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.waypoint-meta-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.waypoint-step-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.waypoint-count-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: #E2E8F0;
+  color: #334155;
+}
+
+.waypoint-address-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0F172A;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* Connecting transit line */
+.corridor-transit-vector {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-left: 10px;
+  padding: 0.2rem 0;
+}
+
+.vector-track-line {
+  width: 2px;
+  height: 24px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #CBD5E1,
+    #CBD5E1 3px,
+    transparent 3px,
+    transparent 6px
+  );
+}
+
+.vector-transit-chip {
+  font-size: 0.6875rem;
+  color: #64748B;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   6. Courier Terminal Dossier Tile
+   -------------------------------------------------------------------------- */
+.mission-courier-dossier {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  gap: 0.85rem;
+  transition: all 180ms ease;
+}
+
+.mission-courier-dossier.is-unassigned {
+  background: #FFFBEB;
+  border: 1px dashed rgba(245, 158, 11, 0.45);
+}
+
+.mission-courier-dossier.is-assigned {
+  background: #F0FDF4;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.courier-dossier-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.courier-avatar-squircle {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0F172A;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.unassigned-avatar-icon {
+  color: #D97706;
+}
+
+.courier-details-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.courier-role-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+}
+
+.courier-primary-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0F172A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.courier-vehicle-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+.courier-action-trigger {
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  transition: all 160ms ease;
+}
+
+.trigger-assign {
+  background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+  color: #FFFFFF;
+  border: none;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+.trigger-assign:hover {
+  background: linear-gradient(135deg, #4338CA 0%, #3730A3 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.trigger-reassign {
+  background: #FFFFFF;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.trigger-reassign:hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+}
+
+/* --------------------------------------------------------------------------
+   7. Consignment Manifest List
+   -------------------------------------------------------------------------- */
+.mission-consignments-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.consignments-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.consignments-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.consignments-sub-note {
+  font-size: 0.65rem;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.consignments-list-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.consignment-order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  font-size: 0.75rem;
+  transition: all 140ms ease;
+}
+
+.consignment-order-item:hover {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+}
+
+.consignment-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.order-monospace-pill {
+  font-family: var(--font-family-mono, monospace);
+  font-weight: 700;
+  color: #4F46E5;
+  background: #EEF2FF;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+}
+
+.order-customer-name {
+  font-weight: 600;
+  color: #0F172A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.order-merchant-tag {
+  color: #64748B;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   8. Route Telemetry Matrix (3 Tiles)
+   -------------------------------------------------------------------------- */
+.mission-telemetry-matrix {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  background: #F8FAFC;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+}
+
+.telemetry-metric-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 1;
+  text-align: center;
+}
+
+.telemetry-icon {
+  color: #64748B;
+}
+
+.metric-value {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.2;
+}
+
+.metric-name {
+  font-size: 0.625rem;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.telemetry-divider {
+  width: 1px;
+  height: 24px;
+  background: #E2E8F0;
+}
+
+/* --------------------------------------------------------------------------
+   9. Mission Card Footer Actions
+   -------------------------------------------------------------------------- */
+.mission-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: auto;
+}
+
+.btn-card-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  transition: all 180ms ease;
+}
+
+.btn-card-outline:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+
+.btn-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 1.3;
+  border: none;
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-card-action.btn-primary {
+  background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+.btn-card-action.btn-primary:hover {
+  background: linear-gradient(135deg, #4338CA 0%, #3730A3 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+}
+
+.btn-card-action.btn-amber {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
+}
+
+.btn-card-action.btn-amber:hover {
+  background: linear-gradient(135deg, #B45309 0%, #92400E 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+}
+
+.btn-card-action.btn-emerald {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+}
+
+.btn-card-action.btn-emerald:hover {
+  background: linear-gradient(135deg, #047857 0%, #065F46 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+}
+
+.completed-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  background: #ECFDF5;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #059669;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex: 1.3;
+}
+
+/* --------------------------------------------------------------------------
+   10. Empty Mission State
+   -------------------------------------------------------------------------- */
 .empty-mission-state {
-  padding: 3.5rem 2rem;
+  padding: 4rem 2rem;
   text-align: center;
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
+  border-radius: 20px;
+}
+
+.empty-radar-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-radar-icon {
+  color: #64748B;
 }
 
 .empty-mission-state h4 {
@@ -43,310 +1037,80 @@
   margin: 0 0 0.5rem 0;
 }
 
-/* Mission Card */
-.mission-card {
-  background: var(--bg-surface, #FFFFFF);
-  border: 1px solid var(--color-border, #E2E8F0);
-  border-radius: var(--radius-md, 14px);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-card);
-  transition: all var(--transition-normal);
+/* --------------------------------------------------------------------------
+   11. Assign Fleet Courier Modal
+   -------------------------------------------------------------------------- */
+.assign-fleet-dialog {
+  max-width: 580px;
+  width: 100%;
+}
+
+.assignment-mission-summary {
   display: flex;
-  flex-direction: column;
-  gap: 1.15rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.mission-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card-hover);
-  border-color: #CBD5E1;
-}
-
-.mission-status-strip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: #CBD5E1;
-}
-
-.mission-status-strip.pending-assignment {
-  background: #F59E0B;
-}
-
-.mission-status-strip.assigned,
-.mission-status-strip.pickup-in-progress,
-.mission-status-strip.out-for-delivery {
-  background: #3B82F6;
-}
-
-.mission-status-strip.completed,
-.mission-status-strip.delivered {
-  background: #10B981;
-}
-
-.mission-card-header {
-  display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-}
-
-.mission-type-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #64748B;
-  text-transform: uppercase;
-}
-
-.mission-id-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #0F172A;
-  margin: 0.15rem 0 0 0;
-}
-
-.mission-schedule-block {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.8125rem;
-  color: #475569;
-}
-
-.schedule-item {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-/* Corridors Box */
-.mission-corridors-box {
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
-  border-radius: var(--radius-sm, 8px);
-  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  padding: 0.75rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-col {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  position: relative;
+  gap: 0.15rem;
 }
 
-.corridor-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-}
-
-.corridor-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-top: 4px;
-  flex-shrink: 0;
-}
-
-.corridor-dot.pickup {
-  background: #F59E0B;
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-}
-
-.corridor-dot.delivery {
-  background: #6366F1;
-  box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
-}
-
-.corridor-divider-vertical {
-  width: 2px;
-  height: 12px;
-  background: #CBD5E1;
-  margin-left: 3px;
-}
-
-.corridor-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-}
-
-.corridor-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.summary-label {
+  font-size: 0.65rem;
   color: #64748B;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
-.corridor-value {
+.summary-data {
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #0F172A;
 }
 
-/* Mission Agent Card */
-.mission-agent-card {
+.modal-courier-search {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 0.95rem;
-  border-radius: var(--radius-sm, 8px);
-  border: 1px solid transparent;
-  gap: 0.75rem;
-}
-
-.mission-agent-card.unassigned {
-  background: #FFFBEB;
-  border-color: rgba(245, 158, 11, 0.25);
-}
-
-.mission-agent-card.assigned {
-  background: #ECFDF5;
-  border-color: rgba(16, 185, 129, 0.25);
-}
-
-.agent-profile-row {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.agent-avatar-squircle {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  gap: 0.5rem;
   background: #FFFFFF;
-  color: #0F172A;
-  border: 1px solid #CBD5E1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  flex-shrink: 0;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.85rem;
 }
 
-.agent-meta {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+.modal-courier-search:focus-within {
+  border-color: #6366F1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
 }
 
-.agent-lead-label {
-  font-size: 0.65rem;
-  color: #64748B;
-  text-transform: uppercase;
-  font-weight: 600;
+.modal-search-icon {
+  color: #94A3B8;
 }
 
-.agent-name-display {
+.modal-courier-search input {
+  border: none;
+  outline: none;
+  background: transparent;
   font-size: 0.8125rem;
   color: #0F172A;
+  width: 100%;
 }
 
-/* Orders Panel */
-.mission-orders-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.orders-panel-header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.orders-items-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.order-item-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.4rem 0.65rem;
-  border-radius: 6px;
-  background: #F1F5F9;
-  font-size: 0.75rem;
-  border: 1px solid #E2E8F0;
-}
-
-.order-chip-code {
-  font-family: var(--font-family-mono);
-  font-weight: 700;
-  color: #4F46E5;
-}
-
-.order-chip-name {
-  font-weight: 500;
-  color: #0F172A;
-}
-
-.order-chip-vendor {
-  color: #64748B;
-  font-size: 0.6875rem;
-}
-
-/* Mission Telemetry Row */
-.mission-telemetry-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.65rem 0.85rem;
-  background: #F8FAFC;
-  border-radius: 6px;
-  border: 1px solid #E2E8F0;
-}
-
-.telemetry-col {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
-.telemetry-lbl {
-  font-size: 0.65rem;
-  color: #64748B;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.telemetry-data {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #0F172A;
-}
-
-.telemetry-separator {
-  width: 1px;
-  height: 20px;
-  background: #CBD5E1;
-}
-
-.mission-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-top: auto;
-}
-
-/* Agent Candidate Selection Scroll in Modal */
 .agent-selection-scroll {
   max-height: 320px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+  padding-right: 0.25rem;
 }
 
 .agent-candidate-card {
@@ -354,38 +1118,87 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 1rem;
-  border-radius: var(--radius-sm, 8px);
+  border-radius: 10px;
   border: 1px solid #E2E8F0;
   background: #FFFFFF;
-  transition: all var(--transition-fast);
+  transition: all 160ms ease;
 }
 
 .agent-candidate-card:hover {
-  border-color: var(--accent-primary, #4F46E5);
+  border-color: #6366F1;
   background: #F8FAFF;
+  transform: translateY(-1px);
 }
 
 .agent-candidate-card.current-assigned {
   background: #ECFDF5;
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.agent-candidate-card.is-busy {
+  opacity: 0.75;
 }
 
 .candidate-left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
+}
+
+.candidate-left .avatar-squircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0F172A;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.agent-online-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  border: 1.5px solid #FFFFFF;
 }
 
 .candidate-info {
   display: flex;
   flex-direction: column;
-  line-height: 1.25;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.candidate-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .candidate-name {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.875rem;
   color: #0F172A;
+}
+
+.current-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: #DCFCE7;
+  color: #065F46;
 }
 
 .candidate-meta {
@@ -397,4 +1210,5 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }

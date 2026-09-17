@@ -209,7 +209,7 @@ const AdminCentralOrdersPage = () => {
                     <td style={{ textAlign: 'right' }}>
                       <button 
                         className="btn btn-outline btn-sm"
-                        onClick={() => setSelectedOrderDetails(o)}
+                        onClick={() => setSelectedOrder(o)}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
                       >
                         <Eye size={13} /> View

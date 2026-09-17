@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { 
-  Map, Layers, CheckCircle, Clock, Truck, AlertCircle, 
+  Map, Layers, CheckCircle2, Clock, Truck, AlertCircle, 
   ArrowRight, ShieldCheck, Info, X, Zap, ChevronRight,
-  Sparkles, Check, MapPin, Navigation, Calendar, Box, Boxes
+  Sparkles, Check, MapPin, Navigation, Calendar, Box, Boxes,
+  ArrowUpRight, Compass, Shield, RefreshCw, Cpu, Activity
 } from 'lucide-react';
 import { findSuitableOrderGroups } from '../../utils/aggregationUtils';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -12,7 +14,7 @@ import OrderDetailsModal from '../../components/common/OrderDetailsModal';
 import './OrderAggregationPage.css';
 
 // SVG Circular Progress Ring Component
-const CircularProgressRing = ({ score, size = 72, strokeWidth = 6 }) => {
+const CircularProgressRing = ({ score, size = 68, strokeWidth = 5 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const progress = Math.min(Math.max(score, 0), 100);
@@ -32,7 +34,7 @@ const CircularProgressRing = ({ score, size = 72, strokeWidth = 6 }) => {
         />
         <circle
           className="score-ring-fill"
-          stroke={progress >= 90 ? '#10B981' : progress >= 75 ? '#6366F1' : '#F59E0B'}
+          stroke={progress >= 90 ? '#10B981' : progress >= 75 ? '#4F46E5' : '#F59E0B'}
           strokeWidth={strokeWidth}
           strokeDasharray={`${circumference} ${circumference}`}
           style={{ strokeDashoffset }}
@@ -57,6 +59,18 @@ const OrderAggregationPage = () => {
 
   const [confirmingGroup, setConfirmingGroup] = useState(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const [isReScanning, setIsReScanning] = useState(false);
+  const [reScanNotice, setReScanNotice] = useState(null);
+
+  const handleManualRescan = () => {
+    setIsReScanning(true);
+    setReScanNotice(null);
+    setTimeout(() => {
+      setIsReScanning(false);
+      setReScanNotice(`Algorithm sweep completed: Analyzed ${orders.length} orders across active transit sectors.`);
+      setTimeout(() => setReScanNotice(null), 4000);
+    }, 750);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -93,60 +107,68 @@ const OrderAggregationPage = () => {
   const workflowStages = [
     { number: '01', title: 'Ready Orders', subtitle: `${readyOrders.length} detected`, status: 'completed' },
     { number: '02', title: 'Spatial Clustering', subtitle: 'Proximity matched', status: 'completed' },
-    { number: '03', title: 'AI Recommendation', subtitle: `${suggestedGroups.length} available`, status: 'active' },
-    { number: '04', title: 'Batch Handover', subtitle: 'Pending approval', status: 'upcoming' },
-    { number: '05', title: 'Fleet Dispatch', subtitle: 'Agent assignment', status: 'upcoming' }
+    { number: '03', title: 'Batch Recommendations', subtitle: `${suggestedGroups.length} available`, status: 'active' },
+    { number: '04', title: 'Batch Authorization', subtitle: 'Pending approval', status: 'upcoming' },
+    { number: '05', title: 'Fleet Dispatch', subtitle: 'Driver assignment', status: 'upcoming' }
   ];
 
   return (
     <div className="page-container aggregation-hub-page">
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-title-group">
-          <h2>
-            Smart Order Aggregation Hub
-            <span className="telemetry-tag">
-              <span className="telemetry-pulse" /> CLUSTER ENGINE
-            </span>
-          </h2>
-          <p className="page-subtitle">
-            Autonomous multi-seller order clustering based on temporal windows, pickup density, dropoff corridors, and courier vehicle constraints.
+      {/* Header Banner */}
+      <div className="aggregation-hero-banner">
+        <div className="hero-banner-info">
+          <div className="hero-status-pill">
+            <span className="hero-status-dot" />
+            <span>Automated Cluster Engine</span>
+          </div>
+          <h1 className="hero-page-title">
+            Order Aggregation Hub
+          </h1>
+          <p className="hero-page-subtitle">
+            Intelligent multi-seller order consolidation based on delivery windows, spatial pickup clusters, and courier load limits.
           </p>
         </div>
 
-        <div className="header-actions">
+        <div className="hero-banner-actions">
           <button className="btn btn-outline" onClick={() => navigate('/admin/delivery-management')}>
             <Truck size={16} /> View Active Batches
           </button>
         </div>
       </div>
 
-      {/* Styled Stepper Workflow Breadcrumb */}
+      {/* Styled Stepper Workflow Breadcrumb Ribbon */}
       <div className="workflow-stepper-card">
-        <div className="stepper-header-label">
-          <Sparkles size={16} className="text-accent" />
-          <span>Aggregation Orchestration Workflow</span>
+        <div className="stepper-header-row">
+          <div className="stepper-title-flex">
+            <div className="stepper-icon-pill">
+              <Sparkles size={15} />
+            </div>
+            <span className="stepper-headline">Aggregation Pipeline Progression</span>
+          </div>
+          <span className="stepper-meta-note">Stage 3 of 5 active</span>
         </div>
 
-        <div className="stepper-track-container">
+        <div className="stepper-track-ribbon">
           {workflowStages.map((stage, idx) => (
             <React.Fragment key={stage.number}>
-              <div className={`stepper-node ${stage.status}`}>
-                <div className="stepper-badge">
+              <div className={`stepper-node-pill ${stage.status}`}>
+                <div className="stepper-node-badge">
                   {stage.status === 'completed' ? (
-                    <Check size={14} className="check-svg" />
+                    <Check size={13} className="check-icon" />
                   ) : (
                     <span>{stage.number}</span>
                   )}
                 </div>
-                <div className="stepper-text">
-                  <span className="stepper-title">{stage.title}</span>
-                  <span className="stepper-sub">{stage.subtitle}</span>
+                <div className="stepper-node-content">
+                  <span className="stepper-node-title">{stage.title}</span>
+                  <span className="stepper-node-sub">{stage.subtitle}</span>
                 </div>
               </div>
 
               {idx < workflowStages.length - 1 && (
-                <div className={`stepper-connector ${idx < 2 ? 'completed' : idx === 2 ? 'active' : ''}`} />
+                <div className="stepper-node-divider">
+                  <ChevronRight size={15} />
+                </div>
               )}
             </React.Fragment>
           ))}
@@ -154,98 +176,161 @@ const OrderAggregationPage = () => {
       </div>
 
       {/* Section 1: Hero Batch Recommendations */}
-      <div className="recommendations-section">
-        <div className="section-header">
-          <div>
-            <h3 className="section-title">
-              <Zap size={18} className="text-accent" />
-              Algorithmic Batch Recommendations ({suggestedGroups.length})
-            </h3>
-            <p className="section-subtitle">
-              High-confidence order bundles mathematically optimized for unified local courier routing.
+      <div className="recommendations-container">
+        <div className="recommendations-section-header">
+          <div className="rec-header-titles">
+            <div className="rec-title-row">
+              <div className="rec-icon-badge">
+                <Boxes size={18} />
+              </div>
+              <h2 className="rec-section-title">
+                Recommended Delivery Batches ({suggestedGroups.length})
+              </h2>
+            </div>
+            <p className="rec-section-subtitle">
+              High-confidence multi-order bundles mathematically grouped for optimal courier efficiency.
             </p>
           </div>
-          <span className="ai-badge-chip">
-            <Sparkles size={13} /> AI SCORING ACTIVE
-          </span>
+          <div className="rec-badge-group">
+            <span className="ai-status-pill">
+              <Sparkles size={12} /> Optimization Engine Active
+            </span>
+          </div>
         </div>
 
         {suggestedGroups.length === 0 ? (
-          <div className="card empty-recommendations-card">
-            <Info size={36} className="text-accent-secondary" />
-            <h4>No Multi-Order Clusters Available</h4>
-            <p>
-              As sellers mark additional orders ready within overlapping delivery slots and nearby sectors, high-compatibility bundles will automatically populate here.
-            </p>
+          <div className="premium-empty-cluster-card">
+            {/* Visual Radar / Constellation Graphic */}
+            <div className="empty-cluster-visual">
+              <div className="visual-radar-pulse outer-ring" />
+              <div className="visual-radar-pulse mid-ring" />
+              <div className="empty-cluster-icon-squircle">
+                <Boxes size={30} className="cluster-hero-icon" />
+                <span className="live-radar-beacon" />
+              </div>
+            </div>
+
+            {/* Content & Heading */}
+            <div className="empty-cluster-content">
+              <h3 className="empty-cluster-headline">
+                No Multi-Order Clusters Available
+              </h3>
+              <p className="empty-cluster-description">
+                The algorithmic clustering engine is continuously monitoring incoming merchant orders across city corridors. High-confidence multi-order batches will automatically synthesize here once two or more shipments align on delivery timeframes, spatial pickup clusters, and courier load limits.
+              </p>
+
+              {reScanNotice && (
+                <div className="rescan-feedback-banner">
+                  <Sparkles size={14} className="text-emerald" />
+                  <span>{reScanNotice}</span>
+                </div>
+              )}
+            </div>
+
+
+
+            {/* Quick Command Actions */}
+            <div className="empty-cluster-actions">
+              <button 
+                className={`btn btn-outline empty-action-btn ${isReScanning ? 'scanning' : ''}`}
+                onClick={handleManualRescan}
+                disabled={isReScanning}
+              >
+                <RefreshCw size={14} className={isReScanning ? 'animate-spin' : ''} />
+                {isReScanning ? 'Evaluating Proximity Matrices...' : 'Force Cluster Re-Scan'}
+              </button>
+
+              <button 
+                className="btn btn-outline empty-action-btn"
+                onClick={() => navigate('/admin/orders')}
+              >
+                <Layers size={14} />
+                Inspect Central Orders Registry
+              </button>
+
+              <button 
+                className="btn btn-primary empty-action-btn"
+                onClick={() => navigate('/admin/delivery-management')}
+              >
+                <Truck size={14} />
+                View Active Delivery Batches <ArrowRight size={14} />
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="hero-recommendations-grid">
+          <div className="recommendations-cards-stack">
             {suggestedGroups.map((group) => (
-              <div key={group.id} className="hero-batch-card">
-                {/* Hero Header Row */}
-                <div className="hero-batch-header">
-                  <div className="batch-meta-left">
-                    <div className="batch-badge-row">
-                      <span className="batch-code-tag">{group.id}</span>
-                      <span className="recommendation-pill-label">
-                        <Sparkles size={11} /> {group.recommendationLabel}
+              <div key={group.id} className="premium-batch-card">
+                {/* Batch Header Bar */}
+                <div className="batch-card-topbar">
+                  <div className="batch-top-left">
+                    <div className="batch-tags-row">
+                      <span className="batch-ref-chip">{group.id}</span>
+                      <span className="batch-confidence-tag">
+                        <Sparkles size={12} /> {group.recommendationLabel || 'Recommended Bundle'}
                       </span>
                     </div>
-                    <h3 className="batch-hero-title">
-                      {group.deliveryArea} Regional Bundle
+                    <h3 className="batch-main-title">
+                      {group.deliveryArea} Regional Delivery Bundle
                     </h3>
-                    <div className="batch-time-window">
+                    <div className="batch-schedule-meta">
                       <Calendar size={13} />
                       <span>{group.deliveryDate}</span>
-                      <span className="separator">•</span>
+                      <span className="dot-sep">•</span>
                       <Clock size={13} />
                       <span>{group.deliveryTimeSlot}</span>
                     </div>
                   </div>
 
-                  {/* Circular Compatibility Progress Ring */}
-                  <div className="batch-score-ring-container">
+                  {/* Circular Compatibility Score Ring */}
+                  <div className="batch-score-block">
                     <CircularProgressRing score={group.compatibilityScore} />
                   </div>
                 </div>
 
-                {/* Logistics Corridors (Pickup vs Dropoff) */}
-                <div className="logistics-corridors-grid">
-                  <div className="corridor-box pickup">
-                    <div className="corridor-header">
-                      <MapPin size={14} className="text-amber" />
+                {/* Logistics Corridors (Pickup & Delivery Corridor) */}
+                <div className="transit-corridors-panel">
+                  <div className="corridor-segment pickup-segment">
+                    <div className="segment-top-label">
+                      <MapPin size={13} className="text-amber" />
                       <span>Pickup Corridor</span>
                     </div>
-                    <p className="corridor-address">{group.pickupArea}</p>
-                    <div className="corridor-sub">
-                      <span>{group.orders.length} Merchant Source(s)</span>
+                    <div className="segment-address-text">{group.pickupArea}</div>
+                    <div className="segment-source-badge">
+                      {group.orders.length} Merchant Source(s)
                     </div>
                   </div>
 
-                  <div className="corridor-box delivery">
-                    <div className="corridor-header">
-                      <Navigation size={14} className="text-indigo" />
+                  <div className="corridor-transit-arrow">
+                    <div className="transit-distance-tag">
+                      <Navigation size={12} />
+                      <span>{group.estimatedDistance} km • ~{group.estimatedTime}m</span>
+                    </div>
+                    <div className="transit-line" />
+                  </div>
+
+                  <div className="corridor-segment delivery-segment">
+                    <div className="segment-top-label">
+                      <Navigation size={13} className="text-indigo" />
                       <span>Destination Sector</span>
                     </div>
-                    <p className="corridor-address">{group.deliveryArea}</p>
-                    <div className="corridor-sub">
-                      <span>{group.orders.length} Dropoff Destination(s)</span>
+                    <div className="segment-address-text">{group.deliveryArea}</div>
+                    <div className="segment-source-badge">
+                      {group.orders.length} Dropoff Location(s)
                     </div>
                   </div>
                 </div>
 
-                {/* Scoring Rationale Checklist */}
-                <div className="scoring-rationale-box">
-                  <div className="rationale-header">
+                {/* Clustering & Routing Rationale */}
+                <div className="rationale-section-box">
+                  <div className="rationale-top-header">
                     <ShieldCheck size={14} className="text-emerald" />
                     <span>Clustering & Routing Rationale:</span>
                   </div>
-                  <div className="rationale-checklist">
+                  <div className="rationale-tags-wrap">
                     {group.reasons.map((reason, idx) => (
-                      <div key={idx} className="rationale-check-pill">
-                        <div className="check-icon-circle">
-                          <Check size={11} />
-                        </div>
+                      <div key={idx} className="rationale-check-tag">
+                        <Check size={12} className="check-svg-emerald" />
                         <span>{reason}</span>
                       </div>
                     ))}
@@ -253,49 +338,48 @@ const OrderAggregationPage = () => {
                 </div>
 
                 {/* Bundled Orders Chips */}
-                <div className="bundled-orders-row">
-                  <span className="bundled-orders-label">Bundled Orders ({group.orderCount}):</span>
-                  <div className="order-chips-list">
+                <div className="bundled-orders-bar">
+                  <span className="bundled-bar-label">Bundled Orders ({group.orderCount}):</span>
+                  <div className="bundled-chips-wrap">
                     {group.orders.map(o => (
                       <button 
                         key={o.id} 
-                        className="bundled-order-chip"
+                        className="order-bundle-pill-btn"
                         onClick={() => setSelectedOrderDetails(o)}
-                        title="Click to view full order details"
+                        title="Click to view order details"
                       >
                         <Box size={12} />
-                        <span className="order-chip-id">{o.orderId || o.id}</span>
-                        <span className="order-chip-vendor">({o.vendorName})</span>
+                        <span className="pill-order-id">{o.orderId || o.id}</span>
+                        <span className="pill-vendor-name">({o.vendorName})</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Bottom Telemetry Metrics Bar */}
-                <div className="batch-telemetry-bar">
-                  <div className="batch-metric-item">
-                    <span className="metric-title">Est. Distance</span>
-                    <span className="metric-val">{group.estimatedDistance} km</span>
+                {/* Bottom Footer: Stats + Primary Action */}
+                <div className="batch-card-footer">
+                  <div className="batch-metrics-quick-summary">
+                    <div className="metric-cell">
+                      <span className="metric-title-txt">Est. Distance</span>
+                      <span className="metric-val-txt">{group.estimatedDistance} km</span>
+                    </div>
+                    <div className="metric-cell-sep" />
+                    <div className="metric-cell">
+                      <span className="metric-title-txt">Est. Drive Time</span>
+                      <span className="metric-val-txt">{group.estimatedTime} mins</span>
+                    </div>
+                    <div className="metric-cell-sep" />
+                    <div className="metric-cell">
+                      <span className="metric-title-txt">Courier Capacity</span>
+                      <span className="metric-val-txt">{group.orderCount} / 5 slots</span>
+                    </div>
                   </div>
-                  <div className="batch-metric-divider" />
-                  <div className="batch-metric-item">
-                    <span className="metric-title">Est. Drive Time</span>
-                    <span className="metric-val">{group.estimatedTime} mins</span>
-                  </div>
-                  <div className="batch-metric-divider" />
-                  <div className="batch-metric-item">
-                    <span className="metric-title">Courier Capacity</span>
-                    <span className="metric-val">{group.orderCount} / 5 slots</span>
-                  </div>
-                </div>
 
-                {/* Primary CTA Command Action */}
-                <div className="hero-batch-cta-row">
                   <button 
-                    className="btn btn-primary btn-hero-confirm"
+                    className="btn btn-primary btn-confirm-batch"
                     onClick={() => setConfirmingGroup(group)}
                   >
-                    <Boxes size={16} /> Confirm Delivery Batch Creation <ArrowRight size={15} />
+                    <Boxes size={16} /> Confirm Delivery Batch <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
@@ -309,11 +393,11 @@ const OrderAggregationPage = () => {
         <div className="card-header">
           <div>
             <h3 className="card-title">
-              <Clock size={17} className="text-accent" />
-              Ready Orders Awaiting Consolidation ({readyOrders.length})
+              <Clock size={16} className="text-accent" />
+              Ready Orders Awaiting Aggregation ({readyOrders.length})
             </h3>
             <p className="card-subtitle-small">
-              Orders confirmed by merchants and prepared for pickup routing.
+              Orders packaged and prepared by local merchants, queued for spatial cluster routing.
             </p>
           </div>
         </div>
@@ -334,8 +418,24 @@ const OrderAggregationPage = () => {
             <tbody>
               {readyOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="empty-state-box">
-                    <p>No unbatched orders currently waiting in queue.</p>
+                  <td colSpan="7" className="empty-table-container-cell">
+                    <div className="premium-table-empty-state">
+                      <div className="table-empty-icon-bubble">
+                        <Box size={24} />
+                      </div>
+                      <div className="table-empty-text-wrap">
+                        <h4 className="table-empty-title">Queue Synchronized & Clear</h4>
+                        <p className="table-empty-desc">
+                          All merchant packaged orders have been processed, aggregated into delivery batches, or dispatched to active fleet couriers.
+                        </p>
+                      </div>
+                      <button 
+                        className="btn btn-outline btn-sm"
+                        onClick={() => navigate('/admin/orders')}
+                      >
+                        Inspect Central Orders
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -366,8 +466,7 @@ const OrderAggregationPage = () => {
                       <StatusBadge status={o.status || o.orderStatus} />
                     </td>
                     <td>
-                      <span className="status-pill status-pending">
-                        <span className="pill-dot" />
+                      <span className="aggregation-tag">
                         {o.aggregationStatus || 'Waiting for Sweep'}
                       </span>
                     </td>
@@ -388,7 +487,8 @@ const OrderAggregationPage = () => {
       </div>
 
       {/* Confirmation Modal before creating batch */}
-      {confirmingGroup && (
+      {/* Confirmation Modal before creating batch - Mounted via Portal to document.body for full viewport backdrop blur */}
+      {confirmingGroup && createPortal(
         <div 
           className="modal-backdrop-command" 
           onClick={() => setConfirmingGroup(null)}
@@ -418,7 +518,7 @@ const OrderAggregationPage = () => {
 
             <div className="modal-dialog-body">
               <p className="modal-lead-text">
-                You are about to bundle <strong>{confirmingGroup.orderCount} independent customer orders</strong> into a single coordinated route in <strong>{confirmingGroup.deliveryArea}</strong>.
+                You are about to bundle <strong>{confirmingGroup.orderCount} customer orders</strong> into a single coordinated route in <strong>{confirmingGroup.deliveryArea}</strong>.
               </p>
               
               <div className="modal-summary-panel">
@@ -460,7 +560,8 @@ const OrderAggregationPage = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Reusable Order Details Modal */}

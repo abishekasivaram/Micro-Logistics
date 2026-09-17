@@ -11,12 +11,13 @@
   --border-command-light: rgba(255, 255, 255, 0.14);
 
   /* Canvas & Elevated Surface */
-  --bg-canvas: #F4F6F9;
+  --bg-canvas: #F8FAFC;
   --bg-surface: #FFFFFF;
   --bg-surface-secondary: #F8FAFC;
   --bg-surface-tertiary: #F1F5F9;
   --bg-card: #FFFFFF;
   --bg-card-hover: #FCFDFE;
+  --bg-glass: rgba(255, 255, 255, 0.85);
 
   /* Typography Colors */
   --color-text-primary: #0F172A;
@@ -27,7 +28,7 @@
 
   /* Borders & Hairlines */
   --color-border: #E2E8F0;
-  --color-border-subtle: #EDF2F7;
+  --color-border-subtle: #F1F5F9;
   --color-border-hover: #CBD5E1;
   --color-border-focus: #6366F1;
 

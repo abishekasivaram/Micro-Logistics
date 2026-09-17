@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Navigation, Plus, Search, UserCheck, Phone, Edit, X, Star, Truck, UserX, Shield, Bike } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -210,8 +211,8 @@ const DeliveryAgentsPage = () => {
         </div>
       </div>
 
-      {/* Onboard Agent Modal */}
-      {isAddModalOpen && (
+      {/* Onboard Agent Modal - Mounted via Portal to document.body */}
+      {isAddModalOpen && createPortal(
         <div className="modal-backdrop-command" onClick={() => setIsAddModalOpen(false)}>
           <div className="modal-dialog-card" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-dialog-header">
@@ -309,7 +310,8 @@ const DeliveryAgentsPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

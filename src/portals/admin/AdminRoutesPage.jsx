@@ -146,10 +146,12 @@ const AdminRoutesPage = () => {
 
             <div className="map-embed-container">
               <MapPlaceholder 
-                pickupLocation={activeBatch?.pickupLocations?.[0] || '12 T. Nagar Main Rd'} 
-                deliveryLocation={activeBatch?.deliveryLocations?.[0] || '101 Anna Nagar East'}
+                stops={routeSteps}
+                pickupLocation={activeBatch?.pickupLocations?.[0] || '12 T. Nagar Main Rd, Chennai'} 
+                deliveryLocation={activeBatch?.deliveryLocations?.[0] || '101 Anna Nagar East, Chennai'}
                 status={activeBatch?.status || 'Assigned'}
-                agentName={activeBatch?.agentName}
+                agentName={activeBatch?.agentName || 'Muthu Vel (DA014)'}
+                estimatedTime={`${activeBatch?.estimatedTime || 35} mins`}
               />
             </div>
 
