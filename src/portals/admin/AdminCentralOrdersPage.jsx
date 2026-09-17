@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Search, Eye } from 'lucide-react';
+import { Search, Eye, Filter, ArrowUpDown, ShoppingBag, Store, User, Calendar, ExternalLink } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import OrderDetailsModal from '../../components/common/OrderDetailsModal';
-import '../seller/DashboardOverview.css';
 
 const AdminCentralOrdersPage = () => {
   const { orders, vendors } = useAppContext();
@@ -14,12 +13,11 @@ const AdminCentralOrdersPage = () => {
   const [aggregationFilter, setAggregationFilter] = useState('ALL');
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const sellersList = vendors.map(v => ({ id: v.id, name: v.name }));
+  const sellersList = vendors.map(v => ({ id: v.id, name: v.name || v.shopName }));
 
   const filteredOrders = orders.filter(o => {
     const sTerm = searchTerm.toLowerCase();
     
-    // Fallbacks for missing string values to avoid runtime exceptions
     const orderId = o.id || o.orderId || '';
     const customerName = o.customerName || '';
     const vendorName = o.vendorName || o.sellerName || '';
@@ -29,8 +27,6 @@ const AdminCentralOrdersPage = () => {
       customerName.toLowerCase().includes(sTerm) ||
       vendorName.toLowerCase().includes(sTerm);
     
-    // Explicit null/undefined checks for filters.
-    // If a filter is ALL, we accept it regardless of the field's presence.
     const vendorIdMatch = o.vendorId || o.sellerId || '';
     const matchesSeller = sellerFilter === 'ALL' || vendorIdMatch === sellerFilter;
     
@@ -43,20 +39,35 @@ const AdminCentralOrdersPage = () => {
     return matchesSearch && matchesSeller && matchesStatus && matchesAgg;
   });
 
+  const getInitials = (name) => {
+    if (!name) return 'CU';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="page-container">
+      {/* Header */}
       <div className="page-header">
-        <div>
-          <h2>Central Order Management</h2>
-          <p>Global monitor for all customer orders placed across participating local sellers.</p>
+        <div className="page-title-group">
+          <h2>
+            Central Order Management
+            <span className="telemetry-tag">
+              <span className="telemetry-pulse" /> {filteredOrders.length} ORDERS
+            </span>
+          </h2>
+          <p className="page-subtitle">
+            Global real-time transaction telemetry and tracking across all participating local sellers and customers.
+          </p>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="card" style={{ marginBottom: '20px', padding: '16px' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
-            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+      {/* Filter Toolbar Card */}
+      <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem 1.25rem' }}>
+        <div className="table-filter-bar" style={{ margin: 0 }}>
+          <div className="search-input-wrapper">
+            <Search size={16} className="search-icon" />
             <input 
               type="text" 
               className="form-control" 
@@ -64,20 +75,29 @@ const AdminCentralOrdersPage = () => {
               aria-label="Search orders by Order ID, Seller, or Customer"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ paddingLeft: '38px' }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <select aria-label="Filter orders by seller" className="form-control" value={sellerFilter} onChange={e => setSellerFilter(e.target.value)} style={{ width: 'auto' }}>
-              <option value="ALL">All Sellers</option>
+          <div className="filter-group">
+            <select 
+              aria-label="Filter orders by seller" 
+              className="form-select" 
+              value={sellerFilter} 
+              onChange={e => setSellerFilter(e.target.value)}
+            >
+              <option value="ALL">All Merchants ({sellersList.length})</option>
               {sellersList.map(s => <option key={s.id} value={s.id}>{s.name || 'Unknown Seller'}</option>)}
             </select>
 
-            <select aria-label="Filter orders by status" className="form-control" value={orderStatusFilter} onChange={e => setOrderStatusFilter(e.target.value)} style={{ width: 'auto' }}>
-              <option value="ALL">All Order Statuses</option>
-              <option value="PLACED">Order Placed</option>
-              <option value="CONFIRMED">Order Confirmed</option>
+            <select 
+              aria-label="Filter orders by status" 
+              className="form-select" 
+              value={orderStatusFilter} 
+              onChange={e => setOrderStatusFilter(e.target.value)}
+            >
+              <option value="ALL">All Lifecycle States</option>
+              <option value="PLACED">Placed</option>
+              <option value="CONFIRMED">Confirmed</option>
               <option value="PREPARING">Preparing</option>
               <option value="READY_FOR_DELIVERY">Ready for Delivery</option>
               <option value="ASSIGNED">Assigned for Delivery</option>
@@ -85,8 +105,13 @@ const AdminCentralOrdersPage = () => {
               <option value="DELIVERED">Delivered</option>
             </select>
 
-            <select aria-label="Filter orders by aggregation status" className="form-control" value={aggregationFilter} onChange={e => setAggregationFilter(e.target.value)} style={{ width: 'auto' }}>
-              <option value="ALL">All Aggregation Statuses</option>
+            <select 
+              aria-label="Filter orders by aggregation status" 
+              className="form-select" 
+              value={aggregationFilter} 
+              onChange={e => setAggregationFilter(e.target.value)}
+            >
+              <option value="ALL">All Aggregation States</option>
               <option value="Waiting for Aggregation">Waiting for Aggregation</option>
               <option value="Suitable for Grouping">Suitable for Grouping</option>
               <option value="Batch Created">Batch Created</option>
@@ -99,77 +124,112 @@ const AdminCentralOrdersPage = () => {
       </div>
 
       {/* Central Orders Table */}
-      <div className="card">
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Order Ref</th>
+              <th>Customer</th>
+              <th>Seller & Merchant</th>
+              <th>Manifest Items</th>
+              <th>Total Amount</th>
+              <th>Delivery Schedule</th>
+              <th>Lifecycle Status</th>
+              <th>Aggregation</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredOrders.length === 0 ? (
               <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Seller / Shop</th>
-                <th>Items</th>
-                <th>Total Amount</th>
-                <th>Order Date</th>
-                <th>Order Status</th>
-                <th>Delivery Status</th>
-                <th>Aggregation Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
+                <td colSpan="9" className="empty-state-box">
+                  <h4>No matching orders found</h4>
+                  <p>Try resetting the search terms or state filter options above.</p>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.length === 0 ? (
-                <tr><td colSpan="10" className="empty-state">No central orders match your search and filter criteria.</td></tr>
-              ) : (
-                filteredOrders.map((o, idx) => {
-                  const currentSt = o.status || o.orderStatus || 'PLACED';
-                  const itemsCount = o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 0;
-                  
-                  return (
-                    <tr key={o.id || o.orderId || `order-${idx}`}>
-                      <td className="font-medium">{o.orderId || o.id || 'N/A'}</td>
-                      <td>{o.customerName || 'Customer'}</td>
-                      <td>{o.vendorName || o.sellerName || 'Local Seller'}</td>
-                      <td>
-                        <span className="font-medium">{itemsCount} items</span>
-                        <small style={{ display: 'block', color: '#6b7280' }}>
-                          {o.items && o.items[0] ? o.items[0].name : 'N/A'}
-                        </small>
-                      </td>
-                      <td className="font-medium text-primary">₹{(o.total || 0).toFixed(2)}</td>
-                      <td>
-                        <div style={{ fontSize: '13px' }}>
-                          <div>📅 {o.deliveryDate ? o.deliveryDate : (o.date ? new Date(o.date).toLocaleDateString() : 'N/A')}</div>
-                          <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: '500' }}>🕒 {o.deliveryTimeSlot || 'Standard Slot'}</span>
+            ) : (
+              filteredOrders.map((o, idx) => {
+                const currentSt = o.status || o.orderStatus || 'PLACED';
+                const itemsCount = o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 0;
+                
+                return (
+                  <tr key={o.id || o.orderId || `order-${idx}`}>
+                    <td>
+                      <span className="order-id-chip">{o.orderId || o.id || 'N/A'}</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <div className="avatar-squircle">
+                          {getInitials(o.customerName)}
                         </div>
-                      </td>
-                      <td>
-                        <StatusBadge status={currentSt} />
-                      </td>
-                      <td>
-                        <span style={{ fontSize: '12px', color: '#4b5563', fontWeight: '500' }}>
-                          {o.deliveryStatus || 'Pending'}
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                          {o.customerName || 'Customer'}
                         </span>
-                      </td>
-                      <td>
-                        <span className="badge badge-secondary" style={{ fontSize: '11px' }}>
-                          {o.aggregationStatus || 'Not Assigned'}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                          {o.vendorName || o.sellerName || 'Local Seller'}
                         </span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-sm btn-outline" onClick={() => setSelectedOrder(o)}>
-                          <Eye size={14} /> Details
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                          {o.pickupLocation || 'Local Merchant Corridor'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>{itemsCount} items</span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                          {o.items && o.items[0] ? o.items[0].name : 'Direct dispatch items'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="monetary-amount" style={{ color: '#4F46E5', fontSize: '0.9375rem' }}>
+                        ₹{Number(o.total || 0).toFixed(2)}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8125rem' }}>
+                        <span style={{ fontWeight: 500 }}>{o.deliveryDate || 'Today'}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                          {o.deliveryTimeSlot || 'Standard Corridor'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <StatusBadge status={currentSt} />
+                    </td>
+                    <td>
+                      <span className="aggregation-tag">
+                        {o.aggregationStatus || 'Unassigned'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button 
+                        className="btn btn-outline btn-sm"
+                        onClick={() => setSelectedOrderDetails(o)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                      >
+                        <Eye size={13} /> View
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+
+        {/* Table Footer */}
+        <div className="table-footer">
+          <span>Showing {filteredOrders.length} of {orders.length} total orders across platform</span>
+          <span style={{ fontFamily: 'var(--font-family-mono)' }}>TELEMETRY STATUS: SYNCHRONIZED</span>
         </div>
       </div>
 
-      {/* Reusable Order Details Modal */}
+      {/* Order Details Modal */}
       {selectedOrder && (
         <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
       )}

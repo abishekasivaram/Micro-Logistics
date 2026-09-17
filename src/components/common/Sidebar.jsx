@@ -4,14 +4,15 @@ import { useAppContext } from '../../context/AppContext';
 import { 
   LayoutDashboard, ShoppingBag, Package, Truck, Layers, Users, Bell, 
   Settings, HelpCircle, LogOut, Map, User, Navigation, Calendar, 
-  Store, BarChart3, ShoppingCart, FileText, X
+  Store, BarChart3, ShoppingCart, FileText, X, ChevronLeft, ChevronRight,
+  Boxes, ShieldCheck, Activity, Cpu
 } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = ({ isOpen, setIsOpen }) => {
+const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
   const { currentUser, setCurrentUser, cart, notifications } = useAppContext();
   const navigate = useNavigate();
-  const role = currentUser?.role || 'vendor'; 
+  const role = currentUser?.role || 'admin'; 
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
   const unreadNotifCount = notifications.filter(n => !n.isRead).length;
 
@@ -21,227 +22,330 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     navigate('/login');
   };
 
-  // Render Admin Links (12 Complete Items)
+  const handleLinkClick = () => {
+    if (setIsOpen) setIsOpen(false);
+  };
+
+  // Render Admin Grouped Links
   const renderAdminLinks = () => (
     <>
-      <NavLink to="/admin-dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <LayoutDashboard size={20} />
-        <span>Dashboard</span>
-      </NavLink>
-      <NavLink to="/admin/sellers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Store size={20} />
-        <span>Sellers</span>
-      </NavLink>
-      <NavLink to="/admin/customers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Users size={20} />
-        <span>Customers</span>
-      </NavLink>
-      <NavLink to="/admin/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <ShoppingBag size={20} />
-        <span>Orders</span>
-      </NavLink>
-      <NavLink to="/admin/order-aggregation" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Map size={20} />
-        <span>Order Aggregation</span>
-      </NavLink>
-      <NavLink to="/admin/delivery-management" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Truck size={20} />
-        <span>Delivery Management</span>
-      </NavLink>
-      <NavLink to="/admin/delivery-agents" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Navigation size={20} />
-        <span>Delivery Agents</span>
-      </NavLink>
-      <NavLink to="/admin/routes" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Layers size={20} />
-        <span>Routes / Coordination</span>
-      </NavLink>
-      <NavLink to="/admin/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Bell size={20} />
-        <span>Notifications</span>
-        {unreadNotifCount > 0 && <span className="nav-badge">{unreadNotifCount}</span>}
-      </NavLink>
-      <NavLink to="/admin/analytics" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <BarChart3 size={20} />
-        <span>Analytics</span>
-      </NavLink>
-      <NavLink to="/admin/reports" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <FileText size={20} />
-        <span>Reports</span>
-      </NavLink>
-      <NavLink to="/admin/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Settings size={20} />
-        <span>Settings</span>
-      </NavLink>
+      {/* Overview */}
+      <div className="nav-group">
+        <div className="nav-group-title">Overview</div>
+        <NavLink 
+          to="/admin-dashboard" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Command Dashboard"
+        >
+          <div className="nav-icon-wrapper"><LayoutDashboard size={19} /></div>
+          <span className="nav-label">Dashboard</span>
+        </NavLink>
+      </div>
+
+      {/* Operations */}
+      <div className="nav-group">
+        <div className="nav-group-title">Operations</div>
+        <NavLink 
+          to="/admin/orders" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Central Orders"
+        >
+          <div className="nav-icon-wrapper"><ShoppingBag size={19} /></div>
+          <span className="nav-label">Orders</span>
+        </NavLink>
+        <NavLink 
+          to="/admin/order-aggregation" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Order Aggregation Hub"
+        >
+          <div className="nav-icon-wrapper"><Boxes size={19} /></div>
+          <span className="nav-label">Aggregation Hub</span>
+          <span className="nav-pill-pulse">AI</span>
+        </NavLink>
+        <NavLink 
+          to="/admin/delivery-management" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Delivery Dispatch"
+        >
+          <div className="nav-icon-wrapper"><Truck size={19} /></div>
+          <span className="nav-label">Delivery Batches</span>
+        </NavLink>
+        <NavLink 
+          to="/admin/delivery-agents" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Delivery Fleet"
+        >
+          <div className="nav-icon-wrapper"><Navigation size={19} /></div>
+          <span className="nav-label">Delivery Agents</span>
+        </NavLink>
+        <NavLink 
+          to="/admin/routes" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Route Coordination"
+        >
+          <div className="nav-icon-wrapper"><Map size={19} /></div>
+          <span className="nav-label">Routes Mesh</span>
+        </NavLink>
+      </div>
+
+      {/* Network */}
+      <div className="nav-group">
+        <div className="nav-group-title">Network</div>
+        <NavLink 
+          to="/admin/sellers" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Seller Directory"
+        >
+          <div className="nav-icon-wrapper"><Store size={19} /></div>
+          <span className="nav-label">Sellers</span>
+        </NavLink>
+        <NavLink 
+          to="/admin/customers" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Customer Base"
+        >
+          <div className="nav-icon-wrapper"><Users size={19} /></div>
+          <span className="nav-label">Customers</span>
+        </NavLink>
+      </div>
+
+      {/* Intelligence & System */}
+      <div className="nav-group">
+        <div className="nav-group-title">Intelligence</div>
+        <NavLink 
+          to="/admin/analytics" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Telemetry & Analytics"
+        >
+          <div className="nav-icon-wrapper"><BarChart3 size={19} /></div>
+          <span className="nav-label">Analytics</span>
+        </NavLink>
+        <NavLink 
+          to="/admin/reports" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="Export Reports"
+        >
+          <div className="nav-icon-wrapper"><FileText size={19} /></div>
+          <span className="nav-label">Reports</span>
+        </NavLink>
+        <NavLink 
+          to="/admin/notifications" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="System Notifications"
+        >
+          <div className="nav-icon-wrapper"><Bell size={19} /></div>
+          <span className="nav-label">Notifications</span>
+          {unreadNotifCount > 0 && <span className="nav-badge">{unreadNotifCount}</span>}
+        </NavLink>
+        <NavLink 
+          to="/admin/settings" 
+          className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+          title="System Settings"
+        >
+          <div className="nav-icon-wrapper"><Settings size={19} /></div>
+          <span className="nav-label">Settings</span>
+        </NavLink>
+      </div>
     </>
   );
 
   // Render Customer Links
   const renderCustomerLinks = () => (
-    <>
-      <NavLink to="/customer-dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <LayoutDashboard size={20} />
-        <span>Dashboard</span>
+    <div className="nav-group">
+      <NavLink to="/customer-dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Dashboard">
+        <div className="nav-icon-wrapper"><LayoutDashboard size={19} /></div>
+        <span className="nav-label">Dashboard</span>
       </NavLink>
-      <NavLink to="/browse-sellers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Store size={20} />
-        <span>Browse Sellers</span>
+      <NavLink to="/browse-sellers" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Browse Sellers">
+        <div className="nav-icon-wrapper"><Store size={19} /></div>
+        <span className="nav-label">Browse Sellers</span>
       </NavLink>
-      <NavLink to="/products" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Package size={20} />
-        <span>Products</span>
+      <NavLink to="/products" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Products">
+        <div className="nav-icon-wrapper"><Package size={19} /></div>
+        <span className="nav-label">Products</span>
       </NavLink>
-      <NavLink to="/cart" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <ShoppingCart size={20} />
-        <span>Cart</span>
+      <NavLink to="/cart" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Cart">
+        <div className="nav-icon-wrapper"><ShoppingCart size={19} /></div>
+        <span className="nav-label">Cart</span>
         {cartItemCount > 0 && <span className="nav-badge">{cartItemCount}</span>}
       </NavLink>
-      <NavLink to="/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <ShoppingBag size={20} />
-        <span>My Orders</span>
+      <NavLink to="/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="My Orders">
+        <div className="nav-icon-wrapper"><ShoppingBag size={19} /></div>
+        <span className="nav-label">My Orders</span>
       </NavLink>
-      <NavLink to="/track-delivery" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Navigation size={20} />
-        <span>Track Delivery</span>
+      <NavLink to="/track-delivery" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Track Delivery">
+        <div className="nav-icon-wrapper"><Navigation size={19} /></div>
+        <span className="nav-label">Track Delivery</span>
       </NavLink>
-      <NavLink to="/delivery-schedule" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Calendar size={20} />
-        <span>Delivery Schedule</span>
+      <NavLink to="/delivery-schedule" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Delivery Schedule">
+        <div className="nav-icon-wrapper"><Calendar size={19} /></div>
+        <span className="nav-label">Delivery Schedule</span>
       </NavLink>
-      <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Bell size={20} />
-        <span>Notifications</span>
-      </NavLink>
-      <NavLink to="/profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <User size={20} />
-        <span>Profile</span>
-      </NavLink>
-    </>
-  );
-
-  // Render Seller / Vendor Links
-  const renderVendorLinks = () => (
-    <>
-      <NavLink to="/vendor-dashboard" className={({isActive}) => `nav-item ${isActive || window.location.pathname === '/dashboard' ? 'active' : ''}`}>
-        <LayoutDashboard size={20} />
-        <span>Dashboard</span>
-      </NavLink>
-      <NavLink to="/products" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Package size={20} />
-        <span>Products</span>
-      </NavLink>
-      <NavLink to="/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <ShoppingBag size={20} />
-        <span>Orders</span>
-      </NavLink>
-      <NavLink to="/seller-analytics" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <BarChart3 size={20} />
-        <span>Analytics</span>
-      </NavLink>
-      <NavLink to="/business-profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Store size={20} />
-        <span>Business Profile</span>
-      </NavLink>
-      <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Bell size={20} />
-        <span>Notifications</span>
-      </NavLink>
-    </>
-  );
-
-  const renderDeliveryPartnerLinks = () => (
-    <>
-      <NavLink to="/delivery-dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <LayoutDashboard size={20} />
-        <span>Dashboard</span>
-      </NavLink>
-      <NavLink to="/delivery/deliveries" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Package size={20} />
-        <span>My Deliveries</span>
-      </NavLink>
-      <NavLink to="/delivery/pickup" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Store size={20} />
-        <span>Pickup</span>
-      </NavLink>
-      <NavLink to="/delivery/route" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Navigation size={20} />
-        <span>Route</span>
-      </NavLink>
-      <NavLink to="/delivery/status" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Truck size={20} />
-        <span>Delivery Status</span>
-      </NavLink>
-      <NavLink to="/delivery/history" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <FileText size={20} />
-        <span>History</span>
-      </NavLink>
-      <NavLink to="/delivery/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <Bell size={20} />
-        <span>Notifications</span>
+      <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Notifications">
+        <div className="nav-icon-wrapper"><Bell size={19} /></div>
+        <span className="nav-label">Notifications</span>
         {unreadNotifCount > 0 && <span className="nav-badge">{unreadNotifCount}</span>}
       </NavLink>
-      <NavLink to="/delivery/profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-        <User size={20} />
-        <span>Profile & Status</span>
+      <NavLink to="/profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Profile">
+        <div className="nav-icon-wrapper"><User size={19} /></div>
+        <span className="nav-label">Profile</span>
       </NavLink>
-    </>
+    </div>
   );
 
-  const handleLinkClick = () => {
-    if (setIsOpen) setIsOpen(false);
-  };
+  // Render Vendor Links
+  const renderVendorLinks = () => (
+    <div className="nav-group">
+      <NavLink to="/vendor-dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Dashboard">
+        <div className="nav-icon-wrapper"><LayoutDashboard size={19} /></div>
+        <span className="nav-label">Dashboard</span>
+      </NavLink>
+      <NavLink to="/products" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Products">
+        <div className="nav-icon-wrapper"><Package size={19} /></div>
+        <span className="nav-label">Products</span>
+      </NavLink>
+      <NavLink to="/orders" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Orders">
+        <div className="nav-icon-wrapper"><ShoppingBag size={19} /></div>
+        <span className="nav-label">Orders</span>
+      </NavLink>
+      <NavLink to="/seller-analytics" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Analytics">
+        <div className="nav-icon-wrapper"><BarChart3 size={19} /></div>
+        <span className="nav-label">Analytics</span>
+      </NavLink>
+      <NavLink to="/business-profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Business Profile">
+        <div className="nav-icon-wrapper"><Store size={19} /></div>
+        <span className="nav-label">Business Profile</span>
+      </NavLink>
+      <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Notifications">
+        <div className="nav-icon-wrapper"><Bell size={19} /></div>
+        <span className="nav-label">Notifications</span>
+      </NavLink>
+    </div>
+  );
+
+  // Render Delivery Partner Links
+  const renderDeliveryPartnerLinks = () => (
+    <div className="nav-group">
+      <NavLink to="/delivery-dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Dashboard">
+        <div className="nav-icon-wrapper"><LayoutDashboard size={19} /></div>
+        <span className="nav-label">Dashboard</span>
+      </NavLink>
+      <NavLink to="/delivery/deliveries" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="My Deliveries">
+        <div className="nav-icon-wrapper"><Package size={19} /></div>
+        <span className="nav-label">My Deliveries</span>
+      </NavLink>
+      <NavLink to="/delivery/pickup" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Pickup">
+        <div className="nav-icon-wrapper"><Store size={19} /></div>
+        <span className="nav-label">Pickup</span>
+      </NavLink>
+      <NavLink to="/delivery/route" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Route">
+        <div className="nav-icon-wrapper"><Navigation size={19} /></div>
+        <span className="nav-label">Route</span>
+      </NavLink>
+      <NavLink to="/delivery/status" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Status">
+        <div className="nav-icon-wrapper"><Truck size={19} /></div>
+        <span className="nav-label">Status</span>
+      </NavLink>
+      <NavLink to="/delivery/history" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="History">
+        <div className="nav-icon-wrapper"><FileText size={19} /></div>
+        <span className="nav-label">History</span>
+      </NavLink>
+      <NavLink to="/delivery/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Notifications">
+        <div className="nav-icon-wrapper"><Bell size={19} /></div>
+        <span className="nav-label">Notifications</span>
+        {unreadNotifCount > 0 && <span className="nav-badge">{unreadNotifCount}</span>}
+      </NavLink>
+      <NavLink to="/delivery/profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Profile">
+        <div className="nav-icon-wrapper"><User size={19} /></div>
+        <span className="nav-label">Profile</span>
+      </NavLink>
+    </div>
+  );
 
   return (
-    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
+      {/* Brand Header */}
       <div className="sidebar-brand">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1>MicroLogi</h1>
-            <span style={{ fontSize: '12px', opacity: 0.8, display: 'block', textTransform: 'capitalize' }}>
-              {role === 'vendor' ? 'Seller Panel' : role === 'delivery_partner' ? 'Delivery Partner' : `${role} Panel`}
-            </span>
+        <div className="brand-logo-row">
+          <div className="brand-badge-icon">
+            <Boxes size={22} className="brand-icon-svg" />
+            <div className="brand-pulse-dot" />
           </div>
-          <button className="icon-btn mobile-close-btn" onClick={() => setIsOpen(false)} aria-label="Close sidebar menu" style={{ width: '32px', height: '32px' }}>
+          
+          {!isCollapsed && (
+            <div className="brand-text-block">
+              <div className="brand-name-title">MicroLogi</div>
+              <div className="brand-tagline">
+                <span className="status-live-dot" />
+                CONTROL TOWER
+              </div>
+            </div>
+          )}
+
+          {/* Mobile close button */}
+          <button 
+            className="mobile-close-btn" 
+            onClick={() => setIsOpen(false)} 
+            aria-label="Close sidebar menu"
+          >
             <X size={18} />
           </button>
         </div>
       </div>
       
+      {/* Navigation Sections */}
       <nav className="sidebar-nav" onClick={handleLinkClick}>
-        <div className="nav-section">
-          {role === 'admin' && renderAdminLinks()}
-          {role === 'customer' && renderCustomerLinks()}
-          {role === 'vendor' && renderVendorLinks()}
-          {role === 'delivery_partner' && renderDeliveryPartnerLinks()}
-        </div>
+        {role === 'admin' && renderAdminLinks()}
+        {role === 'customer' && renderCustomerLinks()}
+        {role === 'vendor' && renderVendorLinks()}
+        {role === 'delivery_partner' && renderDeliveryPartnerLinks()}
 
+        {/* Bottom Utility Actions */}
         <div className="nav-divider"></div>
-
-        <div className="nav-section">
+        <div className="nav-group">
           {role !== 'admin' && role !== 'delivery_partner' && (
             <>
-              <NavLink to="/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-                <Settings size={20} />
-                <span>Settings</span>
+              <NavLink to="/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Settings">
+                <div className="nav-icon-wrapper"><Settings size={19} /></div>
+                <span className="nav-label">Settings</span>
               </NavLink>
-              <NavLink to="/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-                <HelpCircle size={20} />
-                <span>Help & Support</span>
+              <NavLink to="/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Help & Support">
+                <div className="nav-icon-wrapper"><HelpCircle size={19} /></div>
+                <span className="nav-label">Help & Support</span>
               </NavLink>
             </>
           )}
+
           {role === 'delivery_partner' && (
-            <NavLink to="/delivery/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-              <HelpCircle size={20} />
-              <span>Help & Support</span>
+            <NavLink to="/delivery/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Help">
+              <div className="nav-icon-wrapper"><HelpCircle size={19} /></div>
+              <span className="nav-label">Help</span>
             </NavLink>
           )}
-          <Link to="/login" onClick={handleLogout} className="nav-item text-danger mt-auto">
-            <LogOut size={20} />
-            <span>Logout</span>
-          </Link>
+
+          <button onClick={handleLogout} className="nav-item nav-logout-btn" title="Sign Out">
+            <div className="nav-icon-wrapper"><LogOut size={19} /></div>
+            <span className="nav-label">Sign Out</span>
+          </button>
         </div>
       </nav>
+
+      {/* Collapse Toggle Footer */}
+      <div className="sidebar-footer">
+        <button 
+          className="collapse-toggle-btn" 
+          onClick={toggleCollapse} 
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          {isCollapsed ? <ChevronRight size={18} /> : (
+            <>
+              <ChevronLeft size={18} />
+              <span className="collapse-text">Collapse Navigation</span>
+            </>
+          )}
+        </button>
+      </div>
     </aside>
   );
 };

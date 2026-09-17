@@ -1,146 +1,230 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Bell, ShoppingCart, User, Check, X, Menu } from 'lucide-react';
+import { 
+  Search, Bell, ShoppingCart, User, Check, X, Menu, Shield, 
+  Settings, LogOut, ChevronDown, ExternalLink, Activity, Radio
+} from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import './Header.css';
 
 const Header = ({ onMenuClick }) => {
-  const { currentUser, notifications, cart, markNotificationAsRead, markAllNotificationsAsRead } = useAppContext();
+  const { currentUser, setCurrentUser, notifications, cart, markNotificationAsRead, markAllNotificationsAsRead } = useAppContext();
   const navigate = useNavigate();
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifMenu(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    navigate('/login');
+  };
 
   const roleLabel = currentUser?.role === 'vendor' 
     ? 'Seller' 
     : currentUser?.role === 'customer' 
     ? 'Customer' 
     : currentUser?.role === 'delivery_partner'
-    ? 'Delivery Partner'
-    : 'Admin';
+    ? 'Delivery Fleet'
+    : 'System Administrator';
 
-  const userGreetingName = currentUser?.shopName || currentUser?.name || (currentUser?.role === 'vendor' ? 'Seller' : currentUser?.role === 'delivery_partner' ? 'Delivery Partner' : 'User');
+  const userGreetingName = currentUser?.shopName || currentUser?.name || (currentUser?.role === 'vendor' ? 'Seller' : currentUser?.role === 'delivery_partner' ? 'Delivery Partner' : 'System Admin');
+
+  // Compute Initials
+  const getInitials = (name) => {
+    if (!name) return 'SA';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  };
 
   return (
-    <header className="header">
-      <div className="header-greeting" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
-        <button className="icon-btn mobile-menu-btn" onClick={onMenuClick} aria-label="Open navigation sidebar">
+    <header className="header-command-bar">
+      {/* Left side: Greeting and Live Telemetry Indicator */}
+      <div className="header-left">
+        <button className="mobile-menu-trigger" onClick={onMenuClick} aria-label="Open sidebar navigation">
           <Menu size={20} />
         </button>
-        <div>
-          <h2>Welcome, {userGreetingName} 👋</h2>
-        <p>
-          {currentUser?.role === 'customer' 
-            ? "Explore local sellers and track your delivery orders." 
-            : currentUser?.role === 'vendor'
-            ? "Manage orders, products, and delivery coordination status."
-            : currentUser?.role === 'delivery_partner'
-            ? "View assigned batches, confirm pickups, and manage delivery routes."
-            : "Platform administrative overview and settings."}
+        
+        <div className="header-brand-info">
+          <div className="header-title-row">
+            <h2 className="header-headline">Control Tower</h2>
+            <div className="header-system-pill">
+              <span className="telemetry-live-dot" />
+              <span className="telemetry-text">NETWORK ACTIVE</span>
+            </div>
+          </div>
+          <p className="header-subheadline">
+            Welcome back, <span className="text-white-strong">{userGreetingName}</span> • Real-time telemetry, automated order batching & fleet coordination.
           </p>
         </div>
       </div>
 
-      <div className="header-actions">
+      {/* Right side: Actions, Notifications, and Polished Profile Chip */}
+      <div className="header-right">
         {currentUser?.role === 'customer' && (
           <button 
-            className="icon-btn cart-btn" 
+            className="command-icon-btn cart-btn" 
             onClick={() => navigate('/cart')}
-            title="View Shopping Cart"
+            title="Shopping Cart"
             aria-label="View Shopping Cart"
           >
-            <ShoppingCart size={20} />
-            {cartItemCount > 0 && <span className="cart-badge">{cartItemCount}</span>}
+            <ShoppingCart size={18} />
+            {cartItemCount > 0 && <span className="cart-badge-counter">{cartItemCount}</span>}
           </button>
         )}
 
-        <div className="notif-wrapper" style={{ position: 'relative' }}>
+        {/* Notifications Dropdown */}
+        <div className="dropdown-container" ref={notifRef}>
           <button 
-            className="icon-btn" 
+            className={`command-icon-btn ${unreadCount > 0 ? 'has-unread' : ''}`}
             onClick={() => setShowNotifMenu(!showNotifMenu)}
             title="Notifications"
             aria-label="Toggle notifications menu"
           >
-            <Bell size={20} />
-            {unreadCount > 0 && <span className="notification-dot"></span>}
+            <Bell size={18} />
+            {unreadCount > 0 && <span className="pulse-indicator-dot" />}
           </button>
 
           {showNotifMenu && (
-            <div className="notif-dropdown">
-              <div className="notif-dropdown-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h4 style={{ margin: 0, fontSize: '15px' }}>Notifications</h4>
-                  {unreadCount > 0 && <span className="unread-badge">{unreadCount} new</span>}
+            <div className="command-dropdown notif-menu">
+              <div className="command-dropdown-header">
+                <div className="dropdown-title-group">
+                  <span className="dropdown-title">Notifications</span>
+                  {unreadCount > 0 && <span className="dropdown-count-pill">{unreadCount} new</span>}
                 </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  {unreadCount > 0 && (
-                    <button 
-                      className="btn-link" 
-                      onClick={markAllNotificationsAsRead}
-                      style={{ fontSize: '12px', background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer' }}
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                  <button className="btn-link" onClick={() => setShowNotifMenu(false)} aria-label="Close notifications menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>
-                    <X size={16} />
+                {unreadCount > 0 && (
+                  <button 
+                    className="btn-text-link" 
+                    onClick={markAllNotificationsAsRead}
+                  >
+                    Mark all read
                   </button>
-                </div>
+                )}
               </div>
 
-              <div className="notif-dropdown-list">
+              <div className="notif-scroll-list">
                 {notifications.length === 0 ? (
-                  <p className="notif-empty">No notifications yet.</p>
+                  <div className="notif-empty-state">
+                    <Check size={24} className="empty-check-icon" />
+                    <p>All caught up! No new notifications.</p>
+                  </div>
                 ) : (
                   notifications.slice(0, 5).map(n => (
                     <div 
                       key={n.id} 
-                      className={`notif-dropdown-item ${!n.isRead ? 'unread' : ''}`}
+                      className={`notif-item-row ${!n.isRead ? 'is-unread' : ''}`}
                       onClick={() => markNotificationAsRead(n.id)}
                     >
-                      <div className="notif-content">
-                        <p>{n.message}</p>
-                        <span className="notif-time">{new Date(n.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <div className="notif-item-dot" />
+                      <div className="notif-item-body">
+                        <p className="notif-message-text">{n.message}</p>
+                        <span className="notif-timestamp">
+                          {new Date(n.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                      {!n.isRead && <span className="notif-mark-dot" title="Unread"></span>}
                     </div>
                   ))
                 )}
               </div>
 
-              <div className="notif-dropdown-footer">
-                <Link to="/notifications" onClick={() => setShowNotifMenu(false)}>
-                  View all notifications
+              <div className="command-dropdown-footer">
+                <Link to="/admin/notifications" onClick={() => setShowNotifMenu(false)} className="view-all-link">
+                  View Notification Center <ExternalLink size={12} />
                 </Link>
               </div>
             </div>
           )}
         </div>
 
-        <div 
-          className="user-profile" 
-          onClick={() => {
-            if (currentUser?.role === 'customer') navigate('/profile');
-            else if (currentUser?.role === 'vendor') navigate('/business-profile');
-            else navigate('/settings');
-          }}
-        >
-          <div className="avatar">
-            {currentUser?.avatar || currentUser?.logo ? (
-              <img 
-                src={currentUser?.avatar || currentUser?.logo} 
-                alt="Avatar" 
-                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
-              />
-            ) : (
-              <User size={20} />
-            )}
+        {/* User Profile Chip & Dropdown */}
+        <div className="dropdown-container" ref={profileRef}>
+          <div 
+            className="user-command-chip"
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="user-avatar-squircle">
+              {currentUser?.avatar || currentUser?.logo ? (
+                <img 
+                  src={currentUser?.avatar || currentUser?.logo} 
+                  alt="Avatar" 
+                  className="avatar-image"
+                />
+              ) : (
+                <span>{getInitials(userGreetingName)}</span>
+              )}
+            </div>
+            
+            <div className="user-text-column">
+              <span className="user-display-name">{userGreetingName}</span>
+              <span className="user-role-badge">{roleLabel}</span>
+            </div>
+
+            <ChevronDown size={14} className={`chevron-indicator ${showProfileMenu ? 'open' : ''}`} />
           </div>
-          <div className="user-info">
-            <span className="user-name">{currentUser?.shopName || currentUser?.name || 'User'}</span>
-            <span className="user-role">{roleLabel}</span>
-          </div>
+
+          {showProfileMenu && (
+            <div className="command-dropdown profile-menu">
+              <div className="profile-menu-header">
+                <div className="menu-user-name">{userGreetingName}</div>
+                <div className="menu-user-role">{currentUser?.email || 'admin@micrologi.com'}</div>
+              </div>
+              <div className="menu-divider" />
+              <div className="profile-menu-items">
+                <button 
+                  className="profile-menu-item"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    navigate('/admin/settings');
+                  }}
+                >
+                  <Settings size={16} />
+                  <span>Control Settings</span>
+                </button>
+                <button 
+                  className="profile-menu-item"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    navigate('/admin/analytics');
+                  }}
+                >
+                  <Activity size={16} />
+                  <span>Telemetry Log</span>
+                </button>
+                <div className="menu-divider" />
+                <button 
+                  className="profile-menu-item text-danger"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    handleLogout();
+                  }}
+                >
+                  <LogOut size={16} />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
@@ -148,4 +232,3 @@ const Header = ({ onMenuClick }) => {
 };
 
 export default Header;
-

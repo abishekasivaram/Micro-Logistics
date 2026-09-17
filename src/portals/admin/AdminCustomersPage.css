@@ -1,0 +1,278 @@
+/* ==========================================================================
+   ADMIN CUSTOMERS PAGE & INSPECT POPUP MODAL STYLES
+   ========================================================================== */
+
+/* Page scoped overrides */
+.admin-customers-page {
+  animation: fadeInPage 0.2s ease-out;
+}
+
+/* Deep blur on underlying sidebar & top bar when modal is active */
+body.admin-modal-open .sidebar,
+body.admin-modal-open .header-command-bar,
+body.admin-modal-open .dashboard-content {
+  filter: blur(8px);
+  -webkit-filter: blur(8px);
+  transition: filter 0.25s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ==========================================================================
+   PREMIUM CUSTOMER INSPECT MODAL
+   ========================================================================== */
+.customer-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 99999;
+  animation: modalBackdropFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+.customer-inspect-modal {
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 
+    0 25px 50px -12px rgba(15, 23, 42, 0.25),
+    0 0 0 1px rgba(226, 232, 240, 0.9),
+    0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #E2E8F0;
+}
+
+/* Banner - Pure Crisp White Theme (No Blue) */
+.customer-modal-banner {
+  background: #FFFFFF;
+  padding: 1.5rem 1.75rem 1.25rem;
+  position: relative;
+  color: #0F172A;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.customer-modal-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.15rem;
+}
+
+.customer-modal-close {
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #64748B;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.customer-modal-close:hover {
+  background: #E2E8F0;
+  color: #0F172A;
+  transform: scale(1.06);
+}
+
+.customer-identity-row {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.customer-avatar-large {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  border: 1.5px solid #E2E8F0;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+  background: #FFFFFF;
+}
+
+.customer-avatar-fallback {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  border: 1.5px solid #E2E8F0;
+  background: #EEF2FF;
+  color: #4F46E5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+.customer-title-block h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.customer-subtitle-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  color: #64748B;
+  margin-top: 0.2rem;
+}
+
+/* Tabs */
+.customer-modal-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 1.75rem;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.customer-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 8px 8px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.customer-tab-btn:hover {
+  color: #1E293B;
+}
+
+.customer-tab-btn.active {
+  color: #0284C7;
+  border-bottom-color: #0284C7;
+  background: #FFFFFF;
+}
+
+/* Body */
+.customer-modal-body {
+  padding: 1.5rem 1.75rem;
+  overflow-y: auto;
+  max-height: calc(90vh - 250px);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.customer-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .customer-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.customer-kpi-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 0.95rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.customer-kpi-card:hover {
+  border-color: #CBD5E1;
+  background: #FFFFFF;
+}
+
+.customer-kpi-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.customer-kpi-val {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.customer-kpi-sub {
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+.customer-sections-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .customer-sections-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.customer-card-panel {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.customer-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.customer-modal-footer {
+  padding: 1rem 1.75rem;
+  background: #F8FAFC;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}

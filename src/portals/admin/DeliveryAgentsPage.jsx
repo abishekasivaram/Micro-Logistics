@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Navigation, Plus, Search, UserCheck, Phone, Edit, X, Star, Truck } from 'lucide-react';
-import { getStatusBadgeClass } from '../../utils/aggregationUtils';
-import '../seller/DashboardOverview.css';
+import { Navigation, Plus, Search, UserCheck, Phone, Edit, X, Star, Truck, UserX, Shield, Bike } from 'lucide-react';
+import StatusBadge from '../../components/common/StatusBadge';
 
 const DeliveryAgentsPage = () => {
   const { deliveryAgents, addDeliveryAgent, updateDeliveryAgent, deliveryBatches } = useAppContext();
@@ -39,23 +38,42 @@ const DeliveryAgentsPage = () => {
     setNewAgent({ name: '', phone: '', currentArea: 'T. Nagar', capacity: 5, vehicle: 'Electric Scooter' });
   };
 
+  const getInitials = (name) => {
+    if (!name) return 'DA';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="page-container">
+      {/* Header */}
       <div className="page-header">
-        <div>
-          <h2>Delivery Fleet & Agent Operations</h2>
-          <p>Manage active field delivery agents, real-time vehicle allocation, and capacity.</p>
+        <div className="page-title-group">
+          <h2>
+            Delivery Fleet & Courier Operations
+            <span className="telemetry-tag">
+              <span className="telemetry-pulse" /> {deliveryAgents.length} FLEET UNITS
+            </span>
+          </h2>
+          <p className="page-subtitle">
+            Real-time tracking of active field delivery agents, vehicle dispatch allocation, payload capacity, and availability toggles.
+          </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Plus size={18} /> Add New Delivery Agent
+        <button 
+          className="btn btn-primary" 
+          onClick={() => setIsAddModalOpen(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+        >
+          <Plus size={16} /> Onboard New Agent
         </button>
       </div>
 
       {/* Filter Bar */}
-      <div className="card" style={{ marginBottom: '20px', padding: '16px' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
-            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+      <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem 1.25rem' }}>
+        <div className="table-filter-bar" style={{ margin: 0 }}>
+          <div className="search-input-wrapper">
+            <Search size={16} className="search-icon" />
             <input 
               type="text" 
               className="form-control" 
@@ -63,168 +81,231 @@ const DeliveryAgentsPage = () => {
               value={searchTerm}
               aria-label="Search delivery agents by name, phone, or operating area"
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ paddingLeft: '38px' }}
             />
           </div>
 
-          <select 
-            className="form-control" 
-            value={statusFilter} 
-            aria-label="Filter delivery agents by status"
-            onChange={e => setStatusFilter(e.target.value)} 
-            style={{ width: 'auto' }}
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="Available">Available</option>
-            <option value="On Delivery">On Delivery</option>
-            <option value="Offline">Offline</option>
-          </select>
+          <div className="filter-group">
+            <select 
+              className="form-select" 
+              value={statusFilter} 
+              aria-label="Filter delivery agents by status"
+              onChange={e => setStatusFilter(e.target.value)} 
+            >
+              <option value="ALL">All Fleet Statuses</option>
+              <option value="Available">Available (Ready)</option>
+              <option value="On Delivery">On Delivery</option>
+              <option value="Offline">Offline / Off-Duty</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Agents Table */}
-      <div className="card">
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Agent Ref</th>
+              <th>Courier Agent</th>
+              <th>Direct Phone</th>
+              <th>Operating Sector</th>
+              <th>Vehicle Asset</th>
+              <th>Active Load</th>
+              <th>Status</th>
+              <th>Performance</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredAgents.length === 0 ? (
               <tr>
-                <th>Agent ID</th>
-                <th>Driver Name</th>
-                <th>Contact Phone</th>
-                <th>Assigned Area</th>
-                <th>Vehicle Type</th>
-                <th>Capacity / Active</th>
-                <th>Status</th>
-                <th>Rating</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
+                <td colSpan="9" className="empty-state-box">
+                  <h4>No fleet agents found</h4>
+                  <p>Try modifying your search criteria or add a new delivery agent.</p>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredAgents.length === 0 ? (
-                <tr><td colSpan="9" className="empty-state">No delivery personnel found matching your filters.</td></tr>
-              ) : (
-                filteredAgents.map(a => {
-                  const agentBatches = deliveryBatches.filter(b => b.agentId === a.id && b.status !== 'Completed');
-                  const isAvail = a.status === 'Available' || a.availability === 'Available';
+            ) : (
+              filteredAgents.map(a => {
+                const isAvail = a.status === 'Available' || a.availability === 'Available';
+                const currentOrders = a.currentOrders || 0;
+                const capacity = a.capacity || 5;
+                const loadPercentage = Math.min((currentOrders / capacity) * 100, 100);
 
-                  return (
-                    <tr key={a.id}>
-                      <td className="font-medium">{a.id}</td>
-                      <td className="font-semibold" style={{ color: '#1e293b' }}>{a.name}</td>
-                      <td>{a.phone}</td>
-                      <td>{a.currentArea}</td>
-                      <td>{a.vehicle || 'Scooter'}</td>
-                      <td>
-                        <span className="font-medium">{a.currentOrders || 0} / {a.capacity || 5} orders</span>
-                      </td>
-                      <td>
-                        <span className={`badge ${getStatusBadgeClass(a.status)}`}>
-                          {a.status}
-                        </span>
-                      </td>
-                      <td>⭐ {a.rating || 4.8}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button 
-                          className={`btn btn-sm ${isAvail ? 'btn-outline text-danger' : 'btn-outline text-success'}`}
-                          onClick={() => updateDeliveryAgent(a.id, { status: isAvail ? 'Offline' : 'Available', availability: isAvail ? 'Offline' : 'Available' })}
-                        >
-                          {isAvail ? 'Set Offline' : 'Set Available'}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                return (
+                  <tr key={a.id}>
+                    <td>
+                      <span className="order-id-chip">{a.id}</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div className="avatar-squircle" style={{ background: '#ECFDF5', color: '#059669', borderColor: 'rgba(5, 150, 105, 0.2)' }}>
+                          {getInitials(a.name)}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 600, color: '#0F172A' }}>{a.name}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Verified Driver</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.8125rem', fontFamily: 'var(--font-family-mono)', color: '#475569' }}>
+                        {a.phone}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="aggregation-tag">{a.currentArea || 'Central'}</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8125rem' }}>
+                        <Truck size={14} className="text-accent" />
+                        <span>{a.vehicle || 'Electric Scooter'}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '110px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                          <span style={{ fontWeight: 600 }}>{currentOrders} / {capacity}</span>
+                          <span style={{ color: '#64748B' }}>{Math.round(loadPercentage)}%</span>
+                        </div>
+                        <div className="mini-progress-track">
+                          <div 
+                            className={`mini-progress-fill ${loadPercentage > 80 ? '' : 'indigo'}`}
+                            style={{ width: `${loadPercentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <StatusBadge status={a.status || 'Available'} />
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', fontWeight: 600, color: '#D97706' }}>
+                        <Star size={13} fill="#D97706" />
+                        <span>{a.rating || 4.9}</span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button 
+                        className={`btn btn-sm ${isAvail ? 'btn-danger' : 'btn-outline'}`}
+                        onClick={() => updateDeliveryAgent(a.id, { 
+                          status: isAvail ? 'Offline' : 'Available', 
+                          availability: isAvail ? 'Offline' : 'Available' 
+                        })}
+                        style={{ minWidth: '96px' }}
+                      >
+                        {isAvail ? 'Set Offline' : 'Set Active'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+
+        {/* Footer */}
+        <div className="table-footer">
+          <span>Displaying {filteredAgents.length} of {deliveryAgents.length} active fleet agents</span>
+          <span style={{ fontFamily: 'var(--font-family-mono)' }}>TELEMETRY PING: 100% ONLINE</span>
         </div>
       </div>
 
-      {/* Add Agent Modal */}
+      {/* Onboard Agent Modal */}
       {isAddModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsAddModalOpen(false)}>
-          <div 
-            className="modal-content" 
-            role="dialog" 
-            aria-modal="true" 
-            aria-labelledby="agent-modal-title"
-            style={{ maxWidth: '500px' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3 id="agent-modal-title" style={{ margin: 0 }}>Onboard New Delivery Agent</h3>
-              <button className="modal-close" onClick={() => setIsAddModalOpen(false)} aria-label="Close modal"><X size={20} /></button>
-            </div>
-            
-            <form onSubmit={handleAddSubmit}>
-              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="modal-backdrop-command" onClick={() => setIsAddModalOpen(false)}>
+          <div className="modal-dialog-card" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-dialog-header">
+              <div className="modal-title-with-icon">
+                <div className="modal-icon-badge">
+                  <Navigation size={20} />
+                </div>
                 <div>
-                  <label htmlFor="agent-name" className="form-label">Full Name *</label>
+                  <h3>Onboard Delivery Agent</h3>
+                  <span className="modal-subtitle">Enroll verified courier to local fleet mesh</span>
+                </div>
+              </div>
+              <button className="modal-close-trigger" onClick={() => setIsAddModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddSubmit}>
+              <div className="modal-dialog-body">
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>Driver Full Name</label>
                   <input 
                     type="text" 
-                    id="agent-name"
                     className="form-control" 
-                    required 
-                    placeholder="e.g. Arun Kumar"
+                    placeholder="e.g. Ramesh Kumar"
                     value={newAgent.name}
                     onChange={e => setNewAgent({ ...newAgent, name: e.target.value })}
+                    required 
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="agent-phone" className="form-label">Phone Number *</label>
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>Contact Phone Number</label>
                   <input 
                     type="tel" 
-                    id="agent-phone"
                     className="form-control" 
-                    required 
-                    placeholder="e.g. 9876543210"
+                    placeholder="e.g. 9840198765"
                     value={newAgent.phone}
                     onChange={e => setNewAgent({ ...newAgent, phone: e.target.value })}
+                    required 
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="agent-area" className="form-label">Operating Area / Hub</label>
-                  <input 
-                    type="text" 
-                    id="agent-area"
-                    className="form-control" 
-                    placeholder="e.g. Adyar / Mylapore"
-                    value={newAgent.currentArea}
-                    onChange={e => setNewAgent({ ...newAgent, currentArea: e.target.value })}
-                  />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>Primary Operating Area</label>
+                    <select 
+                      className="form-select"
+                      value={newAgent.currentArea}
+                      onChange={e => setNewAgent({ ...newAgent, currentArea: e.target.value })}
+                    >
+                      <option value="T. Nagar">T. Nagar Sector</option>
+                      <option value="Adyar">Adyar Sector</option>
+                      <option value="Anna Nagar">Anna Nagar Sector</option>
+                      <option value="Velachery">Velachery Sector</option>
+                      <option value="Mylapore">Mylapore Sector</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>Vehicle Asset Type</label>
+                    <select 
+                      className="form-select"
+                      value={newAgent.vehicle}
+                      onChange={e => setNewAgent({ ...newAgent, vehicle: e.target.value })}
+                    >
+                      <option value="Electric Scooter">Electric Scooter</option>
+                      <option value="Motorcycle">Motorcycle</option>
+                      <option value="Cargo E-Bike">Cargo E-Bike</option>
+                      <option value="Delivery Van">Delivery Van</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label htmlFor="agent-capacity" className="form-label">Max Order Carrying Capacity</label>
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>Max Order Batch Capacity</label>
                   <input 
                     type="number" 
-                    id="agent-capacity"
-                    className="form-control" 
                     min="1" 
-                    max="10" 
-                    value={newAgent.capacity}
-                    onChange={e => setNewAgent({ ...newAgent, capacity: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="agent-vehicle" className="form-label">Vehicle Type</label>
-                  <input 
-                    type="text" 
-                    id="agent-vehicle"
+                    max="10"
                     className="form-control" 
-                    placeholder="e.g. Ather 450X EV / TVS XL 100"
-                    value={newAgent.vehicle}
-                    onChange={e => setNewAgent({ ...newAgent, vehicle: e.target.value })}
+                    value={newAgent.capacity}
+                    onChange={e => setNewAgent({ ...newAgent, capacity: parseInt(e.target.value) || 5 })}
                   />
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setIsAddModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Agent</button>
+              <div className="modal-dialog-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setIsAddModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  <Plus size={15} /> Confirm Onboarding
+                </button>
               </div>
             </form>
           </div>

@@ -1,47 +1,400 @@
-.batch-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
-  gap: 20px;
-}
-
-.batch-card {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  padding: 20px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+/* ==========================================================================
+   DELIVERY MANAGEMENT MISSION CONTROL STYLING
+   ========================================================================== */
+.delivery-mgmt-page {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 1.75rem;
 }
 
-.batch-header {
+.mission-batches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .mission-batches-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.empty-mission-state {
+  padding: 3.5rem 2rem;
+  text-align: center;
+  grid-column: 1 / -1;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.batch-orders-list {
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 12px;
-  margin: 12px 0;
-  font-size: 13px;
-}
-
-.agent-select-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  transition: all 0.2s ease;
+  gap: 0.75rem;
 }
 
-.agent-select-card:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
+.empty-mission-state h4 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0;
+}
+
+.empty-mission-state p {
+  font-size: 0.875rem;
+  color: #64748B;
+  max-width: 440px;
+  margin: 0 0 0.5rem 0;
+}
+
+/* Mission Card */
+.mission-card {
+  background: var(--bg-surface, #FFFFFF);
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: var(--radius-md, 14px);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.mission-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: #CBD5E1;
+}
+
+.mission-status-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #CBD5E1;
+}
+
+.mission-status-strip.pending-assignment {
+  background: #F59E0B;
+}
+
+.mission-status-strip.assigned,
+.mission-status-strip.pickup-in-progress,
+.mission-status-strip.out-for-delivery {
+  background: #3B82F6;
+}
+
+.mission-status-strip.completed,
+.mission-status-strip.delivered {
+  background: #10B981;
+}
+
+.mission-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mission-type-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.mission-id-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0F172A;
+  margin: 0.15rem 0 0 0;
+}
+
+.mission-schedule-block {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Corridors Box */
+.mission-corridors-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: var(--radius-sm, 8px);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  position: relative;
+}
+
+.corridor-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.corridor-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.corridor-dot.pickup {
+  background: #F59E0B;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+}
+
+.corridor-dot.delivery {
+  background: #6366F1;
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+.corridor-divider-vertical {
+  width: 2px;
+  height: 12px;
+  background: #CBD5E1;
+  margin-left: 3px;
+}
+
+.corridor-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.corridor-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748B;
+}
+
+.corridor-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+/* Mission Agent Card */
+.mission-agent-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.95rem;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid transparent;
+  gap: 0.75rem;
+}
+
+.mission-agent-card.unassigned {
+  background: #FFFBEB;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.mission-agent-card.assigned {
+  background: #ECFDF5;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.agent-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.agent-avatar-squircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0F172A;
+  border: 1px solid #CBD5E1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.agent-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.agent-lead-label {
+  font-size: 0.65rem;
+  color: #64748B;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.agent-name-display {
+  font-size: 0.8125rem;
+  color: #0F172A;
+}
+
+/* Orders Panel */
+.mission-orders-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.orders-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.orders-items-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.order-item-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  background: #F1F5F9;
+  font-size: 0.75rem;
+  border: 1px solid #E2E8F0;
+}
+
+.order-chip-code {
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+  color: #4F46E5;
+}
+
+.order-chip-name {
+  font-weight: 500;
+  color: #0F172A;
+}
+
+.order-chip-vendor {
+  color: #64748B;
+  font-size: 0.6875rem;
+}
+
+/* Mission Telemetry Row */
+.mission-telemetry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  background: #F8FAFC;
+  border-radius: 6px;
+  border: 1px solid #E2E8F0;
+}
+
+.telemetry-col {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.telemetry-lbl {
+  font-size: 0.65rem;
+  color: #64748B;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.telemetry-data {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.telemetry-separator {
+  width: 1px;
+  height: 20px;
+  background: #CBD5E1;
+}
+
+.mission-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: auto;
+}
+
+/* Agent Candidate Selection Scroll in Modal */
+.agent-selection-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.agent-candidate-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  transition: all var(--transition-fast);
+}
+
+.agent-candidate-card:hover {
+  border-color: var(--accent-primary, #4F46E5);
+  background: #F8FAFF;
+}
+
+.agent-candidate-card.current-assigned {
+  background: #ECFDF5;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.candidate-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.candidate-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.candidate-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #0F172A;
+}
+
+.candidate-meta {
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+.candidate-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }

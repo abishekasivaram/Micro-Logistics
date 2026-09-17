@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { FileText, Download, Filter, CheckCircle, Info } from 'lucide-react';
-import '../seller/DashboardOverview.css';
+import { FileText, Download, Filter, CheckCircle, Info, Calendar, Sparkles, Printer } from 'lucide-react';
+import StatusBadge from '../../components/common/StatusBadge';
 
 const AdminReportsPage = () => {
   const [reportType, setReportType] = useState('Daily Orders');
@@ -29,89 +29,167 @@ const AdminReportsPage = () => {
 
   return (
     <div className="page-container">
+      {/* Header */}
       <div className="page-header">
-        <div>
-          <h2>System Reports & Export Center</h2>
-          <p>Generate, review, and export system audit reports for orders, seller performance, and aggregation efficiency.</p>
+        <div className="page-title-group">
+          <h2>
+            System Audit Reports & Data Export Center
+            <span className="telemetry-tag">
+              <span className="telemetry-pulse" /> COMPLIANCE EXPORT
+            </span>
+          </h2>
+          <p className="page-subtitle">
+            Generate cryptographically structured operational audits for transaction ledgers, merchant fulfilment, route aggregation, and SLA metrics.
+          </p>
         </div>
       </div>
 
       {toastMessage && (
-        <div className="alert alert-success" style={{ marginBottom: '16px' }}>
-          <CheckCircle size={18} /> {toastMessage}
+        <div className="modal-notice-banner" style={{ marginBottom: '1.5rem', background: '#ECFDF5', borderColor: 'rgba(16, 185, 129, 0.3)', color: '#065F46' }}>
+          <CheckCircle size={18} className="text-emerald" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Report Generator Controls */}
-      <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
-        <h4 style={{ margin: '0 0 16px', fontSize: '16px' }}>Generate Custom Operational Report</h4>
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.75rem' }}>
+        <div className="card-header" style={{ padding: '0 0 1.25rem 0', borderBottom: '1px solid var(--color-border)' }}>
+          <h4 className="card-title">
+            <FileText size={17} className="text-accent" />
+            Generate Custom Operational Audit
+          </h4>
+        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          <div>
-            <label htmlFor="admin-report-category" className="form-label">Report Category</label>
-            <select id="admin-report-category" className="form-control" value={reportType} onChange={e => setReportType(e.target.value)}>
-              <option value="Daily Orders">Daily Orders Summary</option>
-              <option value="Seller Performance">Seller Onboarding & Performance</option>
-              <option value="Delivery Performance">Delivery Batch & Agent Audit</option>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', margin: '1.5rem 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <label htmlFor="admin-report-category" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>
+              Report Category Domain
+            </label>
+            <select 
+              id="admin-report-category" 
+              className="form-select" 
+              value={reportType} 
+              onChange={e => setReportType(e.target.value)}
+            >
+              <option value="Daily Orders">Daily Orders & Fulfilment Summary</option>
+              <option value="Seller Performance">Seller Merchant Compliance & Performance</option>
+              <option value="Delivery Performance">Delivery Dispatch Batches & Fleet Audit</option>
               <option value="Aggregation Performance">Smart Order Aggregation Efficiency</option>
             </select>
           </div>
 
-          <div>
-            <label htmlFor="admin-report-period" className="form-label">Time Period</label>
-            <select id="admin-report-period" className="form-control" value={dateRange} onChange={e => setDateRange(e.target.value)}>
-              <option value="Today">Today</option>
-              <option value="This Week">This Week</option>
-              <option value="This Month">This Month</option>
-              <option value="Custom Date Range">Custom Date Range</option>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <label htmlFor="admin-report-period" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>
+              Audit Temporal Window
+            </label>
+            <select 
+              id="admin-report-period" 
+              className="form-select" 
+              value={dateRange} 
+              onChange={e => setDateRange(e.target.value)}
+            >
+              <option value="Today">Current Operational Day (Today)</option>
+              <option value="This Week">Rolling 7-Day Cycle</option>
+              <option value="This Month">Calendar Month to Date</option>
+              <option value="Custom Date Range">Custom Audit Range</option>
             </select>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-primary" onClick={() => handleExport('CSV')} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Download size={16} /> Export CSV
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-primary" 
+            onClick={() => handleExport('CSV')}
+          >
+            <Download size={15} /> Export Dataset (CSV)
           </button>
-          <button className="btn btn-outline" onClick={() => handleExport('PDF')} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <FileText size={16} /> Export PDF
+          <button 
+            className="btn btn-outline" 
+            onClick={() => handleExport('PDF')}
+          >
+            <Printer size={15} /> Print / Export PDF
           </button>
         </div>
       </div>
 
       {/* Sample Preview Table */}
-      <div className="card" style={{ padding: '20px' }}>
-        <h4 style={{ margin: '0 0 12px', fontSize: '15px' }}>Report Preview: {reportType} ({dateRange})</h4>
-        <div className="table-responsive">
+      <div className="table-card">
+        <div className="card-header">
+          <div>
+            <h4 className="card-title">
+              Report Data Preview: {reportType}
+            </h4>
+            <span className="card-subtitle-small">Temporal scope: {dateRange}</span>
+          </div>
+          <span className="badge-subtle">LIVE SAMPLE</span>
+        </div>
+
+        <div className="table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Timestamp</th>
-                <th>Metric Category</th>
-                <th>Recorded Value</th>
-                <th>Status</th>
+                <th>Generated Timestamp</th>
+                <th>Metric Dimension</th>
+                <th>Measured Platform Value</th>
+                <th>Audit Verification</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>{new Date().toLocaleDateString()}</td>
-                <td>Total Orders Processed</td>
-                <td>18 Orders</td>
-                <td><span className="badge badge-success">Completed</span></td>
+                <td>
+                  <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.8125rem' }}>
+                    {new Date().toISOString().split('T')[0]} 09:00:00
+                  </span>
+                </td>
+                <td>
+                  <span style={{ fontWeight: 600, color: '#0F172A' }}>Total Orders Processed</span>
+                </td>
+                <td>
+                  <span className="monetary-amount" style={{ color: '#4F46E5' }}>18 Consignments</span>
+                </td>
+                <td>
+                  <StatusBadge status="COMPLETED" />
+                </td>
               </tr>
               <tr>
-                <td>{new Date().toLocaleDateString()}</td>
-                <td>Aggregation Success Rate</td>
-                <td>78.5%</td>
-                <td><span className="badge badge-primary">Optimal</span></td>
+                <td>
+                  <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.8125rem' }}>
+                    {new Date().toISOString().split('T')[0]} 12:00:00
+                  </span>
+                </td>
+                <td>
+                  <span style={{ fontWeight: 600, color: '#0F172A' }}>Aggregation Success Rate</span>
+                </td>
+                <td>
+                  <span className="monetary-amount" style={{ color: '#059669' }}>78.5% Cluster Efficiency</span>
+                </td>
+                <td>
+                  <StatusBadge status="ACTIVE" />
+                </td>
               </tr>
               <tr>
-                <td>{new Date().toLocaleDateString()}</td>
-                <td>Active Delivery Batches</td>
-                <td>4 Batches</td>
-                <td><span className="badge badge-warning">Active</span></td>
+                <td>
+                  <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.8125rem' }}>
+                    {new Date().toISOString().split('T')[0]} 16:30:00
+                  </span>
+                </td>
+                <td>
+                  <span style={{ fontWeight: 600, color: '#0F172A' }}>Active Delivery Batches Coordinated</span>
+                </td>
+                <td>
+                  <span className="monetary-amount">4 Multi-Stop Batches</span>
+                </td>
+                <td>
+                  <StatusBadge status="ASSIGNED" />
+                </td>
               </tr>
             </tbody>
           </table>
+
+          <div className="table-footer">
+            <span>Report sample generated for preview • Verified by MicroLogi Core</span>
+            <span style={{ fontFamily: 'var(--font-family-mono)' }}>SHA256: 7f8a9e...21b</span>
+          </div>
         </div>
       </div>
     </div>

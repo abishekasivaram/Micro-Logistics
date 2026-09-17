@@ -1,7 +1,7 @@
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
-  background-color: var(--color-background);
+  background-color: var(--bg-canvas);
   position: relative;
 }
 
@@ -9,14 +9,16 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0; /* Important for flex children to allow shrinking */
+  min-width: 0;
   width: 100%;
+  background-color: var(--bg-canvas);
 }
 
 .dashboard-content {
   flex: 1;
-  overflow: auto; /* Allow content to scroll independent of sidebar */
+  overflow-y: auto;
   overflow-x: hidden;
+  background-color: var(--bg-canvas);
 }
 
 .sidebar-overlay {
@@ -31,7 +33,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(9, 11, 15, 0.7);
+    backdrop-filter: blur(2px);
     z-index: 40;
   }
 }

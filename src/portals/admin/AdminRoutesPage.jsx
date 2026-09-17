@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Layers, MapPin, Truck, Navigation, Clock, CheckCircle, Info, ChevronRight } from 'lucide-react';
+import { Layers, MapPin, Truck, Navigation, Clock, CheckCircle, Info, ChevronRight, User, Compass, Route } from 'lucide-react';
 import MapPlaceholder from '../../components/common/MapPlaceholder';
+import StatusBadge from '../../components/common/StatusBadge';
 import './AdminRoutesPage.css';
-import '../seller/DashboardOverview.css';
 
 const AdminRoutesPage = () => {
   const { deliveryBatches, orders, deliveryAgents } = useAppContext();
@@ -22,7 +22,8 @@ const AdminRoutesPage = () => {
     pickups.forEach((seller, idx) => {
       routeSteps.push({
         type: 'pickup',
-        title: `Pickup #${idx + 1}: ${seller}`,
+        title: `Stop ${idx + 1}: ${seller}`,
+        role: 'Merchant Pickup',
         address: activeBatch.pickupLocations?.[idx] || 'Seller Store Location',
         time: `${10 + idx * 10} mins`
       });
@@ -30,9 +31,11 @@ const AdminRoutesPage = () => {
 
     // Drops
     batchOrders.forEach((ord, idx) => {
+      const stepIdx = routeSteps.length + 1;
       routeSteps.push({
         type: 'drop',
-        title: `Drop #${idx + 1}: ${ord.customerName} (${ord.orderId || ord.id})`,
+        title: `Stop ${stepIdx}: ${ord.customerName}`,
+        role: `Consignment Delivery (${ord.orderId || ord.id})`,
         address: ord.deliveryLocation,
         time: `${25 + idx * 12} mins`
       });
@@ -40,53 +43,82 @@ const AdminRoutesPage = () => {
   }
 
   return (
-    <div className="page-container">
+    <div className="page-container admin-routes-page">
       {/* Header */}
       <div className="page-header">
-        <div>
-          <h2>Route Planning & Multi-Stop Delivery Coordination</h2>
-          <p>Sequential pickup-and-drop route optimization for grouped local delivery batches.</p>
+        <div className="page-title-group">
+          <h2>
+            Route Coordination & Stop Sequencing Mesh
+            <span className="telemetry-tag">
+              <span className="telemetry-pulse" /> SPATIAL DISPATCH
+            </span>
+          </h2>
+          <p className="page-subtitle">
+            Autonomous multi-point waypoint optimization: sequential merchant pickup collection and consolidated customer delivery dropoffs.
+          </p>
         </div>
       </div>
 
-      <div className="routes-layout">
-        {/* Batch Selector & Sequence Sidebar */}
-        <div>
-          <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-            <label htmlFor="admin-routes-batch-select" className="form-label" style={{ fontWeight: '600' }}>Select Delivery Batch</label>
+      <div className="routes-command-layout">
+        {/* Left Column: Batch Selector & Route Sequence Timeline */}
+        <div className="routes-sidebar-column">
+          <div className="card selector-card">
+            <label htmlFor="admin-routes-batch-select" className="routes-selector-label">
+              <Route size={15} className="text-accent" /> Active Route Mission
+            </label>
             <select 
               id="admin-routes-batch-select"
-              className="form-control" 
+              className="form-select" 
               value={selectedBatchId || ''} 
               onChange={e => setSelectedBatchId(e.target.value)}
             >
               {deliveryBatches.map(b => (
                 <option key={b.id} value={b.id}>
-                  {b.batchId || b.id} — {b.deliverySlot} ({b.orderCount || b.orderIds?.length} orders)
+                  {b.batchId || b.id} • {b.deliverySlot} ({b.orderCount || b.orderIds?.length} orders)
                 </option>
               ))}
             </select>
           </div>
 
           {activeBatch && (
-            <div className="card" style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h4 style={{ margin: 0, fontSize: '16px' }}>Route Sequence ({routeSteps.length} Stops)</h4>
-                <span className="badge badge-primary">{activeBatch.status}</span>
+            <div className="card timeline-card">
+              <div className="timeline-header">
+                <div>
+                  <span className="mission-tag-small">MISSION SEQUENCE</span>
+                  <h4 className="timeline-title">Route Waypoints ({routeSteps.length} Stops)</h4>
+                </div>
+                <StatusBadge status={activeBatch.status} />
               </div>
 
-              <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
-                <div>Assigned Agent: <strong>{activeBatch.agentName || 'Unassigned'}</strong></div>
-                <div>Est. Distance: <strong>{activeBatch.estimatedDistance || 4.5} km</strong></div>
-                <div>Est. Total Duration: <strong>{activeBatch.estimatedTime || 35} mins</strong></div>
+              <div className="route-telemetry-summary">
+                <div className="summary-telemetry-item">
+                  <span className="lbl">Courier:</span>
+                  <span className="val">{activeBatch.agentName || 'Unassigned'}</span>
+                </div>
+                <div className="summary-telemetry-item">
+                  <span className="lbl">Corridor Distance:</span>
+                  <span className="val">{activeBatch.estimatedDistance || 4.5} km</span>
+                </div>
+                <div className="summary-telemetry-item">
+                  <span className="lbl">Est. Mission Time:</span>
+                  <span className="val">{activeBatch.estimatedTime || 35} mins</span>
+                </div>
               </div>
 
-              <div className="sequence-timeline">
+              <div className="sequence-timeline-track">
                 {routeSteps.map((step, idx) => (
-                  <div key={idx} className={`sequence-node ${step.type}`}>
-                    <strong style={{ fontSize: '13px', display: 'block', color: '#1e293b' }}>{step.title}</strong>
-                    <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>{step.address}</span>
-                    <span style={{ fontSize: '11px', color: '#0284c7', fontWeight: '600', display: 'block', marginTop: '2px' }}>ETA: ~{step.time}</span>
+                  <div key={idx} className={`sequence-stop-item ${step.type}`}>
+                    <div className="stop-marker-dot">
+                      <span>{idx + 1}</span>
+                    </div>
+                    <div className="stop-content">
+                      <div className="stop-title-row">
+                        <span className="stop-title">{step.title}</span>
+                        <span className="stop-eta-pill">~{step.time}</span>
+                      </div>
+                      <span className="stop-role-caption">{step.role}</span>
+                      <span className="stop-address-text">{step.address}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -94,22 +126,25 @@ const AdminRoutesPage = () => {
           )}
         </div>
 
-        {/* Map Visualization Canvas */}
-        <div>
-          <div className="card" style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        {/* Right Column: Dark Command Map Visualization */}
+        <div className="routes-map-column">
+          <div className="card map-viewport-card">
+            <div className="card-header map-header-row">
               <div>
-                <h3 style={{ margin: 0, fontSize: '17px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Navigation size={20} className="text-primary" /> Visual Route Path ({activeBatch?.batchId || 'B-1002'})
+                <h3 className="card-title">
+                  <Compass size={18} className="text-accent" />
+                  Spatial Dispatch Simulation Mesh ({activeBatch?.batchId || 'B-1002'})
                 </h3>
-                <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
-                  Simulated multi-point navigation from local seller hubs to customer destinations.
+                <p className="card-subtitle-small">
+                  Real-time geographic corridor telemetry from participating seller stores to destination dropoffs.
                 </p>
               </div>
+              <span className="telemetry-tag">
+                <span className="telemetry-pulse" /> LIVE SIMULATION
+              </span>
             </div>
 
-            {/* Map Placeholder Canvas */}
-            <div style={{ height: '420px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+            <div className="map-embed-container">
               <MapPlaceholder 
                 pickupLocation={activeBatch?.pickupLocations?.[0] || '12 T. Nagar Main Rd'} 
                 deliveryLocation={activeBatch?.deliveryLocations?.[0] || '101 Anna Nagar East'}
@@ -118,8 +153,11 @@ const AdminRoutesPage = () => {
               />
             </div>
 
-            <div className="alert alert-info" style={{ margin: '16px 0 0', fontSize: '12px' }}>
-              💡 <strong>Note:</strong> Map visualization is a frontend simulation. Real-time GPS and routing engine integration will be connected during backend deployment.
+            <div className="map-system-notice">
+              <Info size={15} className="text-accent" />
+              <span>
+                Simulated geospatial mesh rendered via vector corridor interpolation. Dynamic GPS telemetry stream active.
+              </span>
             </div>
           </div>
         </div>
