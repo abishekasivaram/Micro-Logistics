@@ -3,18 +3,20 @@
 -- We use deterministic UUIDs to preserve relationships between records.
 
 -- 0. Insert into auth.users to satisfy foreign keys
-INSERT INTO auth.users (id, aud, role, email, raw_user_meta_data)
+INSERT INTO auth.users (id, aud, role, email, encrypted_password, raw_user_meta_data)
 VALUES 
-  ('11111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'priya@example.com', '{"role":"customer"}'),
-  ('22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'contact@nammachennai.com', '{"role":"vendor"}'),
-  ('33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'agent1@example.com', '{"role":"delivery_partner"}')
-ON CONFLICT (id) DO NOTHING;
+  ('11111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'priya@example.com', '$2b$10$ruXylSGuLLx89FBlXzfG5uVp2s0SlQlz61rKubt7Zn/G045Welqr.', '{"role":"customer"}'),
+  ('22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'contact@nammachennai.com', '$2b$10$ruXylSGuLLx89FBlXzfG5uVp2s0SlQlz61rKubt7Zn/G045Welqr.', '{"role":"vendor"}'),
+  ('33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'agent1@example.com', '$2b$10$ruXylSGuLLx89FBlXzfG5uVp2s0SlQlz61rKubt7Zn/G045Welqr.', '{"role":"delivery_partner"}'),
+  ('99999999-9999-9999-9999-999999999999', 'authenticated', 'authenticated', 'admin@example.com', '$2b$10$ruXylSGuLLx89FBlXzfG5uVp2s0SlQlz61rKubt7Zn/G045Welqr.', '{"role":"admin"}')
+ON CONFLICT (id) DO UPDATE SET encrypted_password = EXCLUDED.encrypted_password;
 
 -- 1. Profiles
 INSERT INTO profiles (id, username, email, phone, role) VALUES
   ('11111111-1111-1111-1111-111111111111', 'priyarajan', 'priya@example.com', '9876543210', 'customer'),
   ('22222222-2222-2222-2222-222222222222', 'nammachennai', 'contact@nammachennai.com', '9840123456', 'vendor'),
-  ('33333333-3333-3333-3333-333333333333', 'muthuvel', 'agent1@example.com', '9988776655', 'delivery_partner')
+  ('33333333-3333-3333-3333-333333333333', 'muthuvel', 'agent1@example.com', '9988776655', 'delivery_partner'),
+  ('99999999-9999-9999-9999-999999999999', 'admin', 'admin@example.com', '9000000000', 'admin')
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Customer Profiles

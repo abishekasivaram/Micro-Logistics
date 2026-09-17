@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { mockUsers } from '../data/sampleData';
 import { Eye, EyeOff, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
+import { supabase } from '../services/supabaseClient';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -28,63 +29,76 @@ const LoginPage = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showForgotModal]);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     
-    const searchId = usernameOrEmail.trim().toLowerCase();
+    const searchId = usernameOrEmail.trim();
 
-    // 1. Check Customer
-    const customerMatch = customers.find(c => 
-      c.id.toLowerCase() === searchId || 
-      (c.username && c.username.toLowerCase() === searchId)
-    );
+    try {
+      // 1. Resolve identifier to email using the new backend endpoint
+      const resolveRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: searchId })
+      });
 
-    // 2. Check Seller (Vendor)
-    const sellerMatch = vendors.find(v => 
-      (v.shopName && v.shopName.toLowerCase() === searchId) || 
-      (v.id && v.id.toLowerCase() === searchId) ||
-      (v.username && v.username.toLowerCase() === searchId)
-    );
+      const resolveData = await resolveRes.json();
+      
+      if (!resolveRes.ok || !resolveData.success) {
+        setErrorMsg(resolveData.message || "Account not found. Please check your User ID, Shop Name, or Agent ID.");
+        return;
+      }
 
-    // 3. Check Admin
-    const adminMatch = mockUsers.find(u => 
-      u.role === 'admin' && 
-      (u.id.toLowerCase() === searchId || (u.username && u.username.toLowerCase() === searchId))
-    );
+      const { email } = resolveData;
 
-    // 4. Check Delivery Partner
-    const deliveryMatch = deliveryAgents && deliveryAgents.find(d => 
-      d.id.toLowerCase() === searchId || 
-      (d.name && d.name.toLowerCase() === searchId)
-    );
+      // 2. Authenticate with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    // The application automatically determines the account type by searching the existing account data
-    let foundUser = customerMatch || sellerMatch || adminMatch || deliveryMatch;
+      if (authError || !authData.user) {
+        setErrorMsg("Incorrect password. Please try again.");
+        return;
+      }
 
-    if (!foundUser) {
-      setErrorMsg("Account not found. Please check your User ID, Shop Name, or Agent ID.");
-      return;
-    }
+      // 3. Determine role based on user metadata from Supabase
+      const role = authData.user.user_metadata?.role;
+      
+      // We still need to fetch the full profile for AppContext
+      // Note: We use the existing logic to construct the user object if needed, but optimally we should get it from DB.
+      // For now, construct the currentUser with role.
+      
+      let foundUser = {
+        id: searchId,
+        email,
+        role,
+        // add additional fields as needed or fetch from /api/v1/profile
+      };
 
-    const expectedPassword = foundUser.password || 'password123';
-    if (password !== expectedPassword) {
-      setErrorMsg("Incorrect password. Please try again.");
-      return;
-    }
-
-    if (customerMatch) {
-      setCurrentUser({ ...foundUser, role: 'customer' });
-      navigate('/customer-dashboard');
-    } else if (sellerMatch) {
-      setCurrentUser({ ...foundUser, role: 'vendor' });
-      navigate('/vendor-dashboard');
-    } else if (adminMatch) {
-      setCurrentUser({ ...foundUser, role: 'admin' });
-      navigate('/admin-dashboard');
-    } else if (deliveryMatch) {
-      setCurrentUser({ ...foundUser, role: 'delivery_partner' });
-      navigate('/delivery-dashboard');
+      if (role === 'customer') {
+        // Find existing mock customer to preserve ID structure for now, or use real data later
+        const customerMatch = customers.find(c => c.id.toLowerCase() === searchId.toLowerCase() || c.username === searchId);
+        setCurrentUser({ ...(customerMatch || foundUser), role: 'customer' });
+        navigate('/customer-dashboard');
+      } else if (role === 'vendor') {
+        const sellerMatch = vendors.find(v => v.id.toLowerCase() === searchId.toLowerCase() || v.username === searchId || v.shopName === searchId);
+        setCurrentUser({ ...(sellerMatch || foundUser), role: 'vendor' });
+        navigate('/vendor-dashboard');
+      } else if (role === 'admin') {
+        setCurrentUser({ ...foundUser, role: 'admin' });
+        navigate('/admin-dashboard');
+      } else if (role === 'delivery_partner') {
+        const deliveryMatch = deliveryAgents && deliveryAgents.find(d => d.id.toLowerCase() === searchId.toLowerCase() || d.name === searchId);
+        setCurrentUser({ ...(deliveryMatch || foundUser), role: 'delivery_partner' });
+        navigate('/delivery-dashboard');
+      } else {
+        setErrorMsg("Role not defined for this user.");
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("An unexpected error occurred during login. Please try again.");
     }
   };
 

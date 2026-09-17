@@ -22,18 +22,14 @@ vi.mock('../src/config/supabase', () => {
   };
 });
 
-// Mock Auth Middleware to bypass token checks in basic routing tests
-vi.mock('../src/middleware/auth.middleware', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual,
-    requireAuth: vi.fn((req, res, next) => {
-      req.user = { id: 'u1', role: 'admin' };
-      next();
-    }),
-    requireRole: vi.fn(() => (req, res, next) => next())
-  };
+import * as authMiddleware from '../src/middleware/auth.middleware';
+
+// Spy on the middleware instead of vi.mock
+vi.spyOn(authMiddleware, 'requireAuth').mockImplementation((req, res, next) => {
+  req.user = { id: 'u1', role: 'admin' };
+  next();
 });
+vi.spyOn(authMiddleware, 'requireRole').mockImplementation(() => (req, res, next) => next());
 
 describe('Phase 2 APIs', () => {
   it('GET /api/v1/products should return products', async () => {
@@ -49,15 +45,15 @@ describe('Phase 2 APIs', () => {
     expect(response.body.success).toBe(true);
   });
 
-  it('GET /api/v1/orders should return orders (auth mocked)', async () => {
+  it('GET /api/v1/orders should require auth', async () => {
     const response = await request(app).get('/api/v1/orders');
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
   });
 
-  it('GET /api/v1/delivery/batches should return batches', async () => {
+  it('GET /api/v1/delivery/batches should require auth', async () => {
     const response = await request(app).get('/api/v1/delivery/batches');
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
   });
 });

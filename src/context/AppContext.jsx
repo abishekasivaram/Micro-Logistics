@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../services/api';
 import { 
   orders as initialOrders, 
   vendors as initialVendors, 
@@ -41,14 +42,59 @@ export const AppProvider = ({ children }) => {
   // Legacy alias for deliveryGroups
   const deliveryGroups = deliveryBatches;
 
-  // Persist states to localStorage
-  useEffect(() => { localStorage.setItem('micrologi_orders', JSON.stringify(orders)); }, [orders]);
-  useEffect(() => { localStorage.setItem('micrologi_vendors', JSON.stringify(vendors)); }, [vendors]);
-  useEffect(() => { localStorage.setItem('micrologi_customers', JSON.stringify(customers)); }, [customers]);
-  useEffect(() => { localStorage.setItem('micrologi_deliveryAgents', JSON.stringify(deliveryAgents)); }, [deliveryAgents]);
-  useEffect(() => { localStorage.setItem('micrologi_deliveryBatches', JSON.stringify(deliveryBatches)); }, [deliveryBatches]);
-  useEffect(() => { localStorage.setItem('micrologi_products', JSON.stringify(products)); }, [products]);
-  useEffect(() => { localStorage.setItem('micrologi_notifications', JSON.stringify(notifications)); }, [notifications]);
+  // --- Initial Data Loading via API ---
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
+
+  useEffect(() => {
+    // Only load if user is logged in
+    if (!currentUser) return;
+
+    const loadData = async () => {
+      setGlobalLoading(true);
+      try {
+        // Fetch data concurrently
+        const [
+          prodRes,
+          vendRes,
+          ordRes,
+          batchRes,
+          agentRes
+        ] = await Promise.all([
+          api.get('/products'),
+          api.get('/vendors'),
+          api.get('/orders'),
+          api.get('/delivery/batches'),
+          api.get('/delivery/agents')
+        ]);
+
+        if (prodRes.data.success) setProducts(prodRes.data.data);
+        if (vendRes.data.success) setVendors(vendRes.data.data);
+        if (ordRes.data.success) setOrders(ordRes.data.data);
+        if (batchRes.data.success) setDeliveryBatches(batchRes.data.data);
+        if (agentRes.data.success) setDeliveryAgents(agentRes.data.data);
+        
+        setOfflineMode(false);
+      } catch (err) {
+        console.error("Failed to load API data. Falling back to local/sample data.", err);
+        setOfflineMode(true);
+        addNotification("API Unreachable. Running in offline/demo mode.", "system");
+        
+        // Load from sample data if empty
+        if (products.length === 0) setProducts(initialProducts);
+        if (vendors.length === 0) setVendors(initialVendors);
+        if (orders.length === 0) setOrders(initialOrders);
+        if (deliveryBatches.length === 0) setDeliveryBatches(initialDeliveryBatches);
+        if (deliveryAgents.length === 0) setDeliveryAgents(initialDeliveryAgents);
+      } finally {
+        setGlobalLoading(false);
+      }
+    };
+
+    loadData();
+  }, [currentUser]);
+
+  // Persist states to localStorage (Only non-API entities)
   useEffect(() => { localStorage.setItem('micrologi_cart', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('micrologi_currentUser', JSON.stringify(currentUser)); }, [currentUser]);
   useEffect(() => { localStorage.setItem('micrologi_adminSettings', JSON.stringify(adminSettings)); }, [adminSettings]);
@@ -148,7 +194,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // --- Orders & Checkout ---
-  const placeOrder = ({ deliveryAddress, contactPhone, deliveryDate, deliveryTimeSlot }) => {
+  const placeOrder = async ({ deliveryAddress, contactPhone, deliveryDate, deliveryTimeSlot }) => {
     if (cart.length === 0) return null;
 
     const itemsByVendor = {};
@@ -158,88 +204,54 @@ export const AppProvider = ({ children }) => {
       itemsByVendor[vId].push(item);
     });
 
-    const newOrdersCreated = [];
-
-    Object.keys(itemsByVendor).forEach((vId) => {
-      const vendorItems = itemsByVendor[vId];
-      const vendor = vendors.find(v => v.id === vId) || { name: vendorItems[0]?.product?.vendorName || 'Local Seller', address: 'Seller Hub' };
-      const orderTotal = vendorItems.reduce((sum, i) => sum + (i.product.price * i.quantity), 0);
-      const generatedId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-
-      const newOrder = {
-        id: generatedId,
-        orderId: generatedId,
-        customerId: currentUser?.id || 'c1',
-        customerName: currentUser?.name || 'Customer',
-        vendorId: vId,
-        vendorName: vendor.name,
-        items: vendorItems.map(i => ({
-          productId: i.product.id,
-          name: i.product.name,
-          qty: i.quantity,
-          price: i.product.price
-        })),
-        total: orderTotal,
-        orderStatus: 'PLACED',
-        status: 'PLACED',
-        deliveryStatus: 'Order Placed',
-        aggregationStatus: 'Waiting for Aggregation',
-        pickupLocation: vendor.address || 'Seller Hub',
-        deliveryLocation: deliveryAddress || currentUser?.address || '101 Anna Nagar East, Chennai',
-        deliveryDate: deliveryDate,
-        deliveryTimeSlot: deliveryTimeSlot,
-        date: new Date().toISOString(),
-        batchId: null,
-        deliveryGroupId: null,
-        groupedWith: [],
-        assignedAgent: null
-      };
-
-      newOrdersCreated.push(newOrder);
-    });
-
-    setOrders(prev => [...newOrdersCreated, ...prev]);
-    clearCart();
-    addNotification(`Success! ${newOrdersCreated.length} order(s) placed for delivery on ${deliveryDate} (${deliveryTimeSlot}).`, 'order');
-    return newOrdersCreated;
+    try {
+      const newOrdersCreated = [];
+      for (const vId of Object.keys(itemsByVendor)) {
+        const vendorItems = itemsByVendor[vId];
+        const payload = {
+          vendorId: vId,
+          items: vendorItems.map(i => ({
+            productId: i.product.id,
+            qty: i.quantity,
+            price: i.product.price
+          })),
+          deliveryLocation: deliveryAddress || currentUser?.address,
+          deliveryDate,
+          deliveryTimeSlot
+        };
+        
+        const res = await api.post('/orders', payload);
+        if (res.data.success) {
+          newOrdersCreated.push(res.data.data.orderId);
+        }
+      }
+      
+      clearCart();
+      addNotification(`Success! ${newOrdersCreated.length} order(s) placed for delivery.`, 'order');
+      
+      // Refresh orders
+      const ordRes = await api.get('/orders');
+      if (ordRes.data.success) setOrders(ordRes.data.data);
+      
+      return newOrdersCreated;
+    } catch (err) {
+      console.error(err);
+      addNotification("Failed to place order via API.", "error");
+      return null;
+    }
   };
 
-  const updateOrderStatus = (orderId, status) => {
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId || o.orderId === orderId) {
-        let deliveryStatus = o.deliveryStatus;
-        let aggregationStatus = o.aggregationStatus;
-
-        if (status === 'CONFIRMED') {
-          deliveryStatus = 'Order Confirmed by Seller';
-        } else if (status === 'PREPARING') {
-          deliveryStatus = 'Item Packaging in Progress';
-        } else if (status === 'READY_FOR_DELIVERY') {
-          deliveryStatus = 'Ready for Delivery';
-          aggregationStatus = 'Waiting for Aggregation';
-        } else if (status === 'ASSIGNED') {
-          deliveryStatus = 'Assigned for Delivery';
-          aggregationStatus = 'Assigned';
-        } else if (status === 'PICKED_UP') {
-          deliveryStatus = 'Picked Up - In Transit to Delivery';
-          aggregationStatus = 'Out for Delivery';
-        } else if (status === 'OUT_FOR_DELIVERY') {
-          deliveryStatus = 'Out for Delivery';
-          aggregationStatus = 'Out for Delivery';
-        } else if (status === 'DELIVERED') {
-          deliveryStatus = 'Delivered to Customer';
-          aggregationStatus = 'Delivered';
-        } else if (status === 'CANCELLED') {
-          deliveryStatus = 'Cancelled';
-          aggregationStatus = 'Cancelled';
-        }
-
-        return { ...o, status, orderStatus: status, deliveryStatus, aggregationStatus };
+  const updateOrderStatus = async (orderId, status) => {
+    try {
+      const res = await api.patch(`/orders/${orderId}/status`, { status });
+      if (res.data.success) {
+        setOrders(prev => prev.map(o => o.id === orderId || o.orderId === orderId ? res.data.data : o));
+        addNotification(`Order ${orderId} updated successfully.`, 'order');
       }
-      return o;
-    }));
-    
-    addNotification(`Order ${orderId} updated to status: ${status.replace(/_/g, ' ')}`, 'order');
+    } catch (err) {
+      console.error(err);
+      addNotification(`Failed to update order ${orderId}.`, 'error');
+    }
   };
 
   const requestDeliverySlotChange = (orderId, newSlot) => {
@@ -265,161 +277,80 @@ export const AppProvider = ({ children }) => {
 
   // --- Admin Delivery Batches & Agent Assignment ---
   // Step 1 of Workflow: Batch Created BEFORE Agent is assigned
-  const createDeliveryBatch = (orderIds, batchData = {}) => {
-    const generatedBatchId = `B-${Math.floor(1000 + Math.random() * 9000)}`;
-    const batchOrders = orders.filter(o => orderIds.includes(o.id));
-    
-    const sellerIds = Array.from(new Set(batchOrders.map(o => o.vendorId || o.sellerId)));
-    const sellerNames = Array.from(new Set(batchOrders.map(o => o.vendorName || o.sellerName)));
-    const pickupLocations = Array.from(new Set(batchOrders.map(o => o.pickupLocation)));
-    const deliveryLocations = batchOrders.map(o => o.deliveryLocation);
-
-    const newBatch = {
-      id: generatedBatchId,
-      batchId: generatedBatchId,
-      orderIds: orderIds,
-      sellerIds: sellerIds,
-      sellerNames: sellerNames,
-      agentId: null,
-      agentName: null,
-      pickupLocations: pickupLocations,
-      deliveryLocations: deliveryLocations,
-      deliveryDate: batchOrders[0]?.deliveryDate || new Date().toISOString().split('T')[0],
-      deliverySlot: batchOrders[0]?.deliveryTimeSlot || '9:00 AM – 1:00 PM',
-      orderCount: orderIds.length,
-      estimatedDistance: batchData.estimatedDistance || parseFloat((2.0 + orderIds.length * 1.5).toFixed(1)),
-      estimatedTime: batchData.estimatedTime || (15 + orderIds.length * 10),
-      status: 'Pending Assignment',
-      aggregationStatus: 'Batch Created',
-      compatibilityScore: batchData.compatibilityScore || 90,
-      dateCreated: new Date().toISOString()
-    };
-
-    setDeliveryBatches(prev => [newBatch, ...prev]);
-
-    // Update member orders
-    setOrders(prev => prev.map(o => {
-      if (orderIds.includes(o.id)) {
-        return {
-          ...o,
-          batchId: generatedBatchId,
-          deliveryGroupId: generatedBatchId,
-          aggregationStatus: 'Batch Created',
-          deliveryStatus: 'Delivery Batch Created'
-        };
+  const createDeliveryBatch = async (orderIds, batchData = {}) => {
+    try {
+      const res = await api.post('/delivery/batches', { orderIds });
+      if (res.data.success) {
+        const newBatch = res.data.data;
+        setDeliveryBatches(prev => [newBatch, ...prev]);
+        
+        // Refresh orders since their batch assignment changed
+        const ordRes = await api.get('/orders');
+        if (ordRes.data.success) setOrders(ordRes.data.data);
+        
+        addNotification(`Delivery Batch ${newBatch.batchId} created.`, 'aggregation');
+        return newBatch;
       }
-      return o;
-    }));
-
-    addNotification(`Delivery Batch ${generatedBatchId} created. Ready for agent assignment.`, 'aggregation');
-    return newBatch;
+    } catch (err) {
+      console.error(err);
+      addNotification("Failed to create delivery batch.", "error");
+      return null;
+    }
   };
 
   // Step 2 of Workflow: Assign Agent to existing Delivery Batch
-  const assignAgentToBatch = (batchId, agentId) => {
-    const agent = deliveryAgents.find(a => a.id === agentId);
-    if (!agent) return false;
-
-    setDeliveryBatches(prev => prev.map(b => {
-      if (b.id === batchId || b.batchId === batchId) {
-        return {
-          ...b,
-          agentId: agent.id,
-          agentName: agent.name,
-          status: 'Assigned',
-          aggregationStatus: 'Assigned'
-        };
+  const assignAgentToBatch = async (batchId, agentId) => {
+    try {
+      const res = await api.post(`/delivery/batches/${batchId}/assign`, { agentId });
+      if (res.data.success) {
+        setDeliveryBatches(prev => prev.map(b => b.id === batchId || b.batchId === batchId ? res.data.data.batch : b));
+        
+        // Refresh orders and agents
+        const [ordRes, agentRes] = await Promise.all([
+          api.get('/orders'),
+          api.get('/delivery/agents')
+        ]);
+        if (ordRes.data.success) setOrders(ordRes.data.data);
+        if (agentRes.data.success) setDeliveryAgents(agentRes.data.data);
+        
+        addNotification(`Agent assigned to Batch ${batchId}.`, 'delivery');
+        return true;
       }
-      return b;
-    }));
-
-    // Update constituent orders
-    const targetBatch = deliveryBatches.find(b => b.id === batchId || b.batchId === batchId);
-    const affectedOrderIds = targetBatch ? targetBatch.orderIds : [];
-
-    setOrders(prev => prev.map(o => {
-      if (affectedOrderIds.includes(o.id)) {
-        return {
-          ...o,
-          assignedAgent: `${agent.name} (${agent.phone})`,
-          status: 'ASSIGNED',
-          orderStatus: 'ASSIGNED',
-          deliveryStatus: 'Assigned for Delivery',
-          aggregationStatus: 'Assigned'
-        };
-      }
-      return o;
-    }));
-
-    // Update Agent state
-    setDeliveryAgents(prev => prev.map(a => {
-      if (a.id === agentId) {
-        return {
-          ...a,
-          status: 'On Delivery',
-          availability: 'On Delivery',
-          currentOrders: (a.currentOrders || 0) + affectedOrderIds.length
-        };
-      }
-      return a;
-    }));
-
-    addNotification(`Agent ${agent.name} assigned to Batch ${batchId}.`, 'delivery');
-    return true;
+    } catch (err) {
+      console.error(err);
+      addNotification(`Failed to assign agent to batch.`, 'error');
+      return false;
+    }
   };
 
-  const updateBatchStatus = (batchId, newStatus) => {
-    setDeliveryBatches(prev => prev.map(b => {
-      if (b.id === batchId || b.batchId === batchId) {
-        let aggStatus = b.aggregationStatus;
-        if (newStatus === 'Assigned') aggStatus = 'Assigned';
-        else if (newStatus === 'Pickup in Progress') aggStatus = 'Pickup in Progress';
-        else if (newStatus === 'Out for Delivery') aggStatus = 'Out for Delivery';
-        else if (newStatus === 'Completed' || newStatus === 'Delivered') aggStatus = 'Delivered';
+  const updateBatchStatus = async (batchId, newStatus) => {
+    try {
+      // The backend expects specific enum values for batch status.
+      // E.g. 'PICKUP_IN_PROGRESS', 'OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED'
+      let mappedStatus = newStatus;
+      if (newStatus === 'Pickup in Progress') mappedStatus = 'PICKUP_IN_PROGRESS';
+      if (newStatus === 'Picked Up') mappedStatus = 'PICKED_UP';
+      if (newStatus === 'Out for Delivery') mappedStatus = 'OUT_FOR_DELIVERY';
+      if (newStatus === 'Completed' || newStatus === 'Delivered') mappedStatus = 'COMPLETED';
 
-        return { ...b, status: newStatus, aggregationStatus: aggStatus };
+      const res = await api.patch(`/delivery/batches/${batchId}/status`, { status: mappedStatus });
+      if (res.data.success) {
+        setDeliveryBatches(prev => prev.map(b => b.id === batchId || b.batchId === batchId ? res.data.data : b));
+        
+        // Refresh orders and agents as they are deeply affected by batch status changes
+        const [ordRes, agentRes] = await Promise.all([
+          api.get('/orders'),
+          api.get('/delivery/agents')
+        ]);
+        if (ordRes.data.success) setOrders(ordRes.data.data);
+        if (agentRes.data.success) setDeliveryAgents(agentRes.data.data);
+        
+        addNotification(`Batch ${batchId} status updated to: ${newStatus}`, 'delivery');
       }
-      return b;
-    }));
-
-    const targetBatch = deliveryBatches.find(b => b.id === batchId || b.batchId === batchId);
-    if (targetBatch) {
-      setOrders(prev => prev.map(o => {
-        if (targetBatch.orderIds.includes(o.id)) {
-          let orderCode = o.status;
-          let delText = o.deliveryStatus;
-          let aggText = o.aggregationStatus;
-
-          if (newStatus === 'Out for Delivery') {
-            orderCode = 'OUT_FOR_DELIVERY';
-            delText = 'Out for Delivery';
-            aggText = 'Out for Delivery';
-          } else if (newStatus === 'Completed' || newStatus === 'Delivered') {
-            orderCode = 'DELIVERED';
-            delText = 'Delivered to Customer';
-            aggText = 'Delivered';
-          }
-
-          return { ...o, status: orderCode, orderStatus: orderCode, deliveryStatus: delText, aggregationStatus: aggText };
-        }
-        return o;
-      }));
-
-      // Free agent if completed
-      if ((newStatus === 'Completed' || newStatus === 'Delivered') && targetBatch.agentId) {
-        setDeliveryAgents(prev => prev.map(a => {
-          if (a.id === targetBatch.agentId) {
-            return { ...a, status: 'Available', availability: 'Available', currentOrders: Math.max(0, (a.currentOrders || 1) - targetBatch.orderCount) };
-          }
-          return a;
-        }));
-        if (currentUser && currentUser.id === targetBatch.agentId) {
-          setCurrentUser(prev => ({ ...prev, status: 'Available', availability: 'Available' }));
-        }
-      }
+    } catch (err) {
+      console.error(err);
+      addNotification(`Failed to update batch status.`, 'error');
     }
-
-    addNotification(`Batch ${batchId} status updated to: ${newStatus}`, 'delivery');
   };
 
   const addDeliveryAgent = (agentData) => {
@@ -468,52 +399,72 @@ export const AppProvider = ({ children }) => {
     addNotification(`Profile updated successfully.`, 'system');
   };
 
-  const updateSellerProfile = (updatedVendorFields) => {
+  const updateSellerProfile = async (updatedVendorFields) => {
     if (!currentUser || currentUser.role !== 'vendor') return;
     const patch = { ...updatedVendorFields };
-    if (patch.name && !patch.shopName) {
-      patch.shopName = patch.name;
-    } else if (patch.shopName && !patch.name) {
-      patch.name = patch.shopName;
+    if (patch.name && !patch.shopName) patch.shopName = patch.name;
+    else if (patch.shopName && !patch.name) patch.name = patch.shopName;
+    
+    try {
+      // In Phase 2, vendors API is /api/v1/vendors/:id
+      const res = await api.put(`/vendors/${currentUser.id}`, patch);
+      if (res.data.success) {
+        const updatedUser = { ...currentUser, ...patch };
+        setCurrentUser(updatedUser);
+        setVendors(prev => prev.map(v => v.id === currentUser.id ? { ...v, ...patch } : v));
+        addNotification(`Business profile updated successfully.`, 'system');
+      }
+    } catch (err) {
+      console.error(err);
+      addNotification("Failed to update business profile.", "error");
     }
-    const updatedUser = { ...currentUser, ...patch };
-    setCurrentUser(updatedUser);
-    setVendors(prev => prev.map(v => v.id === currentUser.id ? { ...v, ...patch } : v));
-    addNotification(`Business profile updated successfully.`, 'system');
   };
 
   // --- Products CRUD ---
-  const addProduct = (product) => {
-    const newProduct = { 
-      ...product, 
-      id: `p${Date.now()}`,
-      vendorId: currentUser?.role === 'vendor' ? currentUser.id : (product.vendorId || 'v1'),
-      vendorName: currentUser?.role === 'vendor' ? currentUser.name : (product.vendorName || 'Local Seller'),
-      status: (product.stock && Number(product.stock) > 0) ? 'In Stock' : 'Out of Stock'
-    };
-    setProducts(prev => [...prev, newProduct]);
-    addNotification(`New product added: ${product.name}`, 'system');
+  const addProduct = async (product) => {
+    try {
+      const payload = {
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        stock: product.stock,
+        prepTime: product.prepTime || '5 mins',
+        vendorId: currentUser?.role === 'vendor' ? currentUser.id : (product.vendorId || 'v1')
+      };
+      
+      const res = await api.post('/products', payload);
+      if (res.data.success) {
+        // Refresh products list
+        const pRes = await api.get('/products');
+        if (pRes.data.success) setProducts(pRes.data.data);
+        addNotification(`New product added: ${product.name}`, 'system');
+      }
+    } catch (err) {
+      console.error(err);
+      addNotification("Failed to add product.", "error");
+    }
   };
   
-  const updateProduct = (id, updatedFields) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id === id) {
-        const updated = { ...p, ...updatedFields };
-        if (updated.stock !== undefined) {
-          const numStock = Number(updated.stock);
-          if (numStock > 10) updated.status = 'In Stock';
-          else if (numStock > 0) updated.status = 'Low Stock';
-          else updated.status = 'Out of Stock';
-        }
-        return updated;
+  const updateProduct = async (id, updatedFields) => {
+    try {
+      const res = await api.put(`/products/${id}`, updatedFields);
+      if (res.data.success) {
+        // Refresh products list to get calculated status based on stock
+        const pRes = await api.get('/products');
+        if (pRes.data.success) setProducts(pRes.data.data);
+        addNotification(`Product updated successfully.`, 'system');
       }
-      return p;
-    }));
+    } catch (err) {
+      console.error(err);
+      addNotification("Failed to update product.", "error");
+    }
   };
   
   const deleteProduct = (id) => {
+    // Delete product API endpoint might not be in Phase 2 contract, falling back to local only if necessary
+    // But assuming it is, or we'll mock it temporarily
     setProducts(prev => prev.filter(p => p.id !== id));
-    addNotification(`Product deleted.`, 'system');
+    addNotification(`Product deleted locally.`, 'system');
   };
 
   // --- Notifications CRUD ---
@@ -572,7 +523,8 @@ export const AppProvider = ({ children }) => {
       registerCustomer, registerSeller, placeOrder,
       updateUserProfile, updateSellerProfile,
       adminSettings, updateAdminSettings,
-      getAgentBatches, getAgentOrders, confirmOrderPickup, confirmOrderDelivery
+      getAgentBatches, getAgentOrders, confirmOrderPickup, confirmOrderDelivery,
+      globalLoading, offlineMode
     }}>
       {children}
     </AppContext.Provider>
