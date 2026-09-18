@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppContext } from '../../context/AppContext';
-import { Navigation, Plus, Search, UserCheck, Phone, Edit, X, Star, Truck, UserX, Shield, Bike } from 'lucide-react';
+import { Navigation, Plus, Search, UserCheck, Phone, Edit, X, Star, Truck, UserX, Shield, Bike, PowerOff } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const DeliveryAgentsPage = () => {
   const { deliveryAgents, addDeliveryAgent, updateDeliveryAgent, deliveryBatches } = useAppContext();
@@ -10,6 +11,7 @@ const DeliveryAgentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [offlineModalData, setOfflineModalData] = useState(null);
   const [newAgent, setNewAgent] = useState({ name: '', phone: '', currentArea: 'T. Nagar', capacity: 5, vehicle: 'Electric Scooter' });
 
   useEffect(() => {
@@ -188,10 +190,22 @@ const DeliveryAgentsPage = () => {
                     <td style={{ textAlign: 'right' }}>
                       <button 
                         className={`btn btn-sm ${isAvail ? 'btn-danger' : 'btn-outline'}`}
-                        onClick={() => updateDeliveryAgent(a.id, { 
-                          status: isAvail ? 'Offline' : 'Available', 
-                          availability: isAvail ? 'Offline' : 'Available' 
-                        })}
+                        onClick={() => {
+                          if (isAvail) {
+                            setOfflineModalData({
+                              id: a.id,
+                              name: a.name,
+                              phone: a.phone,
+                              area: a.currentArea || 'T. Nagar',
+                              vehicle: a.vehicle || 'Electric Scooter'
+                            });
+                          } else {
+                            updateDeliveryAgent(a.id, { 
+                              status: 'Available', 
+                              availability: 'Available' 
+                            });
+                          }
+                        }}
                         style={{ minWidth: '96px' }}
                       >
                         {isAvail ? 'Set Offline' : 'Set Active'}
@@ -313,6 +327,30 @@ const DeliveryAgentsPage = () => {
         </div>,
         document.body
       )}
+
+      {/* Confirmation Warning Modal for Set Offline */}
+      <ConfirmationModal
+        isOpen={Boolean(offlineModalData)}
+        onClose={() => setOfflineModalData(null)}
+        onConfirm={() => {
+          if (offlineModalData) {
+            updateDeliveryAgent(offlineModalData.id, {
+              status: 'Offline',
+              availability: 'Offline'
+            });
+            setOfflineModalData(null);
+          }
+        }}
+        title="Set Delivery Agent Offline?"
+        message="Taking this courier agent offline will immediately remove them from the active corridor dispatch pool. Any pending automated consignment pairings for their route will be reassigned."
+        subjectName={offlineModalData?.name}
+        subjectInfo={`Phone: ${offlineModalData?.phone} | Zone: ${offlineModalData?.area} | Vehicle: ${offlineModalData?.vehicle}`}
+        confirmText="Set Offline"
+        cancelText="Keep Active"
+        variant="warning"
+        badgeText="FLEET DISPATCH WARNING"
+        icon={PowerOff}
+      />
     </div>
   );
 };

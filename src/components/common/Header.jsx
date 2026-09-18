@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import ConfirmationModal from './ConfirmationModal';
 import { 
   Search, Bell, ShoppingCart, User, Check, X, Menu, Shield, 
   Settings, LogOut, ChevronDown, ExternalLink, Activity, Radio
@@ -12,6 +13,7 @@ const Header = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
@@ -209,7 +211,7 @@ const Header = ({ onMenuClick }) => {
                   className="profile-menu-item text-danger"
                   onClick={() => {
                     setShowProfileMenu(false);
-                    handleLogout();
+                    setShowLogoutModal(true);
                   }}
                 >
                   <LogOut size={16} />
@@ -220,6 +222,22 @@ const Header = ({ onMenuClick }) => {
           )}
         </div>
       </div>
+
+      {/* Professional Logout Warning Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="Sign Out of Control Tower?"
+        message="Are you sure you want to end your active session? You will be returned to the secure login gateway."
+        subjectName={userGreetingName}
+        subjectInfo={`Active Account: ${currentUser?.email || 'admin@micrologi.com'} | Role: ${roleLabel}`}
+        confirmText="Confirm Sign Out"
+        cancelText="Stay Logged In"
+        variant="danger"
+        badgeText="SECURITY PROTOCOL"
+        icon={LogOut}
+      />
     </header>
   );
 };

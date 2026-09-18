@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
+import ConfirmationModal from './ConfirmationModal';
 import { 
   LayoutDashboard, ShoppingBag, Package, Truck, Layers, Users, Bell, 
   Settings, HelpCircle, LogOut, Map, User, Navigation, Calendar, 
@@ -12,12 +13,17 @@ import './Sidebar.css';
 const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
   const { currentUser, setCurrentUser, cart, notifications } = useAppContext();
   const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const role = currentUser?.role || 'admin'; 
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
   const unreadNotifCount = notifications.filter(n => !n.isRead).length;
 
-  const handleLogout = (e) => {
+  const handleLogoutClick = (e) => {
     e.preventDefault();
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
     setCurrentUser(null);
     navigate('/login');
   };
@@ -301,16 +307,16 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
         {role === 'delivery_partner' && renderDeliveryPartnerLinks()}
 
         {/* Bottom Utility Actions */}
-        <div className="nav-divider"></div>
-        <div className="nav-group">
+        <div className="nav-bottom-group">
+          <div className="nav-divider"></div>
           {role !== 'admin' && role !== 'delivery_partner' && (
             <>
               <NavLink to="/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Settings">
-                <div className="nav-icon-wrapper"><Settings size={19} /></div>
+                <div className="nav-icon-wrapper"><Settings size={18} /></div>
                 <span className="nav-label">Settings</span>
               </NavLink>
               <NavLink to="/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Help & Support">
-                <div className="nav-icon-wrapper"><HelpCircle size={19} /></div>
+                <div className="nav-icon-wrapper"><HelpCircle size={18} /></div>
                 <span className="nav-label">Help & Support</span>
               </NavLink>
             </>
@@ -318,13 +324,13 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
 
           {role === 'delivery_partner' && (
             <NavLink to="/delivery/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Help">
-              <div className="nav-icon-wrapper"><HelpCircle size={19} /></div>
+              <div className="nav-icon-wrapper"><HelpCircle size={18} /></div>
               <span className="nav-label">Help</span>
             </NavLink>
           )}
 
-          <button onClick={handleLogout} className="nav-item nav-logout-btn" title="Sign Out">
-            <div className="nav-icon-wrapper"><LogOut size={19} /></div>
+          <button onClick={handleLogoutClick} className="nav-item nav-logout-btn" title="Sign Out">
+            <div className="nav-icon-wrapper"><LogOut size={18} /></div>
             <span className="nav-label">Sign Out</span>
           </button>
         </div>
@@ -346,6 +352,21 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
           )}
         </button>
       </div>
+      {/* Professional Logout Warning Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleConfirmLogout}
+        title="Sign Out of Control Tower?"
+        message="Are you sure you want to end your active session? You will be returned to the secure login gateway."
+        subjectName={currentUser?.name || currentUser?.shopName || 'System Administrator'}
+        subjectInfo={`Active Account: ${currentUser?.email || 'admin@micrologi.com'} | Role: ${role.toUpperCase()}`}
+        confirmText="Confirm Sign Out"
+        cancelText="Stay Logged In"
+        variant="danger"
+        badgeText="SECURITY PROTOCOL"
+        icon={LogOut}
+      />
     </aside>
   );
 };

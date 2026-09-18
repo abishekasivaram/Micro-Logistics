@@ -320,9 +320,18 @@ const AdminDashboard = () => {
                 </div>
 
                 {idx < pipelineSteps.length - 1 && (
-                  <div className="pipeline-ribbon-connector">
+                  <div 
+                    className={`pipeline-ribbon-connector connector-${step.themeClass} ${hasCount ? 'is-active-connector' : ''}`}
+                    style={{
+                      '--connector-color': step.color,
+                      '--connector-bg': step.bg,
+                      '--next-color': pipelineSteps[idx + 1].color,
+                      '--next-bg': pipelineSteps[idx + 1].bg
+                    }}
+                    aria-label={`Progress to ${pipelineSteps[idx + 1].label}`}
+                  >
                     <div className="connector-chevron-arrow">
-                      <ChevronRight size={16} />
+                      <ChevronRight size={10} strokeWidth={2.2} />
                     </div>
                   </div>
                 )}

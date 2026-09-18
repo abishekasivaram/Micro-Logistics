@@ -8,6 +8,7 @@ import {
   DollarSign, TrendingUp, Check
 } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 import './AdminSellersPage.css';
 
 const AdminSellersPage = () => {
@@ -18,6 +19,7 @@ const AdminSellersPage = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [areaFilter, setAreaFilter] = useState('ALL');
   const [selectedSeller, setSelectedSeller] = useState(null);
+  const [suspendModalData, setSuspendModalData] = useState(null);
   const [inspectTab, setInspectTab] = useState('overview'); // 'overview' | 'catalog' | 'orders' | 'compliance'
 
   useEffect(() => {
@@ -223,7 +225,7 @@ const AdminSellersPage = () => {
                         {sellerStatus === 'Active' && (
                           <button 
                             className="btn btn-danger btn-sm"
-                            onClick={() => updateSellerStatus(v.id, 'Suspended')}
+                            onClick={() => setSuspendModalData(v)}
                             title="Suspend Seller Access"
                           >
                             <Ban size={13} /> Suspend
@@ -633,10 +635,7 @@ const AdminSellersPage = () => {
                   {selectedSeller.status === 'Active' && (
                     <button 
                       className="btn btn-danger btn-sm"
-                      onClick={() => {
-                        updateSellerStatus(selectedSeller.id, 'Suspended');
-                        setSelectedSeller({ ...selectedSeller, status: 'Suspended' });
-                      }}
+                      onClick={() => setSuspendModalData(selectedSeller)}
                     >
                       <Ban size={14} /> Suspend Store Access
                     </button>
@@ -683,6 +682,30 @@ const AdminSellersPage = () => {
           document.body
         );
       })()}
+
+      {/* Confirmation Warning Modal for Suspending Seller */}
+      <ConfirmationModal
+        isOpen={Boolean(suspendModalData)}
+        onClose={() => setSuspendModalData(null)}
+        onConfirm={() => {
+          if (suspendModalData) {
+            updateSellerStatus(suspendModalData.id, 'Suspended');
+            if (selectedSeller && selectedSeller.id === suspendModalData.id) {
+              setSelectedSeller({ ...selectedSeller, status: 'Suspended' });
+            }
+            setSuspendModalData(null);
+          }
+        }}
+        title="Suspend Merchant Store Access?"
+        message="Suspending this seller will revoke their product visibility on the customer marketplace and freeze automated consignment fulfillment until administrative re-verification."
+        subjectName={suspendModalData?.shopName || suspendModalData?.name}
+        subjectInfo={`Store ID: ${suspendModalData?.id} | Category: ${suspendModalData?.category || 'General'} | Owner: ${suspendModalData?.name}`}
+        confirmText="Suspend Store"
+        cancelText="Cancel"
+        variant="danger"
+        badgeText="COMPLIANCE SUSPENSION"
+        icon={Ban}
+      />
     </div>
   );
 };

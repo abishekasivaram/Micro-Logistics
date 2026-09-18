@@ -1,0 +1,296 @@
+/* ==========================================================================
+   ENTERPRISE CONFIRMATION & WARNING MODAL
+   Crisp, modern SaaS warning dialog with glassmorphic backdrop
+   ========================================================================== */
+
+.confirm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: confirmBackdropFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes confirmBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.confirm-modal-card {
+  width: 100%;
+  max-width: 440px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 
+    0 25px 50px -12px rgba(15, 23, 42, 0.25),
+    0 0 0 1px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  position: relative;
+  animation: confirmModalScale 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes confirmModalScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Accent Ribbon on Top */
+.confirm-modal-ribbon {
+  height: 4px;
+  width: 100%;
+}
+
+.confirm-modal-ribbon.variant-danger {
+  background: linear-gradient(90deg, #EF4444 0%, #DC2626 100%);
+}
+
+.confirm-modal-ribbon.variant-warning {
+  background: linear-gradient(90deg, #F59E0B 0%, #D97706 100%);
+}
+
+.confirm-modal-ribbon.variant-info {
+  background: linear-gradient(90deg, #6366F1 0%, #4F46E5 100%);
+}
+
+/* Header & Close Button */
+.confirm-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.5rem 1.5rem 0.75rem 1.5rem;
+  gap: 1rem;
+}
+
+.confirm-icon-and-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.confirm-icon-squircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.confirm-icon-squircle.variant-danger {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15);
+}
+
+.confirm-icon-squircle.variant-warning {
+  background: #FEF3C7;
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+}
+
+.confirm-icon-squircle.variant-info {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.15);
+}
+
+.confirm-badge-tag {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.confirm-badge-tag.variant-danger {
+  background: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.confirm-badge-tag.variant-warning {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.confirm-badge-tag.variant-info {
+  background: #EEF2FF;
+  color: #3730A3;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.confirm-close-btn {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  color: #64748B;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.confirm-close-btn:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+  border-color: #CBD5E1;
+}
+
+/* Modal Body */
+.confirm-modal-body {
+  padding: 0.5rem 1.5rem 1.25rem 1.5rem;
+}
+
+.confirm-modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  margin-bottom: 0.5rem;
+}
+
+.confirm-modal-message {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.55;
+}
+
+/* Target Subject Box (e.g. store name, rider name) */
+.confirm-subject-callout {
+  margin-top: 0.9rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 9px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.confirm-subject-callout.variant-danger {
+  background: #FFF5F5;
+  border-color: #FECACA;
+}
+
+.confirm-subject-callout.variant-warning {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+
+.confirm-subject-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.confirm-subject-subtext {
+  font-size: 0.75rem;
+  color: #64748B;
+  margin-top: 0.1rem;
+}
+
+/* Footer Actions */
+.confirm-modal-footer {
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  background: #FAFBFD;
+  border-top: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.confirm-btn-cancel {
+  padding: 0.55rem 1.15rem;
+  border-radius: 9px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirm-btn-cancel:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+  border-color: #94A3B8;
+}
+
+.confirm-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 9px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirm-btn-action.variant-danger {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28);
+}
+
+.confirm-btn-action.variant-danger:hover {
+  background: linear-gradient(135deg, #B91C1C 0%, #991B1B 100%);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.38);
+  transform: translateY(-1px);
+}
+
+.confirm-btn-action.variant-warning {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.28);
+}
+
+.confirm-btn-action.variant-warning:hover {
+  background: linear-gradient(135deg, #B45309 0%, #92400E 100%);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.38);
+  transform: translateY(-1px);
+}
+
+.confirm-btn-action.variant-info {
+  background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.28);
+}
+
+.confirm-btn-action.variant-info:hover {
+  background: linear-gradient(135deg, #4338CA 0%, #3730A3 100%);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.38);
+  transform: translateY(-1px);
+}

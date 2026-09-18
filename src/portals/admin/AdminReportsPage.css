@@ -1,0 +1,705 @@
+/* ==========================================================================
+   SYSTEM AUDIT REPORTS & CRYPTOGRAPHIC EXPORT CENTER (ENTERPRISE SAAS)
+   ========================================================================== */
+
+.reports-command-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Toast feedback notification banner */
+.reports-toast-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  background: #ECFDF5;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #065F46;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+  animation: slideDownToast 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --------------------------------------------------------------------------
+   1. Hero Header & Quick Actions
+   -------------------------------------------------------------------------- */
+.reports-hero-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 1.85rem 2.15rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 24px;
+  box-shadow: 
+    0 4px 6px -1px rgba(15, 23, 42, 0.02),
+    0 16px 36px -4px rgba(15, 23, 42, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.hero-content-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 720px;
+}
+
+.compliance-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.soc2-compliance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem;
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #4F46E5;
+}
+
+.shield-icon {
+  color: #4F46E5;
+}
+
+.live-ledger-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem;
+  background: #ECFDF5;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #065F46;
+}
+
+.live-ledger-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+}
+
+.hero-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-export-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+  border: none;
+  color: #FFFFFF;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.28);
+  transition: all 180ms ease;
+}
+
+.btn-export-primary:hover {
+  background: linear-gradient(135deg, #4338CA 0%, #4F46E5 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.38);
+}
+
+.btn-export-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #0F172A;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 180ms ease;
+}
+
+.btn-export-secondary:hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   2. Interactive Domain Category Selection Grid
+   -------------------------------------------------------------------------- */
+.domain-selection-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.section-label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.section-subtext {
+  font-size: 0.75rem;
+  color: #94A3B8;
+}
+
+.domain-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.15rem;
+}
+
+@media (max-width: 1200px) {
+  .domain-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .domain-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.domain-select-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(226, 232, 240, 0.9);
+  border-radius: 20px;
+  padding: 1.35rem 1.45rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.95rem;
+  cursor: pointer;
+  outline: none;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.02);
+  user-select: none;
+}
+
+.domain-select-card:hover {
+  transform: translateY(-2px);
+  border-color: #CBD5E1;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.domain-select-card.selected {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 247, 255, 0.9) 100%);
+  border-color: #6366F1;
+  box-shadow: 
+    0 4px 14px rgba(79, 70, 229, 0.12), 
+    0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.domain-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.domain-icon-squircle {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.domain-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.domain-count-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background: #F1F5F9;
+  color: #475569;
+  font-feature-settings: 'tnum';
+}
+
+.domain-check-beacon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #4F46E5;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.domain-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 0.35rem 0;
+  line-height: 1.3;
+}
+
+.domain-desc {
+  font-size: 0.75rem;
+  color: #64748B;
+  line-height: 1.45;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.domain-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.75);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.domain-select-card.selected .domain-card-footer {
+  color: #4F46E5;
+  font-weight: 700;
+}
+
+.domain-arrow-icon {
+  transition: transform 180ms ease;
+}
+
+.domain-select-card:hover .domain-arrow-icon {
+  transform: translateX(3px);
+}
+
+/* --------------------------------------------------------------------------
+   3. Scope Controls Bar & Cryptographic Seal
+   -------------------------------------------------------------------------- */
+.audit-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.65rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 18px;
+}
+
+.scope-pills-col {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.scope-col-label {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #64748B;
+}
+
+.temporal-segmented-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 11px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.temporal-pill-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.35rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.temporal-pill-btn:hover {
+  color: #0F172A;
+}
+
+.temporal-pill-btn.active {
+  background: #FFFFFF;
+  color: #4F46E5;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.crypto-seal-box {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 0.45rem 0.85rem;
+}
+
+.crypto-left-info {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.crypto-lock-icon {
+  color: #4F46E5;
+}
+
+.crypto-text-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.crypto-label {
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748B;
+}
+
+.crypto-hash-text {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.72rem;
+  color: #0F172A;
+  font-weight: 600;
+}
+
+.btn-copy-hash {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #334155;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.btn-copy-hash:hover {
+  background: #EEF2FF;
+  border-color: #4F46E5;
+  color: #4F46E5;
+}
+
+/* --------------------------------------------------------------------------
+   4. Live Verified Preview Ledger Table
+   -------------------------------------------------------------------------- */
+.audit-ledger-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 
+    0 4px 6px -1px rgba(15, 23, 42, 0.02),
+    0 16px 36px -4px rgba(15, 23, 42, 0.04);
+}
+
+.ledger-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.45rem 1.85rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  flex-wrap: wrap;
+}
+
+.ledger-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.ledger-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #EEF2FF;
+  color: #4F46E5;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ledger-card-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.ledger-card-desc {
+  font-size: 0.75rem;
+  color: #64748B;
+  margin: 0.15rem 0 0 0;
+}
+
+.badge-live-stream {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.badge-live-stream .live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+}
+
+.table-responsive-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.audit-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.audit-data-table th {
+  padding: 0.95rem 1.5rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #64748B;
+  text-transform: uppercase;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  white-space: nowrap;
+}
+
+.audit-data-table td {
+  padding: 1.05rem 1.5rem;
+  font-size: 0.8125rem;
+  color: #334155;
+  border-bottom: 1px solid #F1F5F9;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.audit-data-table tr:hover td {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.mono-code-tag {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: #F1F5F9;
+  color: #334155;
+  border: 1px solid #E2E8F0;
+}
+
+.table-primary-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.table-secondary-text {
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+.table-time-text {
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+.table-val-bold {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0F172A;
+  font-feature-settings: 'tnum';
+}
+
+.table-sector-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.table-batch-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  background: #EEF2FF;
+  color: #4F46E5;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.status-dot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+}
+
+.status-dot-pill.open {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.status-dot-pill.closed {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.pulse-mini-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.score-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.score-badge.emerald {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.score-badge.indigo {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.ledger-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.85rem;
+  background: #F8FAFC;
+  border-top: 1px solid #E2E8F0;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+.footer-left-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.footer-check-icon {
+  color: #059669;
+  display: flex;
+  align-items: center;
+}
+
+.crypto-mono-stamp {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.6875rem;
+  color: #94A3B8;
+}
+
+/* Print Stylesheet */
+@media print {
+  .hero-actions-group,
+  .audit-controls-bar,
+  .domain-selection-section {
+    display: none !important;
+  }
+  .audit-ledger-card {
+    box-shadow: none !important;
+    border: 1px solid #CBD5E1 !important;
+  }
+}

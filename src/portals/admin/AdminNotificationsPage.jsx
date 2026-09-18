@@ -1,187 +1,317 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { 
   Bell, CheckCircle2, Info, AlertTriangle, Layers, 
-  Clock, Check, Filter, Sparkles, Truck 
+  Clock, Check, Filter, Sparkles, Truck, Search, 
+  ShieldAlert, Activity, ArrowUpRight, Zap, RefreshCw,
+  CheckCheck, AlertCircle, Radio
 } from 'lucide-react';
 import './AdminNotificationsPage.css';
 
 const AdminNotificationsPage = () => {
   const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useAppContext();
+  
   const [filterType, setFilterType] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toastMessage, setToastMessage] = useState(null);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const aggCount = notifications.filter(n => n.type === 'aggregation').length;
   const delCount = notifications.filter(n => n.type === 'delivery').length;
+  const alertCount = notifications.filter(n => n.type === 'warning' || n.type === 'alert').length;
 
-  const filteredNotifications = notifications.filter(n => {
-    if (filterType === 'unread') return !n.isRead;
-    if (filterType === 'aggregation') return n.type === 'aggregation';
-    if (filterType === 'delivery') return n.type === 'delivery';
-    return true;
-  });
+  // Filter and search
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter(n => {
+      // Category filter
+      if (filterType === 'unread' && n.isRead) return false;
+      if (filterType === 'aggregation' && n.type !== 'aggregation') return false;
+      if (filterType === 'delivery' && n.type !== 'delivery') return false;
+      if (filterType === 'warning' && !['warning', 'alert'].includes(n.type)) return false;
+
+      // Keyword search
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const msg = (n.message || '').toLowerCase();
+        const type = (n.type || '').toLowerCase();
+        return msg.includes(q) || type.includes(q);
+      }
+      return true;
+    });
+  }, [notifications, filterType, searchQuery]);
+
+  const handleAcknowledge = (id) => {
+    markNotificationAsRead(id);
+    showToast('Signal acknowledged and logged to audit ledger.');
+  };
+
+  const handleMarkAll = () => {
+    markAllNotificationsAsRead();
+    showToast(`All ${unreadCount} signals acknowledged.`);
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'aggregation':
-        return <Layers size={18} />;
+        return <Layers size={17} />;
       case 'delivery':
-        return <Truck size={18} />;
+        return <Truck size={17} />;
       case 'warning':
-        return <AlertTriangle size={18} />;
+      case 'alert':
+        return <AlertTriangle size={17} />;
       default:
-        return <Bell size={18} />;
+        return <Bell size={17} />;
     }
   };
 
-  const getNotificationStyle = (type) => {
+  const getNotificationTheme = (type) => {
     switch (type) {
       case 'aggregation':
-        return { bg: '#EFF6FF', color: '#2563EB', tag: 'Aggregation Hub' };
+        return {
+          bg: '#EEF2FF',
+          color: '#4F46E5',
+          border: 'rgba(79, 70, 229, 0.25)',
+          glow: 'rgba(79, 70, 229, 0.12)',
+          tag: 'Aggregation Engine',
+          badgeClass: 'tag-indigo'
+        };
       case 'delivery':
-        return { bg: '#ECFDF5', color: '#059669', tag: 'Dispatch Event' };
+        return {
+          bg: '#ECFDF5',
+          color: '#059669',
+          border: 'rgba(16, 185, 129, 0.25)',
+          glow: 'rgba(16, 185, 129, 0.12)',
+          tag: 'Courier Dispatch',
+          badgeClass: 'tag-emerald'
+        };
       case 'warning':
-        return { bg: '#FEF3C7', color: '#D97706', tag: 'Telemetry Alert' };
+      case 'alert':
+        return {
+          bg: '#FEF2F2',
+          color: '#DC2626',
+          border: 'rgba(220, 38, 38, 0.25)',
+          glow: 'rgba(220, 38, 38, 0.12)',
+          tag: 'Telemetry Warning',
+          badgeClass: 'tag-rose'
+        };
       default:
-        return { bg: '#F1F5F9', color: '#475569', tag: 'System Signal' };
+        return {
+          bg: '#F8FAFC',
+          color: '#475569',
+          border: 'rgba(100, 116, 139, 0.2)',
+          glow: 'rgba(15, 23, 42, 0.05)',
+          tag: 'System Event',
+          badgeClass: 'tag-slate'
+        };
     }
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <h2>System & Logistics Signals</h2>
-            <span className="badge badge-primary">LIVE STREAM</span>
-          </div>
-          <p>Real-time audit log of automated batch clustering, courier assignments, and network alerts.</p>
+    <div className="page-container signals-command-page">
+      {/* Toast Notice */}
+      {toastMessage && (
+        <div className="signals-toast-banner">
+          <CheckCircle2 size={16} className="text-emerald" />
+          <span>{toastMessage}</span>
         </div>
-        {unreadCount > 0 && (
-          <button 
-            className="btn btn-outline" 
-            onClick={markAllNotificationsAsRead}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Check size={16} /> Mark All as Read ({unreadCount})
-          </button>
-        )}
+      )}
+
+      {/* Hero Header */}
+      <div className="signals-hero-banner">
+        <div className="hero-left-col">
+          <div className="stream-badge-row">
+            <div className="live-stream-pill">
+              <span className="live-pulse-dot" />
+              <span>LIVE TELEMETRY STREAM</span>
+            </div>
+            <span className="stream-status-tag">BUFFER ACTIVE • FIFO</span>
+          </div>
+          <h1 className="hero-heading">System & Logistics Signals Command</h1>
+          <p className="hero-subtitle">
+            Real-time operational audit log of automated batch clustering sweeps, courier assignments, route modifications, and merchant mutations.
+          </p>
+        </div>
+
+        <div className="hero-actions-col">
+          {unreadCount > 0 ? (
+            <button 
+              className="btn-mark-all-primary" 
+              onClick={handleMarkAll}
+              title="Acknowledge all pending signals"
+            >
+              <CheckCheck size={16} />
+              <span>Mark All Acknowledged ({unreadCount})</span>
+            </button>
+          ) : (
+            <div className="all-clear-badge">
+              <CheckCircle2 size={15} className="text-emerald" />
+              <span>All Signals Acknowledged</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="notifications-container">
-        {/* Signal Stats Grid */}
-        <div className="notifications-stats-grid">
-          <div className="notif-stat-card">
-            <div className="notif-stat-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
-              <Bell size={20} />
-            </div>
-            <div className="notif-stat-info">
-              <span className="notif-stat-value">{notifications.length}</span>
-              <span className="notif-stat-label">Total Signals</span>
+      {/* 4 Glassmorphic Signal Telemetry Cards */}
+      <div className="signals-metrics-grid">
+        <div className="signal-kpi-card blue-glow">
+          <div className="signal-kpi-header">
+            <span className="signal-kpi-label">TOTAL SIGNALS IN BUFFER</span>
+            <div className="signal-squircle blue">
+              <Bell size={18} />
             </div>
           </div>
-
-          <div className="notif-stat-card">
-            <div className="notif-stat-icon" style={{ background: '#FEF2F2', color: '#DC2626' }}>
-              <AlertTriangle size={20} />
-            </div>
-            <div className="notif-stat-info">
-              <span className="notif-stat-value">{unreadCount}</span>
-              <span className="notif-stat-label">Pending Action</span>
-            </div>
-          </div>
-
-          <div className="notif-stat-card">
-            <div className="notif-stat-icon" style={{ background: '#EEF2FF', color: '#4F46E5' }}>
-              <Layers size={20} />
-            </div>
-            <div className="notif-stat-info">
-              <span className="notif-stat-value">{aggCount}</span>
-              <span className="notif-stat-label">Batch Groupings</span>
-            </div>
-          </div>
-
-          <div className="notif-stat-card">
-            <div className="notif-stat-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
-              <Truck size={20} />
-            </div>
-            <div className="notif-stat-info">
-              <span className="notif-stat-value">{delCount}</span>
-              <span className="notif-stat-label">Dispatches</span>
-            </div>
+          <div className="signal-kpi-val">{notifications.length}</div>
+          <div className="signal-kpi-footer">
+            <span className="signal-dot blue" />
+            <span>Continuous event telemetry stream</span>
           </div>
         </div>
 
-        {/* Filter Bar */}
-        <div className="notif-filter-bar">
-          <div className="notif-filter-pills">
-            <button 
-              className={`notif-filter-btn ${filterType === 'all' ? 'active' : ''}`}
-              onClick={() => setFilterType('all')}
-            >
-              All Signals ({notifications.length})
-            </button>
-            <button 
-              className={`notif-filter-btn ${filterType === 'unread' ? 'active' : ''}`}
-              onClick={() => setFilterType('unread')}
-            >
-              Unread ({unreadCount})
-            </button>
-            <button 
-              className={`notif-filter-btn ${filterType === 'aggregation' ? 'active' : ''}`}
-              onClick={() => setFilterType('aggregation')}
-            >
-              Batches ({aggCount})
-            </button>
-            <button 
-              className={`notif-filter-btn ${filterType === 'delivery' ? 'active' : ''}`}
-              onClick={() => setFilterType('delivery')}
-            >
-              Deliveries ({delCount})
-            </button>
+        <div className="signal-kpi-card red-glow">
+          <div className="signal-kpi-header">
+            <span className="signal-kpi-label">PENDING ACTION</span>
+            <div className="signal-squircle red">
+              <AlertTriangle size={18} />
+            </div>
+          </div>
+          <div className="signal-kpi-val text-rose">{unreadCount}</div>
+          <div className="signal-kpi-footer">
+            <span className="signal-dot red" />
+            <span>{unreadCount > 0 ? 'Requires operator review' : 'Zero unacknowledged alerts'}</span>
           </div>
         </div>
 
-        {/* Notifications List */}
-        <div className="notif-list">
-          {filteredNotifications.length === 0 ? (
-            <div className="notif-empty-state">
-              <div className="notif-empty-icon">
-                <Sparkles size={28} />
-              </div>
-              <h4 style={{ margin: '0 0 6px 0', color: 'var(--text-primary)' }}>All Signals Cleared</h4>
-              <p style={{ margin: 0, fontSize: '13px' }}>
-                {filterType === 'unread' 
-                  ? 'There are no pending unread notifications in the system buffer.' 
-                  : 'No notification records match the active filter criteria.'}
-              </p>
+        <div className="signal-kpi-card purple-glow">
+          <div className="signal-kpi-header">
+            <span className="signal-kpi-label">BATCH GROUPINGS</span>
+            <div className="signal-squircle purple">
+              <Layers size={18} />
             </div>
-          ) : (
-            filteredNotifications.map(n => {
-              const style = getNotificationStyle(n.type);
-              return (
-                <div 
-                  key={n.id} 
-                  className={`notif-item ${n.isRead ? 'read' : 'unread'} type-${n.type || 'system'}`}
-                >
-                  <div className="notif-left">
-                    <div 
-                      className="notif-icon-box" 
-                      style={{ background: style.bg, color: style.color }}
-                    >
-                      {getNotificationIcon(n.type)}
-                    </div>
-                    <div className="notif-content">
-                      <span className="notif-title">{n.message}</span>
-                      <div className="notif-meta">
-                        <span 
-                          className="notif-tag" 
-                          style={{ background: style.bg, color: style.color }}
-                        >
-                          {style.tag}
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={12} />
+          </div>
+          <div className="signal-kpi-val text-purple">{aggCount}</div>
+          <div className="signal-kpi-footer">
+            <span className="signal-dot purple" />
+            <span>Autonomous clustering sweep events</span>
+          </div>
+        </div>
+
+        <div className="signal-kpi-card emerald-glow">
+          <div className="signal-kpi-header">
+            <span className="signal-kpi-label">FLEET DISPATCHES</span>
+            <div className="signal-squircle emerald">
+              <Truck size={18} />
+            </div>
+          </div>
+          <div className="signal-kpi-val text-emerald">{delCount}</div>
+          <div className="signal-kpi-footer">
+            <span className="signal-dot emerald" />
+            <span>Active courier handovers & runs</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Tabs & Search Bar Strip */}
+      <div className="signals-controls-strip">
+        <div className="filter-pills-wrap">
+          <button 
+            className={`filter-pill-btn ${filterType === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterType('all')}
+          >
+            <span>All Signals</span>
+            <span className="filter-count-badge">{notifications.length}</span>
+          </button>
+          <button 
+            className={`filter-pill-btn ${filterType === 'unread' ? 'active' : ''}`}
+            onClick={() => setFilterType('unread')}
+          >
+            <span>Unread</span>
+            <span className={`filter-count-badge ${unreadCount > 0 ? 'highlight' : ''}`}>{unreadCount}</span>
+          </button>
+          <button 
+            className={`filter-pill-btn ${filterType === 'aggregation' ? 'active' : ''}`}
+            onClick={() => setFilterType('aggregation')}
+          >
+            <span>Batches</span>
+            <span className="filter-count-badge">{aggCount}</span>
+          </button>
+          <button 
+            className={`filter-pill-btn ${filterType === 'delivery' ? 'active' : ''}`}
+            onClick={() => setFilterType('delivery')}
+          >
+            <span>Deliveries</span>
+            <span className="filter-count-badge">{delCount}</span>
+          </button>
+        </div>
+
+        {/* Real-Time Keyword Search */}
+        <div className="search-input-box">
+          <Search size={14} className="search-icon" />
+          <input 
+            type="text" 
+            placeholder="Search signals by keyword..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="signal-search-field"
+          />
+          {searchQuery && (
+            <button 
+              className="clear-search-btn" 
+              onClick={() => setSearchQuery('')}
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Signals Stream Feed */}
+      <div className="signals-feed-container">
+        {filteredNotifications.length === 0 ? (
+          <div className="signals-empty-state">
+            <div className="empty-icon-ring">
+              <Sparkles size={32} />
+            </div>
+            <h3 className="empty-title">All Signals In Sync</h3>
+            <p className="empty-desc">
+              {filterType === 'unread'
+                ? 'No pending signals require operator attention. The logistics dispatch buffer is clean.'
+                : 'No telemetry signals match the current search or category filter.'}
+            </p>
+          </div>
+        ) : (
+          filteredNotifications.map((n) => {
+            const theme = getNotificationTheme(n.type);
+            return (
+              <div 
+                key={n.id} 
+                className={`signal-feed-card ${n.isRead ? 'is-read' : 'is-unread'}`}
+                style={{ '--theme-border': theme.border, '--theme-glow': theme.glow }}
+              >
+                {/* Accent Beacon Bar on Left */}
+                <div className="signal-accent-stripe" style={{ backgroundColor: theme.color }} />
+
+                <div className="signal-card-main">
+                  <div 
+                    className="signal-icon-squircle" 
+                    style={{ backgroundColor: theme.bg, color: theme.color }}
+                  >
+                    {getNotificationIcon(n.type)}
+                  </div>
+
+                  <div className="signal-body-col">
+                    <div className="signal-top-row">
+                      <span className={`signal-type-tag ${theme.badgeClass}`}>
+                        {theme.tag}
+                      </span>
+                      <div className="signal-timestamp-flex">
+                        <Clock size={12} />
+                        <span>
                           {new Date(n.date).toLocaleString([], { 
                             month: 'short', 
                             day: 'numeric', 
@@ -189,42 +319,40 @@ const AdminNotificationsPage = () => {
                             minute: '2-digit' 
                           })}
                         </span>
-                        {!n.isRead && (
-                          <span style={{ 
-                            fontSize: '10px', 
-                            fontWeight: '700', 
-                            color: 'var(--accent-primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            ● NEW
-                          </span>
-                        )}
                       </div>
+                      {!n.isRead && (
+                        <span className="signal-new-beacon">
+                          <span className="beacon-dot" />
+                          NEW
+                        </span>
+                      )}
                     </div>
+
+                    <p className="signal-message-text">{n.message}</p>
                   </div>
 
-                  <div className="notif-actions">
+                  <div className="signal-action-col">
                     {!n.isRead ? (
                       <button 
-                        className="btn btn-sm btn-outline" 
-                        onClick={() => markNotificationAsRead(n.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                        className="btn-ack-signal"
+                        onClick={() => handleAcknowledge(n.id)}
+                        title="Mark signal as acknowledged"
                       >
-                        <Check size={14} /> Acknowledge
+                        <Check size={14} />
+                        <span>Acknowledge</span>
                       </button>
                     ) : (
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <CheckCircle2 size={14} color="#10B981" /> Read
+                      <span className="signal-acknowledged-text">
+                        <Check size={12} />
+                        <span>Logged</span>
                       </span>
                     )}
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

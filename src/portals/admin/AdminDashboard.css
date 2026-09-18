@@ -340,13 +340,13 @@
 }
 
 .hub-arrow-icon {
-  transition: transform 200ms ease;
-  color: #64748B;
+  transition: transform 200ms ease, color 200ms ease;
+  color: #4F46E5;
 }
 
 .btn-hub-pill:hover .hub-arrow-icon {
   transform: translateX(4px);
-  color: #4F46E5;
+  color: #4338CA;
 }
 
 /* Continuous Segmented Progression Ribbon (Fixed Layout - Zero Horizontal Scroll) */
@@ -680,36 +680,108 @@
   font-weight: 500;
 }
 
-/* Thinner Animated Connectors */
+/* ==========================================================================
+   STATE-OF-THE-ART PIPELINE ARROW CONNECTORS (PREMIUM THEMED COLORS)
+   ========================================================================== */
 .pipeline-ribbon-connector {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #CBD5E1;
+  position: relative;
   flex-shrink: 0;
-  width: 10px;
+  width: 16px;
   padding: 0;
+  z-index: 2;
+}
+
+/* Connecting track line between boxes */
+.pipeline-ribbon-connector::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  right: -2px;
+  height: 1.5px;
+  background: linear-gradient(90deg, var(--connector-color, #CBD5E1), var(--next-color, #94A3B8));
+  opacity: 0.35;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .connector-chevron-arrow {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: pulseRight 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #FFFFFF 0%, var(--connector-bg, #F8FAFC) 100%);
+  border: 1px solid var(--connector-border, var(--connector-color, #94A3B8));
+  color: var(--connector-color, #64748B);
+  box-shadow: 
+    0 1px 4px -1px rgba(15, 23, 42, 0.06), 
+    0 0 6px -1px var(--connector-glow, rgba(0, 0, 0, 0.05)), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 200ms ease;
+  cursor: default;
 }
 
-@keyframes pulseRight {
+/* Stage-specific custom color definitions with radiant glowing themes */
+.pipeline-ribbon-connector.connector-theme-amber {
+  --connector-color: #D97706;
+  --connector-bg: #FEF3C7;
+  --connector-border: rgba(217, 119, 6, 0.4);
+  --connector-glow: rgba(245, 158, 11, 0.25);
+}
 
-  0%,
-  100% {
-    transform: translateX(0);
-    opacity: 0.35;
-  }
+.pipeline-ribbon-connector.connector-theme-sky {
+  --connector-color: #0284C7;
+  --connector-bg: #E0F2FE;
+  --connector-border: rgba(2, 132, 199, 0.4);
+  --connector-glow: rgba(2, 132, 199, 0.25);
+}
 
-  50% {
-    transform: translateX(2px);
-    opacity: 0.95;
-  }
+.pipeline-ribbon-connector.connector-theme-purple {
+  --connector-color: #7C3AED;
+  --connector-bg: #EDE9FE;
+  --connector-border: rgba(124, 58, 237, 0.4);
+  --connector-glow: rgba(124, 58, 237, 0.25);
+}
+
+.pipeline-ribbon-connector.connector-theme-blue {
+  --connector-color: #2563EB;
+  --connector-bg: #DBEAFE;
+  --connector-border: rgba(37, 99, 235, 0.4);
+  --connector-glow: rgba(37, 99, 235, 0.25);
+}
+
+.pipeline-ribbon-connector.connector-theme-rose {
+  --connector-color: #E11D48;
+  --connector-bg: #FFE4E6;
+  --connector-border: rgba(225, 29, 72, 0.4);
+  --connector-glow: rgba(225, 29, 72, 0.25);
+}
+
+/* Active queue indicator boost - static clean highlight */
+.pipeline-ribbon-connector.is-active-connector .connector-chevron-arrow {
+  box-shadow: 
+    0 2px 6px -1px rgba(15, 23, 42, 0.08), 
+    0 0 10px 1px var(--connector-glow), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.95);
+}
+
+/* Subtle Hover Feedback without jumping or shifting */
+.pipeline-ribbon-connector:hover .connector-chevron-arrow {
+  box-shadow: 
+    0 3px 8px -1px rgba(15, 23, 42, 0.1), 
+    0 0 12px 1px var(--connector-glow), 
+    inset 0 1px 1px #FFFFFF;
 }
 
 /* Responsive Ribbon */

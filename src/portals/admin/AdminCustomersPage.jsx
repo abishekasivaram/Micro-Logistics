@@ -6,6 +6,7 @@ import {
   ShoppingBag, ShieldCheck, User, Calendar, Clock, DollarSign, Package, Check 
 } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 import './AdminCustomersPage.css';
 
 const AdminCustomersPage = () => {
@@ -15,6 +16,7 @@ const AdminCustomersPage = () => {
   const [areaFilter, setAreaFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [suspendModalData, setSuspendModalData] = useState(null);
   const [inspectTab, setInspectTab] = useState('profile'); // 'profile' | 'orders'
 
   useEffect(() => {
@@ -198,7 +200,7 @@ const AdminCustomersPage = () => {
                         {custStatus === 'Active' ? (
                           <button 
                             className="btn btn-danger btn-sm" 
-                            onClick={() => updateCustomerStatus(c.id, 'Suspended')} 
+                            onClick={() => setSuspendModalData(c)} 
                             title="Suspend Account"
                           >
                             <Ban size={13} /> Suspend
@@ -416,10 +418,7 @@ const AdminCustomersPage = () => {
                   {selectedCustomer.status === 'Active' ? (
                     <button 
                       className="btn btn-danger btn-sm"
-                      onClick={() => {
-                        updateCustomerStatus(selectedCustomer.id, 'Suspended');
-                        setSelectedCustomer({ ...selectedCustomer, status: 'Suspended' });
-                      }}
+                      onClick={() => setSuspendModalData(selectedCustomer)}
                     >
                       <Ban size={14} /> Suspend Account
                     </button>
@@ -447,6 +446,25 @@ const AdminCustomersPage = () => {
           document.body
         );
       })()}
+
+      {suspendModalData && (
+        <ConfirmationModal
+          isOpen={!!suspendModalData}
+          onClose={() => setSuspendModalData(null)}
+          onConfirm={() => {
+            updateCustomerStatus(suspendModalData.id, 'Suspended');
+            if (selectedCustomer?.id === suspendModalData.id) {
+              setSelectedCustomer({ ...selectedCustomer, status: 'Suspended' });
+            }
+            setSuspendModalData(null);
+          }}
+          type="danger"
+          title="Suspend Customer Account"
+          message={`You are about to suspend the account of ${suspendModalData.name}. They will lose access to the platform immediately.`}
+          confirmLabel="Suspend Account"
+          icon="ban"
+        />
+      )}
     </div>
   );
 };
