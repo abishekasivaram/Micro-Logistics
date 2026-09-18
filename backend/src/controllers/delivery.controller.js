@@ -168,19 +168,19 @@ const updateBatchStatus = async (req, res) => {
         const userId = req.user?.id;
         if (userRole === 'delivery_partner' && batch.agent_id !== userId)
             return res.status(403).json({ success: false, message: 'Forbidden' });
-        let aggStatus = dbStatus === 'COMPLETED' ? 'COMPLETED' : dbStatus;
-        const { error } = await supabase_1.supabase.from('delivery_batches').update({
-            status: dbStatus,
-            aggregation_status: aggStatus
-        }).eq('id', batch.id);
+        const updatePayload = { status: dbStatus };
+        if (dbStatus === 'COMPLETED') {
+            updatePayload.aggregation_status = 'COMPLETED';
+        }
+        
+        const { error } = await supabase_1.supabase.from('delivery_batches').update(updatePayload).eq('id', batch.id);
         if (error)
             throw error;
         // Propagate to orders if needed
         if (dbStatus === 'OUT_FOR_DELIVERY') {
             await supabase_1.supabase.from('orders').update({
                 order_status: 'OUT_FOR_DELIVERY',
-                delivery_status: 'OUT_FOR_DELIVERY',
-                aggregation_status: 'OUT_FOR_DELIVERY'
+                delivery_status: 'OUT_FOR_DELIVERY'
             }).eq('batch_id', batch.id);
         }
         else if (dbStatus === 'COMPLETED') {
