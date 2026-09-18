@@ -10,7 +10,7 @@ const getOrders = async (req, res) => {
       customer:customer_profiles(id, legacy_id, profile:profiles(username, email)),
       vendor:vendors(id, legacy_id, shop_name),
       order_items(qty, price, product:products(id, legacy_id, name)),
-      batch:delivery_batches(id, batch_code),
+      batch:delivery_batches!orders_batch_id_fkey(id, batch_code),
       assigned_agent:delivery_agents(id, profile:profiles(username, phone))
     `);
         // Role-based filtering
@@ -44,7 +44,7 @@ const getOrderById = async (req, res) => {
       customer:customer_profiles(id, legacy_id, profile:profiles(username, email)),
       vendor:vendors(id, legacy_id, shop_name),
       order_items(qty, price, product:products(id, legacy_id, name)),
-      batch:delivery_batches(id, batch_code),
+      batch:delivery_batches!orders_batch_id_fkey(id, batch_code),
       assigned_agent:delivery_agents(id, profile:profiles(username, phone))
     `).eq('order_code', id).single();
         if (error || !data)
@@ -165,7 +165,7 @@ const updateOrderStatus = async (req, res) => {
       customer:customer_profiles(id, legacy_id, profile:profiles(username, email)),
       vendor:vendors(id, legacy_id, shop_name),
       order_items(qty, price, product:products(id, legacy_id, name)),
-      batch:delivery_batches(id, batch_code),
+      batch:delivery_batches!orders_batch_id_fkey(id, batch_code),
       assigned_agent:delivery_agents(id, profile:profiles(username, phone))
     `).single();
         if (error)
