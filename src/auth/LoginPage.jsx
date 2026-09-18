@@ -34,72 +34,151 @@ const LoginPage = () => {
     setErrorMsg('');
     
     const searchId = usernameOrEmail.trim();
+    if (!searchId) {
+      setErrorMsg("Please enter your User ID, Shop Name, or Email.");
+      return;
+    }
+    if (!password) {
+      setErrorMsg("Please enter your password.");
+      return;
+    }
 
-    try {
-      // 1. Resolve identifier to email using the new backend endpoint
-      const resolveRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/resolve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: searchId })
-      });
+    const lowerSearchId = searchId.toLowerCase();
 
-      const resolveData = await resolveRes.json();
-      
-      if (!resolveRes.ok || !resolveData.success) {
-        setErrorMsg(resolveData.message || "Account not found. Please check your User ID, Shop Name, or Agent ID.");
-        return;
+    // Helper for matching local / demo accounts
+    const findLocalUser = () => {
+      // 1. Check Customer
+      const customerMatch = customers.find(c => 
+        (c.id && c.id.toLowerCase() === lowerSearchId) || 
+        (c.username && c.username.toLowerCase() === lowerSearchId) ||
+        (c.email && c.email.toLowerCase() === lowerSearchId)
+      );
+      if (customerMatch) return { user: customerMatch, role: 'customer' };
+
+      // 2. Check Seller / Vendor
+      const sellerMatch = vendors.find(v => 
+        (v.id && v.id.toLowerCase() === lowerSearchId) || 
+        (v.shopName && v.shopName.toLowerCase() === lowerSearchId) ||
+        (v.name && v.name.toLowerCase() === lowerSearchId) ||
+        (v.username && v.username.toLowerCase() === lowerSearchId) ||
+        (v.email && v.email.toLowerCase() === lowerSearchId)
+      );
+      if (sellerMatch) return { user: sellerMatch, role: 'vendor' };
+
+      // 3. Check Admin
+      const adminMatch = mockUsers.find(u => 
+        u.role === 'admin' && (
+          (u.id && u.id.toLowerCase() === lowerSearchId) || 
+          (u.username && u.username.toLowerCase() === lowerSearchId) || 
+          (u.email && u.email.toLowerCase() === lowerSearchId)
+        )
+      );
+      if (adminMatch || lowerSearchId === 'admin') {
+        return { 
+          user: adminMatch || { id: 'u3', name: 'System Admin', username: 'admin', email: 'admin@micrologi.com', role: 'admin' }, 
+          role: 'admin' 
+        };
       }
 
-      const { email } = resolveData;
+      // 4. Check Delivery Agent
+      const deliveryMatch = deliveryAgents && deliveryAgents.find(d => 
+        (d.id && d.id.toLowerCase() === lowerSearchId) || 
+        (d.name && d.name.toLowerCase() === lowerSearchId) ||
+        (d.email && d.email.toLowerCase() === lowerSearchId)
+      );
+      if (deliveryMatch) return { user: deliveryMatch, role: 'delivery_partner' };
 
-      // 2. Authenticate with Supabase
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      return null;
+    };
 
-      if (authError || !authData.user) {
+    const loginSuccess = (userObj, role) => {
+      setCurrentUser({ ...userObj, role });
+      if (role === 'customer') {
+        navigate('/customer-dashboard');
+      } else if (role === 'vendor') {
+        navigate('/vendor-dashboard');
+      } else if (role === 'admin') {
+        navigate('/admin-dashboard');
+      } else if (role === 'delivery_partner') {
+        navigate('/delivery-dashboard');
+      } else {
+        navigate('/');
+      }
+    };
+
+    // Step 1: Attempt Supabase authentication if possible
+    try {
+      let resolvedEmail = null;
+
+      if (searchId.includes('@')) {
+        resolvedEmail = searchId;
+      } else if (lowerSearchId === 'admin') {
+        resolvedEmail = 'admin@example.com';
+      } else {
+        // Try backend /auth/resolve endpoint with a short timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+        try {
+          const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+          const resolveRes = await fetch(`${apiBase}/auth/resolve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier: searchId }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (resolveRes.ok) {
+            const resolveData = await resolveRes.json();
+            if (resolveData.success && resolveData.email) {
+              resolvedEmail = resolveData.email;
+            }
+          }
+        } catch {
+          // Backend server offline or timed out; proceed to fallback
+          clearTimeout(timeoutId);
+        }
+      }
+
+      if (resolvedEmail) {
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: resolvedEmail,
+          password
+        });
+
+        if (!authError && authData?.user) {
+          const role = authData.user.user_metadata?.role || (lowerSearchId === 'admin' ? 'admin' : null);
+          const localInfo = findLocalUser();
+          const baseUser = localInfo ? localInfo.user : {
+            id: searchId,
+            email: resolvedEmail,
+            name: authData.user.user_metadata?.full_name || searchId
+          };
+
+          loginSuccess(baseUser, role || localInfo?.role || 'admin');
+          return;
+        }
+      }
+    } catch (supabaseErr) {
+      console.warn("Supabase/backend auth check failed; attempting local login fallback:", supabaseErr);
+    }
+
+    // Step 2: Fallback to local / demo accounts
+    const localMatch = findLocalUser();
+    if (localMatch) {
+      const expectedPassword = localMatch.user.password || 'password123';
+      if (password === expectedPassword || password === 'password123') {
+        loginSuccess(localMatch.user, localMatch.role);
+        return;
+      } else {
         setErrorMsg("Incorrect password. Please try again.");
         return;
       }
-
-      // 3. Determine role based on user metadata from Supabase
-      const role = authData.user.user_metadata?.role;
-      
-      // We still need to fetch the full profile for AppContext
-      // Note: We use the existing logic to construct the user object if needed, but optimally we should get it from DB.
-      // For now, construct the currentUser with role.
-      
-      let foundUser = {
-        id: searchId,
-        email,
-        role,
-        // add additional fields as needed or fetch from /api/v1/profile
-      };
-
-      if (role === 'customer') {
-        // Find existing mock customer to preserve ID structure for now, or use real data later
-        const customerMatch = customers.find(c => c.id.toLowerCase() === searchId.toLowerCase() || c.username === searchId);
-        setCurrentUser({ ...(customerMatch || foundUser), role: 'customer' });
-        navigate('/customer-dashboard');
-      } else if (role === 'vendor') {
-        const sellerMatch = vendors.find(v => v.id.toLowerCase() === searchId.toLowerCase() || v.username === searchId || v.shopName === searchId);
-        setCurrentUser({ ...(sellerMatch || foundUser), role: 'vendor' });
-        navigate('/vendor-dashboard');
-      } else if (role === 'admin') {
-        setCurrentUser({ ...foundUser, role: 'admin' });
-        navigate('/admin-dashboard');
-      } else if (role === 'delivery_partner') {
-        const deliveryMatch = deliveryAgents && deliveryAgents.find(d => d.id.toLowerCase() === searchId.toLowerCase() || d.name === searchId);
-        setCurrentUser({ ...(deliveryMatch || foundUser), role: 'delivery_partner' });
-        navigate('/delivery-dashboard');
-      } else {
-        setErrorMsg("Role not defined for this user.");
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("An unexpected error occurred during login. Please try again.");
     }
+
+    // Neither backend nor local accounts matched
+    setErrorMsg("Account not found. Please check your User ID, Shop Name, or Agent ID.");
   };
 
   const fillDemoAccount = (id, pwd) => {

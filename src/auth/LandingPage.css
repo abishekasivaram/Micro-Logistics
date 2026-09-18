@@ -112,9 +112,20 @@
   font-weight: var(--font-weight-medium);
 }
 
-.card-1 { top: 20%; left: -10%; }
-.card-2 { top: 50%; right: -10%; }
-.card-3 { bottom: 15%; left: 10%; }
+.card-1 {
+  top: 20%;
+  left: -10%;
+}
+
+.card-2 {
+  top: 50%;
+  right: -10%;
+}
+
+.card-3 {
+  bottom: 15%;
+  left: 10%;
+}
 
 /* Features Section */
 .features-section {
@@ -309,9 +320,20 @@
   margin-bottom: 20px;
 }
 
-.customer-role-icon { background-color: #e0e7ff; color: #4f46e5; }
-.seller-role-icon { background-color: #d1fae5; color: #059669; }
-.admin-role-icon { background-color: #fef3c7; color: #d97706; }
+.customer-role-icon {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+}
+
+.seller-role-icon {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.admin-role-icon {
+  background-color: #fef3c7;
+  color: #d97706;
+}
 
 .role-card h3 {
   font-size: 20px;
@@ -351,7 +373,11 @@
     font-size: 2.5rem;
   }
 
-  .card-1 { left: 0; }
-  .card-2 { right: 0; }
-}
+  .card-1 {
+    left: 0;
+  }
 
+  .card-2 {
+    right: 0;
+  }
+}

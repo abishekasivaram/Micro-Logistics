@@ -35,9 +35,9 @@ const LandingPage = () => {
               <Compass size={16} />
               <span>Smart Local Fulfillment Network</span>
             </div>
-            <h1>Smarter Local Orders.<br/>Better Delivery Coordination.</h1>
+            <h1>Smarter Local Orders.<br />Better Delivery Coordination.</h1>
             <p>
-              An intelligent micro-logistics platform designed to connect neighborhood sellers with customers, 
+              An intelligent micro-logistics platform designed to connect neighborhood sellers with customers,
               grouping nearby deliveries into efficient, eco-friendly dispatch runs.
             </p>
             <div className="hero-actions">
@@ -50,27 +50,27 @@ const LandingPage = () => {
 
           <div className="hero-visual">
             <div className="hero-image-placeholder">
-               <div className="floating-card card-1">
-                 <Store size={22} color="var(--color-primary)" />
-                 <div>
-                   <strong>Local Sellers</strong>
-                   <span style={{ fontSize: '11px', color: '#666' }}>T. Nagar & Adyar</span>
-                 </div>
-               </div>
-               <div className="floating-card card-2">
-                 <Layers size={22} color="var(--color-warning)" />
-                 <div>
-                   <strong>Smart Aggregation</strong>
-                   <span style={{ fontSize: '11px', color: '#666' }}>3 Orders Grouped</span>
-                 </div>
-               </div>
-               <div className="floating-card card-3">
-                 <Truck size={22} color="var(--color-success)" />
-                 <div>
-                   <strong>Out for Delivery</strong>
-                   <span style={{ fontSize: '11px', color: '#666' }}>Agent DA014 Assigned</span>
-                 </div>
-               </div>
+              <div className="floating-card card-1">
+                <Store size={22} color="var(--color-primary)" />
+                <div>
+                  <strong>Local Sellers</strong>
+                  <span style={{ fontSize: '11px', color: '#666' }}>T. Nagar & Adyar</span>
+                </div>
+              </div>
+              <div className="floating-card card-2">
+                <Layers size={22} color="var(--color-warning)" />
+                <div>
+                  <strong>Smart Aggregation</strong>
+                  <span style={{ fontSize: '11px', color: '#666' }}>3 Orders Grouped</span>
+                </div>
+              </div>
+              <div className="floating-card card-3">
+                <Truck size={22} color="var(--color-success)" />
+                <div>
+                  <strong>Out for Delivery</strong>
+                  <span style={{ fontSize: '11px', color: '#666' }}>Agent DA014 Assigned</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>
