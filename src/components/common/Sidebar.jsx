@@ -1,58 +1,21 @@
-<<<<<<< HEAD
 import React, { useState } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import ConfirmationModal from './ConfirmationModal';
 import { 
   LayoutDashboard, ShoppingBag, Package, Truck, Layers, Users, Bell, 
   Settings, HelpCircle, LogOut, Map, User, Navigation, Calendar, 
   Store, BarChart3, ShoppingCart, FileText, X, ChevronLeft, ChevronRight,
-  Boxes, ShieldCheck, Activity, Cpu
-=======
-import React from 'react';
-import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAppContext } from '../../context/AppContext';
-import {
-  LayoutDashboard,
-  ShoppingBag,
-  Package,
-  Truck,
-  Layers,
-  Users,
-  Bell,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Map,
-  User,
-  Navigation,
-  Calendar,
-  Store,
-  BarChart3,
-  ShoppingCart,
-  FileText,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Boxes,
-  ShieldCheck,
-  Activity,
-  Cpu,
-  Heart
->>>>>>> e6d10d6 (ui for customer portal)
+  Boxes, ShieldCheck, Activity, Cpu, Heart
 } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
   const { currentUser, setCurrentUser, cart, notifications } = useAppContext();
   const navigate = useNavigate();
-<<<<<<< HEAD
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const role = currentUser?.role || 'admin'; 
-=======
   const location = useLocation();
   const role = currentUser?.role || 'admin';
->>>>>>> e6d10d6 (ui for customer portal)
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
   const unreadNotifCount = notifications.filter(n => !n.isRead).length;
 
@@ -353,34 +316,20 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
           <div className="nav-divider"></div>
           {role !== 'admin' && role !== 'delivery_partner' && (
             <>
-<<<<<<< HEAD
-              <NavLink to="/settings" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Settings">
-                <div className="nav-icon-wrapper"><Settings size={18} /></div>
-                <span className="nav-label">Settings</span>
-              </NavLink>
-              <NavLink to="/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Help & Support">
-                <div className="nav-icon-wrapper"><HelpCircle size={18} /></div>
-=======
               <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Settings">
                 <div className="nav-icon-wrapper"><Settings size={19} /></div>
                 <span className="nav-label">Settings</span>
               </NavLink>
               <NavLink to="/help" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Help & Support">
                 <div className="nav-icon-wrapper"><HelpCircle size={19} /></div>
->>>>>>> e6d10d6 (ui for customer portal)
                 <span className="nav-label">Help & Support</span>
               </NavLink>
             </>
           )}
 
           {role === 'delivery_partner' && (
-<<<<<<< HEAD
-            <NavLink to="/delivery/help" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} title="Help">
-              <div className="nav-icon-wrapper"><HelpCircle size={18} /></div>
-=======
             <NavLink to="/delivery/help" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Help">
               <div className="nav-icon-wrapper"><HelpCircle size={19} /></div>
->>>>>>> e6d10d6 (ui for customer portal)
               <span className="nav-label">Help</span>
             </NavLink>
           )}

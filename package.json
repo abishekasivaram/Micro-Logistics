@@ -10,12 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@supabase/supabase-js": "^2.116.0",
     "axios": "^1.20.0",
-=======
     "jsdom": "^29.1.1",
->>>>>>> e6d10d6 (ui for customer portal)
     "lucide-react": "^1.41.0",
     "puppeteer": "^25.10.0",
     "react": "^19.2.8",
