@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import { Search, Filter, Map as MapIcon, Eye, Navigation, Check, X, Clock, Play, AlertCircle } from 'lucide-react';
+import { Search, Filter, Map as MapIcon, Eye, Navigation, Check, X, Clock, Play, AlertCircle, Store, Truck, MapPin, CheckCircle, Package, ArrowRight } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import OrderDetailsModal from '../../components/common/OrderDetailsModal';
 import './OrdersPage.css';
+import './CustomerOrdersPage.css';
 
 const OrdersPage = () => {
   const { orders, customers, vendors, currentUser, updateOrderStatus } = useAppContext();
@@ -65,6 +66,129 @@ const OrdersPage = () => {
     'PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY',
     'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'
   ];
+
+  if (isCustomer) {
+    // Custom logic for customer tabs
+    const customerTabs = ['All', 'Active', 'Delivered', 'Cancelled'];
+    const activeTab = statusFilter === 'All' ? 'All' : statusFilter;
+    
+    // Filter specifically for the selected customer tab
+    const activeCustomerOrders = userOrders.filter(order => {
+      const st = order.orderStatus || order.status || 'PLACED';
+      if (activeTab === 'All') return true;
+      if (activeTab === 'Active') return ['PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY', 'ASSIGNED', 'OUT_FOR_DELIVERY'].includes(st);
+      if (activeTab === 'Delivered') return st === 'DELIVERED';
+      if (activeTab === 'Cancelled') return st === 'CANCELLED';
+      return true;
+    });
+
+    const getTimelineIndex = (status) => {
+      const s = status || 'PLACED';
+      if (s === 'PLACED') return 0;
+      if (['CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY'].includes(s)) return 1;
+      if (['ASSIGNED', 'OUT_FOR_DELIVERY'].includes(s)) return 2;
+      if (s === 'DELIVERED') return 3;
+      return 0; // Default or Cancelled
+    };
+
+    return (
+      <div className="customer-orders-page page-container">
+        <div className="customer-orders-header">
+          <h2>My Orders</h2>
+          <p>Track your local purchases and smart deliveries.</p>
+        </div>
+
+        <div className="orders-tabs">
+          {customerTabs.map(tab => (
+            <button 
+              key={tab} 
+              className={`order-tab ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setStatusFilter(tab === 'Active' ? 'Active' : tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div>
+          {activeCustomerOrders.length === 0 ? (
+            <div className="empty-state card" style={{ padding: '64px', textAlign: 'center', background: 'white', borderRadius: '16px' }}>
+              <Package size={48} color="#94a3b8" style={{ margin: '0 auto 16px auto' }} />
+              <h3 style={{ fontSize: '18px', margin: '0 0 8px 0', color: '#1e293b' }}>No Orders Found</h3>
+              <p style={{ color: '#64748b', margin: '0 0 24px 0' }}>You don't have any {activeTab.toLowerCase()} orders right now.</p>
+              <button className="btn btn-primary" onClick={() => navigate('/browse-sellers')}>
+                Start Shopping
+              </button>
+            </div>
+          ) : (
+            activeCustomerOrders.map(order => {
+              const currentSt = order.orderStatus || order.status || 'PLACED';
+              const itemsCount = order.items ? order.items.reduce((s, i) => s + (i.qty || 1), 0) : 0;
+              const stepIndex = getTimelineIndex(currentSt);
+              const isCancelled = currentSt === 'CANCELLED';
+
+              return (
+                <div key={order.id} className="customer-order-card">
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                      <div className="order-info-col">
+                        <h3>Order {order.id || order.orderId}</h3>
+                        <p style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Store size={14} /> {order.vendorName} • {itemsCount} items
+                        </p>
+                      </div>
+                      <div className="order-total-col" style={{ textAlign: 'right' }}>
+                        <span>Total Amount</span>
+                        <strong>₹{(order.total || 0).toFixed(2)}</strong>
+                      </div>
+                    </div>
+
+                    {!isCancelled ? (
+                      <div className="order-timeline-visual">
+                        <div className={`timeline-step ${stepIndex >= 0 ? 'completed' : ''} ${stepIndex === 0 ? 'active' : ''}`}>
+                          <div className="timeline-icon"><Check size={14} /></div>
+                          <span className="timeline-label">Placed</span>
+                        </div>
+                        <div className={`timeline-step ${stepIndex >= 1 ? 'completed' : ''} ${stepIndex === 1 ? 'active' : ''}`}>
+                          <div className="timeline-icon"><Package size={14} /></div>
+                          <span className="timeline-label">Preparing</span>
+                        </div>
+                        <div className={`timeline-step ${stepIndex >= 2 ? 'completed' : ''} ${stepIndex === 2 ? 'active' : ''}`}>
+                          <div className="timeline-icon"><Truck size={14} /></div>
+                          <span className="timeline-label">Out for Delivery</span>
+                        </div>
+                        <div className={`timeline-step ${stepIndex >= 3 ? 'completed' : ''} ${stepIndex === 3 ? 'active' : ''}`}>
+                          <div className="timeline-icon"><CheckCircle size={14} /></div>
+                          <span className="timeline-label">Delivered</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '16px', background: '#fef2f2', color: '#b91c1c', borderRadius: '12px', fontSize: '14px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <X size={18} /> Order Cancelled
+                      </div>
+                    )}
+
+                    <div className="customer-order-actions">
+                      <button className="btn btn-outline" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }} onClick={() => setViewingOrder(order)}>
+                        <Eye size={16} /> View Details
+                      </button>
+                      {['READY_FOR_DELIVERY', 'ASSIGNED', 'OUT_FOR_DELIVERY'].includes(currentSt) && (
+                        <button className="btn btn-primary" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }} onClick={() => navigate('/track-delivery')}>
+                          Track Live Map <ArrowRight size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {viewingOrder && <OrderDetailsModal order={viewingOrder} onClose={() => setViewingOrder(null)} />}
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

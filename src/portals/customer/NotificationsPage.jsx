@@ -1,41 +1,52 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Bell, Info, Package, Truck } from 'lucide-react';
-import './OrdersPage.css';
+import { Bell, Info, Package, Truck, Clock } from 'lucide-react';
+import './CustomerNotificationsPage.css';
 
 const NotificationsPage = () => {
   const { notifications } = useAppContext();
 
   const getIcon = (type) => {
     switch(type) {
-      case 'delivery': return <Truck size={20} className="text-primary" />;
-      case 'order': return <Package size={20} className="text-warning" />;
-      default: return <Info size={20} className="text-secondary" />;
+      case 'delivery': return <Truck size={24} />;
+      case 'order': return <Package size={24} />;
+      default: return <Info size={24} />;
+    }
+  };
+
+  const getIconClass = (type) => {
+    switch(type) {
+      case 'delivery': return 'delivery';
+      case 'order': return 'order';
+      default: return 'system';
     }
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h2>Notifications</h2>
-          <p>Stay updated with the latest system and delivery events.</p>
-        </div>
+    <div className="customer-notifications-page page-container">
+      <div className="notifications-header">
+        <h2>Notifications</h2>
+        <p>Stay updated with the latest system and smart delivery events.</p>
       </div>
 
-      <div className="card" style={{ padding: 'var(--spacing-4)' }}>
+      <div className="notifications-card">
         {notifications.length === 0 ? (
-          <p className="empty-state">No new notifications.</p>
+          <div className="empty-notifications">
+            <Bell size={48} color="#94a3b8" style={{ margin: '0 auto', opacity: 0.5 }} />
+            <p>You have no new notifications.</p>
+          </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="notifications-list">
             {notifications.map(notif => (
-              <div key={notif.id} className="flex items-start gap-4 p-4 border-b border-border last-of-type-no-border" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem' }}>
-                <div className="bg-background p-2 rounded-full">
+              <div key={notif.id} className="notification-item">
+                <div className={`notification-icon-wrap ${getIconClass(notif.type)}`}>
                   {getIcon(notif.type)}
                 </div>
-                <div>
-                  <p className="font-medium">{notif.message}</p>
-                  <span className="text-sm text-secondary">{new Date(notif.date).toLocaleString()}</span>
+                <div className="notification-content">
+                  <p className="notification-message">{notif.message}</p>
+                  <span className="notification-time">
+                    <Clock size={12} /> {new Date(notif.date).toLocaleString()}
+                  </span>
                 </div>
               </div>
             ))}

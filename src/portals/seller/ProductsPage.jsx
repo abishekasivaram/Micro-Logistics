@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import { Search, Plus, Edit2, Trash2, ShoppingCart, Clock, Store, Eye, Check, X, Filter } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, ShoppingCart, Clock, Store, Eye, Check, X, Filter, Heart } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import './ProductsPage.css';
 
@@ -181,7 +181,7 @@ const ProductsPage = () => {
 
       {/* CUSTOMER VIEW: Product Cards Grid */}
       {isCustomer ? (
-        <div className="products-card-grid">
+        <div className="customer-product-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', padding: '16px 0' }}>
           {filteredProducts.length === 0 ? (
             <div className="no-products-box full-width">
               <Store size={48} className="text-secondary" />
@@ -195,43 +195,49 @@ const ProductsPage = () => {
               const isAvailable = product.stock > 0;
 
               return (
-                <div key={product.id} className="product-item-card">
-                  <div className="product-image-wrap">
-                    <img src={product.image} alt={product.name} />
-                    <span className={`product-status-tag ${isAvailable ? 'in-stock' : 'out-of-stock'}`}>
-                      {isAvailable ? 'In Stock' : 'Out of Stock'}
-                    </span>
+                <div key={product.id} className="customer-product-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                  <div className="wishlist-btn-overlay" style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', cursor: 'pointer', zIndex: 2 }}>
+                    <Heart size={16} />
+                  </div>
+                  
+                  <div className="product-img-box" style={{ height: '160px', width: '100%', overflow: 'hidden', position: 'relative' }}>
+                    <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {!isAvailable && (
+                       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(239, 68, 68, 0.9)', color: 'white', fontSize: '12px', textAlign: 'center', padding: '4px' }}>
+                         Out of Stock
+                       </div>
+                    )}
                   </div>
 
-                  <div className="product-card-details">
-                    <span className="product-category-tag">{product.category}</span>
-                    <h3 className="product-title">{product.name}</h3>
-                    <div className="product-seller-info">
-                      <Store size={14} className="text-secondary" />
+                  <div className="product-info-box" style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{product.name}</h4>
+                    <div className="product-seller-text" style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
+                      <Store size={14} />
                       <span>{vendor?.name || product.vendorName || 'Local Seller'}</span>
                     </div>
-                    <p className="product-desc">{product.description}</p>
 
-                    <div className="product-meta">
-                      <span className="product-price">₹{product.price.toFixed(2)}</span>
-                      <span className="product-prep-time"><Clock size={12} /> {product.prepTime || '15 mins'}</span>
-                    </div>
-                  </div>
-
-                  <div className="product-card-footer">
-                    <div className="qty-selector">
-                      <button onClick={() => handleQtyChange(product.id, -1)} disabled={!isAvailable}>-</button>
-                      <span>{qty}</span>
-                      <button onClick={() => handleQtyChange(product.id, 1)} disabled={!isAvailable}>+</button>
+                    <div className="product-price-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', marginBottom: '12px' }}>
+                      <span className="price" style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>₹{product.price.toFixed(2)}</span>
+                      <span style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={12} /> {product.prepTime || '15 mins'}
+                      </span>
                     </div>
 
-                    <button 
-                      className="btn btn-primary add-cart-btn"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={!isAvailable}
-                    >
-                      <ShoppingCart size={16} /> Add to Cart
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <div className="qty-selector" style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                        <button style={{ padding: '6px 10px', background: '#f8fafc', border: 'none', cursor: 'pointer' }} onClick={() => handleQtyChange(product.id, -1)} disabled={!isAvailable}>-</button>
+                        <span style={{ padding: '0 12px', fontSize: '14px', fontWeight: '500' }}>{qty}</span>
+                        <button style={{ padding: '6px 10px', background: '#f8fafc', border: 'none', cursor: 'pointer' }} onClick={() => handleQtyChange(product.id, 1)} disabled={!isAvailable}>+</button>
+                      </div>
+                      <button 
+                        className="btn btn-primary"
+                        style={{ flex: 1, padding: '8px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
+                        onClick={() => handleAddToCart(product)}
+                        disabled={!isAvailable}
+                      >
+                        <ShoppingCart size={16} /> Add
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { User, Mail, Phone, MapPin, Save, Lock, Camera, CheckCircle } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Save, Lock, Camera, CheckCircle, Heart, Trash2, ShoppingCart } from 'lucide-react';
 import './ProfilePage.css';
+import './CustomerProfilePage.css';
 
 const ProfilePage = () => {
   const { currentUser, updateUserProfile } = useAppContext();
@@ -106,12 +107,20 @@ const ProfilePage = () => {
             >
               <Lock size={16} /> Change Password
             </button>
+            {currentUser?.role === 'customer' && (
+              <button 
+                className={`tab-btn ${activeTab === 'wishlist' ? 'active' : ''}`}
+                onClick={() => setActiveTab('wishlist')}
+              >
+                <Heart size={16} /> My Wishlist
+              </button>
+            )}
           </div>
         </div>
 
         {/* Right Side: Form View */}
         <div className="profile-card form-card">
-          {activeTab === 'details' ? (
+          {activeTab === 'details' && (
             <form onSubmit={handleDetailsSubmit} className="profile-form">
               <h3 className="form-section-title">Personal Information</h3>
 
@@ -206,7 +215,9 @@ const ProfilePage = () => {
                 </button>
               </div>
             </form>
-          ) : (
+          )}
+
+          {activeTab === 'password' && (
             <form onSubmit={handlePasswordSubmit} className="profile-form">
               <h3 className="form-section-title">Change Password</h3>
 
@@ -257,6 +268,54 @@ const ProfilePage = () => {
                 </button>
               </div>
             </form>
+          )}
+
+          {activeTab === 'wishlist' && (
+            <div className="customer-wishlist-view">
+              <h3 className="form-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Heart size={20} fill="#ef4444" color="#ef4444" /> My Wishlist
+              </h3>
+              <p style={{ color: '#64748b', fontSize: '14px', margin: '-12px 0 16px 0' }}>Saved items from your favorite local sellers.</p>
+              
+              <div className="customer-wishlist-grid">
+                {/* Mock Visual Wishlist Items */}
+                <div className="wishlist-mock-card">
+                  <div className="wishlist-img-box">
+                    <img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=200" alt="Fresh Apples" />
+                    <button className="remove-wishlist-btn" title="Remove"><Trash2 size={16} /></button>
+                  </div>
+                  <div className="wishlist-info">
+                    <h4>Fresh Apples (1kg)</h4>
+                    <span className="price">₹120.00</span>
+                    <button className="wishlist-action-btn"><ShoppingCart size={14} /> Add to Cart</button>
+                  </div>
+                </div>
+
+                <div className="wishlist-mock-card">
+                  <div className="wishlist-img-box">
+                    <img src="https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&q=80&w=200" alt="Whole Wheat Bread" />
+                    <button className="remove-wishlist-btn" title="Remove"><Trash2 size={16} /></button>
+                  </div>
+                  <div className="wishlist-info">
+                    <h4>Whole Wheat Bread</h4>
+                    <span className="price">₹45.00</span>
+                    <button className="wishlist-action-btn"><ShoppingCart size={14} /> Add to Cart</button>
+                  </div>
+                </div>
+
+                <div className="wishlist-mock-card">
+                  <div className="wishlist-img-box">
+                    <img src="https://images.unsplash.com/photo-1587049352847-8d4e8941554a?auto=format&fit=crop&q=80&w=200" alt="Organic Milk" />
+                    <button className="remove-wishlist-btn" title="Remove"><Trash2 size={16} /></button>
+                  </div>
+                  <div className="wishlist-info">
+                    <h4>Organic Milk (1L)</h4>
+                    <span className="price">₹65.00</span>
+                    <button className="wishlist-action-btn"><ShoppingCart size={14} /> Add to Cart</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
