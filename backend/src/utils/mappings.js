@@ -153,9 +153,31 @@ const mapBatchToFrontend = (dbBatch) => {
         deliverySlot: dbBatch.delivery_slot,
         orderCount: dbBatch.order_count,
         estimatedDistance: dbBatch.estimated_distance,
+
         estimatedTime: dbBatch.estimated_time,
         status: (0, exports.getBatchHumanReadableStatus)(dbBatch.status),
         aggregationStatus: (0, exports.getHumanReadableAggregationStatus)(dbBatch.aggregation_status)
     };
 };
 exports.mapBatchToFrontend = mapBatchToFrontend;
+
+const mapCustomerToFrontend = (dbCustomer) => {
+    return {
+        uuid: dbCustomer.id,
+        id: dbCustomer.legacy_id || dbCustomer.id,
+        name: dbCustomer.profile?.username, // or full_name if available, using username
+        username: dbCustomer.profile?.username,
+        email: dbCustomer.profile?.email,
+        phone: dbCustomer.profile?.phone,
+        role: dbCustomer.profile?.role || 'customer',
+        address: dbCustomer.address,
+        area: dbCustomer.area,
+        status: dbCustomer.status,
+        totalOrders: dbCustomer.total_orders,
+        activeOrders: dbCustomer.active_orders,
+        lat: dbCustomer.lat,
+        lng: dbCustomer.lng,
+        avatar: dbCustomer.avatar
+    };
+};
+exports.mapCustomerToFrontend = mapCustomerToFrontend;

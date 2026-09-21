@@ -8,4 +8,5 @@ router.get('/', product_controller_1.getProducts);
 router.get('/:id', product_controller_1.getProductById);
 router.post('/', auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(['admin', 'vendor']), product_controller_1.createProduct);
 router.put('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(['admin', 'vendor']), product_controller_1.updateProduct);
+router.delete('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(['admin', 'vendor']), product_controller_1.deleteProduct);
 exports.default = router;

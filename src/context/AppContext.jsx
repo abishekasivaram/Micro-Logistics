@@ -1,16 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
-import { 
-  orders as initialOrders, 
-  vendors as initialVendors, 
-  customers as initialCustomers, 
-  deliveryAgents as initialDeliveryAgents,
-  deliveryBatches as initialDeliveryBatches,
-  products as initialProducts,
-  initialNotifications,
-  mockUsers,
-  adminSettingsInitial
-} from '../data/sampleData';
 
 const AppContext = createContext();
 
@@ -28,16 +17,21 @@ const getStorageItem = (key, defaultValue) => {
 };
 
 export const AppProvider = ({ children }) => {
-  const [orders, setOrders] = useState(() => getStorageItem('orders', initialOrders));
-  const [vendors, setVendors] = useState(() => getStorageItem('vendors', initialVendors));
-  const [customers, setCustomers] = useState(() => getStorageItem('customers', initialCustomers));
-  const [deliveryAgents, setDeliveryAgents] = useState(() => getStorageItem('deliveryAgents', initialDeliveryAgents));
-  const [deliveryBatches, setDeliveryBatches] = useState(() => getStorageItem('deliveryBatches', initialDeliveryBatches));
-  const [products, setProducts] = useState(() => getStorageItem('products', initialProducts));
-  const [notifications, setNotifications] = useState(() => getStorageItem('notifications', initialNotifications));
+  const [orders, setOrders] = useState(() => getStorageItem('orders', []));
+  const [vendors, setVendors] = useState(() => getStorageItem('vendors', []));
+  const [customers, setCustomers] = useState(() => getStorageItem('customers', []));
+  const [deliveryAgents, setDeliveryAgents] = useState(() => getStorageItem('deliveryAgents', []));
+  const [deliveryBatches, setDeliveryBatches] = useState(() => getStorageItem('deliveryBatches', []));
+  const [products, setProducts] = useState(() => getStorageItem('products', []));
+  const [notifications, setNotifications] = useState(() => getStorageItem('notifications', []));
   const [cart, setCart] = useState(() => getStorageItem('cart', []));
   const [currentUser, setCurrentUser] = useState(() => getStorageItem('currentUser', null));
-  const [adminSettings, setAdminSettings] = useState(() => getStorageItem('adminSettings', adminSettingsInitial));
+  const [adminSettings, setAdminSettings] = useState(() => getStorageItem('adminSettings', {
+    autoAssignWaitTime: 15,
+    maxOrdersPerBatch: 5,
+    maxBatchDistance: 3.5,
+    agentTimeout: 30
+  }));
 
   // Legacy alias for deliveryGroups
   const deliveryGroups = deliveryBatches;
@@ -53,39 +47,43 @@ export const AppProvider = ({ children }) => {
     const loadData = async () => {
       setGlobalLoading(true);
       try {
-        // Fetch data concurrently
-        const [
-          prodRes,
-          vendRes,
-          ordRes,
-          batchRes,
-          agentRes
-        ] = await Promise.all([
-          api.get('/products'),
-          api.get('/vendors'),
-          api.get('/orders'),
-          api.get('/delivery/batches'),
-          api.get('/delivery/agents')
-        ]);
+        const role = currentUser.role;
+        const promises = [
+          api.get('/products').then(res => { if (res.data.success) setProducts(res.data.data) }),
+          api.get('/vendors').then(res => { if (res.data.success) setVendors(res.data.data) }),
+          api.get('/notifications').then(res => { if (res.data.success) setNotifications(res.data.data) })
+        ];
 
-        if (prodRes.data.success) setProducts(prodRes.data.data);
-        if (vendRes.data.success) setVendors(vendRes.data.data);
-        if (ordRes.data.success) setOrders(ordRes.data.data);
-        if (batchRes.data.success) setDeliveryBatches(batchRes.data.data);
-        if (agentRes.data.success) setDeliveryAgents(agentRes.data.data);
-        
+        if (role === 'admin') {
+          promises.push(
+            api.get('/orders').then(res => { if (res.data.success) setOrders(res.data.data) }),
+            api.get('/delivery/batches').then(res => { if (res.data.success) setDeliveryBatches(res.data.data) }),
+            api.get('/delivery/agents').then(res => { if (res.data.success) setDeliveryAgents(res.data.data) }),
+            api.get('/customers').then(res => { if (res.data.success) setCustomers(res.data.data) }),
+            api.get('/settings').then(res => { if (res.data.success) setAdminSettings(res.data.data) })
+          );
+        } else if (role === 'vendor') {
+          promises.push(
+            api.get('/orders').then(res => { if (res.data.success) setOrders(res.data.data) })
+          );
+        } else if (role === 'customer') {
+          promises.push(
+            api.get('/orders').then(res => { if (res.data.success) setOrders(res.data.data) })
+          );
+        } else if (role === 'delivery_partner') {
+          promises.push(
+            api.get('/orders').then(res => { if (res.data.success) setOrders(res.data.data) }),
+            api.get('/delivery/batches').then(res => { if (res.data.success) setDeliveryBatches(res.data.data) }),
+            api.get('/delivery/agents').then(res => { if (res.data.success) setDeliveryAgents(res.data.data) })
+          );
+        }
+
+        await Promise.all(promises);
         setOfflineMode(false);
       } catch (err) {
-        console.error("Failed to load API data. Falling back to local/sample data.", err);
+        console.error("Failed to load API data.", err);
         setOfflineMode(true);
         addNotification("API Unreachable. Running in offline/demo mode.", "system");
-        
-        // Load from sample data if empty
-        if (products.length === 0) setProducts(initialProducts);
-        if (vendors.length === 0) setVendors(initialVendors);
-        if (orders.length === 0) setOrders(initialOrders);
-        if (deliveryBatches.length === 0) setDeliveryBatches(initialDeliveryBatches);
-        if (deliveryAgents.length === 0) setDeliveryAgents(initialDeliveryAgents);
       } finally {
         setGlobalLoading(false);
       }
@@ -136,61 +134,55 @@ export const AppProvider = ({ children }) => {
   };
 
   // --- Registration Flows ---
-  const registerCustomer = (data) => {
-    const newCustomer = {
-      id: `c${Date.now()}`,
-      name: data.fullName,
-      username: data.username,
-      email: data.email,
-      password: data.password || 'password123',
-      phone: data.phone,
-      address: data.address,
-      area: data.cityArea || 'Local',
-      status: 'Active',
-      totalOrders: 0,
-      activeOrders: 0,
-      role: 'customer',
-      avatar: data.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      lat: 13.0827,
-      lng: 80.2707
-    };
-    
-    setCustomers(prev => [...prev, newCustomer]);
-    setCurrentUser(newCustomer);
-    addNotification(`Welcome ${newCustomer.name}! Customer account created successfully.`, 'system');
-    return newCustomer;
+  const registerCustomer = async (data) => {
+    try {
+      const payload = {
+        name: data.fullName,
+        username: data.username,
+        email: data.email,
+        password: data.password || 'password123',
+        phone: data.phone,
+        address: data.address,
+        area: data.cityArea || 'Local',
+        role: 'customer'
+      };
+      
+      const res = await api.post('/auth/signup', payload);
+      if (res.data.success) {
+        addNotification(`Welcome ${payload.name}! Customer account created successfully.`, 'system');
+        return true;
+      }
+    } catch (err) {
+      console.error(err);
+      addNotification(err.response?.data?.message || "Failed to register customer account.", "error");
+      return false;
+    }
   };
 
-  const registerSeller = (data) => {
-    const newSeller = {
-      id: `v${Date.now()}`,
-      name: data.businessName,
-      shopName: data.businessName,
-      password: data.password,
-      ownerName: data.ownerName,
-      username: data.username,
-      email: data.email,
-      phone: data.phone,
-      category: data.category || 'Local Seller',
-      rating: 5.0,
-      prepTime: '15-30 mins',
-      isOpen: true,
-      status: 'Active',
-      joinDate: new Date().toISOString().split('T')[0],
-      operatingHours: data.operatingHours || '9:00 AM - 9:00 PM',
-      address: data.businessAddress,
-      area: data.cityArea || 'Local Area',
-      role: 'vendor',
-      logo: data.logo || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&auto=format&fit=crop&q=80',
-      description: data.description || 'Verified local seller in the Micro-Logistics Network.',
-      lat: 13.0418,
-      lng: 80.2341
-    };
-
-    setVendors(prev => [...prev, newSeller]);
-    setCurrentUser(newSeller);
-    addNotification(`Welcome ${newSeller.name}! Seller registration complete.`, 'system');
-    return newSeller;
+  const registerSeller = async (data) => {
+    try {
+      const payload = {
+        name: data.ownerName,
+        shopName: data.businessName,
+        username: data.username,
+        email: data.email,
+        password: data.password || 'password123',
+        phone: data.phone,
+        address: data.businessAddress,
+        area: data.cityArea || 'Local Area',
+        role: 'vendor'
+      };
+      
+      const res = await api.post('/auth/signup', payload);
+      if (res.data.success) {
+        addNotification(`Welcome ${payload.shopName}! Seller registration complete.`, 'system');
+        return true;
+      }
+    } catch (err) {
+      console.error(err);
+      addNotification(err.response?.data?.message || "Failed to register seller account.", "error");
+      return false;
+    }
   };
 
   // --- Orders & Checkout ---
@@ -460,11 +452,17 @@ export const AppProvider = ({ children }) => {
     }
   };
   
-  const deleteProduct = (id) => {
-    // Delete product API endpoint might not be in Phase 2 contract, falling back to local only if necessary
-    // But assuming it is, or we'll mock it temporarily
-    setProducts(prev => prev.filter(p => p.id !== id));
-    addNotification(`Product deleted locally.`, 'system');
+  const deleteProduct = async (id) => {
+    try {
+      const res = await api.delete(`/products/${id}`);
+      if (res.data?.success) {
+        setProducts(prev => prev.filter(p => p.id !== id && p.uuid !== id));
+        addNotification(`Product deleted successfully.`, 'system');
+      }
+    } catch (err) {
+      console.error("Error deleting product:", err);
+      addNotification("Failed to delete product.", "error");
+    }
   };
 
   // --- Notifications CRUD ---

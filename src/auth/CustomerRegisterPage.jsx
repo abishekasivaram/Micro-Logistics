@@ -28,7 +28,7 @@ const CustomerRegisterPage = () => {
     if (errorMsg) setErrorMsg('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (
@@ -59,8 +59,10 @@ const CustomerRegisterPage = () => {
     }
 
     // Call AppContext registration
-    registerCustomer(formData);
-    navigate('/customer-dashboard');
+    const success = await registerCustomer(formData);
+    if (success) {
+      navigate('/login');
+    }
   };
 
   return (

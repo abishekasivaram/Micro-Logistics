@@ -7,6 +7,8 @@ const router = (0, express_1.Router)();
 router.use(auth_middleware_1.requireAuth);
 router.get('/agents', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.getAgents);
 router.get('/agents/:id', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.getAgentById);
+router.post('/agents', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.createAgent);
+router.put('/agents/:id', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.updateAgent);
 router.get('/batches', delivery_controller_1.getBatches);
 router.get('/batches/:id', delivery_controller_1.getBatchById);
 router.post('/batches', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.createBatch);

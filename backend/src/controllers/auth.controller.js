@@ -60,3 +60,66 @@ exports.resolveIdentifier = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+exports.signup = async (req, res) => {
+  try {
+    const { email, password, role, name, phone, address, area, shopName } = req.body;
+    
+    if (!email || !password || !role) {
+      return res.status(400).json({ success: false, message: 'Email, password, and role are required' });
+    }
+
+    // 1. Create Supabase Auth User
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { role, full_name: name || shopName }
+    });
+
+    if (authError) {
+      return res.status(400).json({ success: false, message: authError.message });
+    }
+
+    const userId = authData.user.id;
+
+    // 2. Insert into profiles
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: userId,
+      email,
+      username: name || shopName,
+      phone,
+      role
+    });
+    
+    if (profileError) throw profileError;
+
+    // 3. Insert into role-specific tables
+    if (role === 'customer') {
+      const legacyId = 'c' + Math.floor(Math.random() * 10000);
+      await supabase.from('customer_profiles').insert({
+        id: userId,
+        legacy_id: legacyId,
+        address,
+        area,
+        status: 'Active'
+      });
+    } else if (role === 'vendor') {
+      const legacyId = 'v' + Math.floor(Math.random() * 10000);
+      await supabase.from('vendors').insert({
+        id: userId,
+        legacy_id: legacyId,
+        shop_name: shopName || name,
+        owner_name: name,
+        address,
+        area,
+        status: 'Active',
+        is_open: true
+      });
+    }
+
+    return res.status(201).json({ success: true, message: 'User registered successfully', userId });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

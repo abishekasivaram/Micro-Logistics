@@ -45,50 +45,11 @@ const LoginPage = () => {
 
     const lowerSearchId = searchId.toLowerCase();
 
-    // Helper for matching local / demo accounts
-    const findLocalUser = () => {
-      // 1. Check Customer
-      const customerMatch = customers.find(c => 
-        (c.id && c.id.toLowerCase() === lowerSearchId) || 
-        (c.username && c.username.toLowerCase() === lowerSearchId) ||
-        (c.email && c.email.toLowerCase() === lowerSearchId)
-      );
-      if (customerMatch) return { user: customerMatch, role: 'customer' };
-
-      // 2. Check Seller / Vendor
-      const sellerMatch = vendors.find(v => 
-        (v.id && v.id.toLowerCase() === lowerSearchId) || 
-        (v.shopName && v.shopName.toLowerCase() === lowerSearchId) ||
-        (v.name && v.name.toLowerCase() === lowerSearchId) ||
-        (v.username && v.username.toLowerCase() === lowerSearchId) ||
-        (v.email && v.email.toLowerCase() === lowerSearchId)
-      );
-      if (sellerMatch) return { user: sellerMatch, role: 'vendor' };
-
-      // 3. Check Admin
-      const adminMatch = mockUsers.find(u => 
-        u.role === 'admin' && (
-          (u.id && u.id.toLowerCase() === lowerSearchId) || 
-          (u.username && u.username.toLowerCase() === lowerSearchId) || 
-          (u.email && u.email.toLowerCase() === lowerSearchId)
-        )
-      );
-      if (adminMatch || lowerSearchId === 'admin') {
-        return { 
-          user: adminMatch || { id: 'u3', name: 'System Admin', username: 'admin', email: 'admin@micrologi.com', role: 'admin' }, 
-          role: 'admin' 
-        };
-      }
-
-      // 4. Check Delivery Agent
-      const deliveryMatch = deliveryAgents && deliveryAgents.find(d => 
-        (d.id && d.id.toLowerCase() === lowerSearchId) || 
-        (d.name && d.name.toLowerCase() === lowerSearchId) ||
-        (d.email && d.email.toLowerCase() === lowerSearchId)
-      );
-      if (deliveryMatch) return { user: deliveryMatch, role: 'delivery_partner' };
-
-      return null;
+    // Helper to determine role from email or metadata (fallback if needed)
+    const getRole = (metadata, emailStr) => {
+      if (metadata?.role) return metadata.role;
+      if (emailStr.includes('admin')) return 'admin';
+      return 'customer'; // Default
     };
 
     const loginSuccess = (userObj, role) => {
@@ -106,7 +67,6 @@ const LoginPage = () => {
       }
     };
 
-    // Step 1: Attempt Supabase authentication if possible
     try {
       let resolvedEmail = null;
 
@@ -115,7 +75,7 @@ const LoginPage = () => {
       } else if (lowerSearchId === 'admin') {
         resolvedEmail = 'admin@example.com';
       } else {
-        // Try backend /auth/resolve endpoint with a short timeout
+        // Try backend /auth/resolve endpoint
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1500);
 
@@ -136,7 +96,6 @@ const LoginPage = () => {
             }
           }
         } catch {
-          // Backend server offline or timed out; proceed to fallback
           clearTimeout(timeoutId);
         }
       }
@@ -148,37 +107,30 @@ const LoginPage = () => {
         });
 
         if (!authError && authData?.user) {
-          const role = authData.user.user_metadata?.role || (lowerSearchId === 'admin' ? 'admin' : null);
-          const localInfo = findLocalUser();
-          const baseUser = localInfo ? localInfo.user : {
-            id: searchId,
+          const role = getRole(authData.user.user_metadata, resolvedEmail);
+          
+          // Use basic user details for now; AppContext will hydrate full data
+          const baseUser = {
+            id: authData.user.id,
             email: resolvedEmail,
-            name: authData.user.user_metadata?.full_name || searchId
+            name: authData.user.user_metadata?.full_name || searchId,
+            username: searchId
           };
 
-          loginSuccess(baseUser, role || localInfo?.role || 'admin');
+          loginSuccess(baseUser, role);
+          return;
+        } else {
+          setErrorMsg("Incorrect credentials. Please try again.");
           return;
         }
-      }
-    } catch (supabaseErr) {
-      console.warn("Supabase/backend auth check failed; attempting local login fallback:", supabaseErr);
-    }
-
-    // Step 2: Fallback to local / demo accounts
-    const localMatch = findLocalUser();
-    if (localMatch) {
-      const expectedPassword = localMatch.user.password || 'password123';
-      if (password === expectedPassword || password === 'password123') {
-        loginSuccess(localMatch.user, localMatch.role);
-        return;
       } else {
-        setErrorMsg("Incorrect password. Please try again.");
+        setErrorMsg("Account not found. Please check your User ID, Shop Name, or Agent ID.");
         return;
       }
+    } catch (err) {
+      console.error("Login failed:", err);
+      setErrorMsg("An error occurred during login.");
     }
-
-    // Neither backend nor local accounts matched
-    setErrorMsg("Account not found. Please check your User ID, Shop Name, or Agent ID.");
   };
 
   const fillDemoAccount = (id, pwd) => {

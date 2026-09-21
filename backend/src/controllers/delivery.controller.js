@@ -197,3 +197,104 @@ const updateBatchStatus = async (req, res) => {
     }
 };
 exports.updateBatchStatus = updateBatchStatus;
+
+const createAgent = async (req, res) => {
+    try {
+        const { name, phone, email, currentArea, vehicle, capacity } = req.body;
+        
+        // Ensure email isn't already used
+        const { data: existingUser } = await supabase_1.supabase.from('profiles').select('id').eq('email', email).single();
+        if (existingUser) return res.status(400).json({ success: false, message: 'Email already exists' });
+        
+        // 1. Create auth user
+        const { data: authData, error: authErr } = await supabase_1.supabase.auth.admin.createUser({
+            email,
+            password: 'password123', // default
+            email_confirm: true,
+            user_metadata: { role: 'delivery_partner', full_name: name }
+        });
+        if (authErr) throw authErr;
+        
+        const newId = authData.user.id;
+        
+        // 2. Insert profile
+        await supabase_1.supabase.from('profiles').insert({
+            id: newId,
+            email,
+            phone,
+            username: name,
+            role: 'delivery_partner'
+        });
+        
+        // 3. Insert agent
+        const legacyId = 'da' + Math.floor(Math.random() * 1000);
+        const { data, error } = await supabase_1.supabase.from('delivery_agents').insert({
+            id: newId,
+            legacy_id: legacyId,
+            current_area: currentArea,
+            vehicle: vehicle || 'Bike',
+            capacity: capacity || 5,
+            status: 'Active',
+            availability: 'Available'
+        }).select('*, profile:profiles(username, phone)').single();
+        
+        if (error) throw error;
+        
+        res.status(201).json({ success: true, data: (0, mappings_1.mapAgentToFrontend)(data) });
+    }
+    catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+exports.createAgent = createAgent;
+
+const updateAgent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        
+        let query = supabase_1.supabase.from('delivery_agents').select('id').eq('legacy_id', id).single();
+        let { data: existing, error: e1 } = await query;
+        if (e1) {
+            existing = (await supabase_1.supabase.from('delivery_agents').select('id').eq('id', id).single()).data;
+        }
+        if (!existing) return res.status(404).json({ success: false, message: 'Agent not found' });
+        
+        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        if (userRole === 'delivery_partner' && existing.id !== req.user?.id) {
+            return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+        
+        const payload = {
+            current_area: updates.currentArea,
+            vehicle: updates.vehicle,
+            capacity: updates.capacity,
+            status: updates.status,
+            availability: updates.availability
+        };
+        
+        const { data, error } = await supabase_1.supabase.from('delivery_agents')
+            .update(payload)
+            .eq('id', existing.id)
+            .select('*, profile:profiles(username, phone)')
+            .single();
+            
+        if (error) throw error;
+        
+        // Update profile if phone or name is given
+        if (updates.phone || updates.name) {
+            const pUpdate = {};
+            if (updates.phone) pUpdate.phone = updates.phone;
+            if (updates.name) pUpdate.username = updates.name;
+            await supabase_1.supabase.from('profiles').update(pUpdate).eq('id', existing.id);
+            const refreshed = await supabase_1.supabase.from('delivery_agents').select('*, profile:profiles(username, phone)').eq('id', existing.id).single();
+            return res.json({ success: true, data: (0, mappings_1.mapAgentToFrontend)(refreshed.data) });
+        }
+        
+        res.json({ success: true, data: (0, mappings_1.mapAgentToFrontend)(data) });
+    }
+    catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+exports.updateAgent = updateAgent;

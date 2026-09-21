@@ -123,3 +123,29 @@ const updateProduct = async (req, res) => {
     }
 };
 exports.updateProduct = updateProduct;
+
+const deleteProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let query = supabase_1.supabase.from('products').select('id, vendor_id').eq('legacy_id', id).single();
+        let { data: existing, error: e1 } = await query;
+        if (e1) {
+            existing = (await supabase_1.supabase.from('products').select('id, vendor_id').eq('id', id).single()).data;
+        }
+        if (!existing)
+            return res.status(404).json({ success: false, message: 'Product not found' });
+            
+        if (req.user?.user_metadata?.role === 'vendor' && existing.vendor_id !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
+        }
+        
+        const { error } = await supabase_1.supabase.from('products').delete().eq('id', existing.id);
+        if (error) throw error;
+        
+        res.json({ success: true, message: 'Product deleted successfully' });
+    }
+    catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+exports.deleteProduct = deleteProduct;

@@ -36,7 +36,7 @@ const SellerRegisterPage = () => {
     if (errorMsg) setErrorMsg('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.businessName || !formData.ownerName || !formData.username || !formData.email || !formData.password || !formData.phone || !formData.businessAddress) {
@@ -60,8 +60,10 @@ const SellerRegisterPage = () => {
       return;
     }
 
-    registerSeller(formData);
-    navigate('/vendor-dashboard');
+    const success = await registerSeller(formData);
+    if (success) {
+      navigate('/login');
+    }
   };
 
   return (
