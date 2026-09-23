@@ -1,17 +1,12 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
-let app;
-try {
-  const appModule = require('../backend/src/app.js');
-  app = appModule.default || appModule;
-} catch (err) {
-  console.error("Vercel App Require Error:", err);
-}
+const appModule = require('./backend.cjs');
+const app = appModule.default || appModule;
 
 export default function handler(req, res) {
-  if (!app) {
-    return res.status(500).json({ success: false, error: "Failed to load backend app with createRequire" });
+  if (typeof app === 'function') {
+    return app(req, res);
   }
-  return app(req, res);
+  return app.default(req, res);
 }
