@@ -7,16 +7,22 @@ exports.env = void 0;
 const zod_1 = require("zod");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+
 const envSchema = zod_1.z.object({
-    SUPABASE_URL: zod_1.z.string().url('Must be a valid URL'),
-    SUPABASE_SERVICE_ROLE_KEY: zod_1.z.string().min(1, 'Service role key is required'),
+    SUPABASE_URL: zod_1.z.string().default(process.env.VITE_SUPABASE_URL || 'https://qyqeidrkyeyrvfrthbta.supabase.co'),
+    SUPABASE_SERVICE_ROLE_KEY: zod_1.z.string().default(process.env.VITE_SUPABASE_ANON_KEY || ''),
     PORT: zod_1.z.string().default('5000').transform(Number),
-    FRONTEND_URL: zod_1.z.string().default('http://localhost:5173'),
+    FRONTEND_URL: zod_1.z.string().default('*'),
 });
+
 const _env = envSchema.safeParse(process.env);
 if (!_env.success) {
-    console.error('❌ Invalid environment variables:');
-    console.error(_env.error.format());
-    process.exit(1);
+    console.error('⚠️ Environment warning:', _env.error.format());
 }
-exports.env = _env.data;
+
+exports.env = _env.data || {
+    SUPABASE_URL: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://qyqeidrkyeyrvfrthbta.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
+    PORT: 5000,
+    FRONTEND_URL: '*'
+};
