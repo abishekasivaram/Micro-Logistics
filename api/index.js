@@ -1,17 +1,17 @@
-import appModule from '../backend/src/app.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
-const app = appModule.default || appModule;
+let app;
+try {
+  const appModule = require('../backend/src/app.js');
+  app = appModule.default || appModule;
+} catch (err) {
+  console.error("Vercel App Require Error:", err);
+}
 
 export default function handler(req, res) {
-  try {
-    if (typeof app === 'function') {
-      return app(req, res);
-    }
-    if (app && typeof app.default === 'function') {
-      return app.default(req, res);
-    }
-    return res.status(500).json({ success: false, error: "App is not a callable function", type: typeof app });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, stack: err.stack });
+  if (!app) {
+    return res.status(500).json({ success: false, error: "Failed to load backend app with createRequire" });
   }
+  return app(req, res);
 }
