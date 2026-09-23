@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import { deliverySlots } from '../../data/sampleData';
+import { deliverySlots } from '../../utils/deliveryConstants';
 import { Truck, Calendar, Clock, MapPin, Phone, ShieldCheck, CheckCircle, Info, ArrowLeft, ArrowRight, Store, Sparkles } from 'lucide-react';
 import './CheckoutPage.css';
 

@@ -11,7 +11,7 @@ const envSchema = zod_1.z.object({
     SUPABASE_URL: zod_1.z.string().url('Must be a valid URL'),
     SUPABASE_SERVICE_ROLE_KEY: zod_1.z.string().min(1, 'Service role key is required'),
     PORT: zod_1.z.string().default('5000').transform(Number),
-    FRONTEND_URL: zod_1.z.string().url('Must be a valid URL'),
+    FRONTEND_URL: zod_1.z.string().default('http://localhost:5173'),
 });
 const _env = envSchema.safeParse(process.env);
 if (!_env.success) {

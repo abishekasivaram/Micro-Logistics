@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { mockUsers } from '../data/sampleData';
 import { Eye, EyeOff, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import './LoginPage.css';

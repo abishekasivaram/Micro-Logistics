@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { deliverySlots } from '../../data/sampleData';
+import { deliverySlots } from '../../utils/deliveryConstants';
 import { Calendar, Clock, MapPin, Store, Edit2, CheckCircle, Info, X, Sparkles } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import './DeliverySchedulePage.css';
