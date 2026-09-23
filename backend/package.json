@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "node --watch src/server.js",
+    "build": "echo 'No build step required'",
     "start": "node src/server.js",
     "test": "vitest run",
     "fix": "node fix_seed.js",
