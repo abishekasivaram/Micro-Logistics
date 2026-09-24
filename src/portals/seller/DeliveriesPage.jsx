@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Search, Map as MapIcon, ChevronRight } from 'lucide-react';
 import '../customer/OrdersPage.css'; // Reusing table styles
 
 const DeliveriesPage = () => {
-  const { deliveryBatches = [], deliveryAgents = [], orders = [], customers = [], updateBatchStatus } = useAppContext();
+  const navigate = useNavigate();
+  const { deliveryBatches = [], deliveryAgents = [], orders = [], customers = [], updateBatchStatus, currentUser } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
 
   // Enrich delivery groups
@@ -102,7 +104,17 @@ const DeliveriesPage = () => {
                     </select>
                   </td>
                   <td>
-                    <button className="icon-btn-small" title="View Route"><MapIcon size={18} /></button>
+                    <button 
+                      className="icon-btn-small" 
+                      title="View Route"
+                      aria-label={`View Route for batch ${group.id}`}
+                      onClick={() => {
+                        const targetPath = currentUser?.role === 'admin' ? '/admin/routes' : '/track-delivery';
+                        navigate(targetPath, { state: { batchId: group.id } });
+                      }}
+                    >
+                      <MapIcon size={18} />
+                    </button>
                   </td>
                 </tr>
               ))

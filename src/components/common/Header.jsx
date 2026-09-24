@@ -68,7 +68,7 @@ const Header = ({ onMenuClick }) => {
         
         <div className="header-brand-info">
           <div className="header-title-row">
-            <h2 className="header-headline">Welcome back, SuperAdmin</h2>
+            <h2 className="header-headline">Welcome back, {userGreetingName}</h2>
           </div>
         </div>
       </div>

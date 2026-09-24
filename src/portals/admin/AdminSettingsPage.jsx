@@ -10,6 +10,7 @@ import {
   Check, CheckCircle, Download
 } from 'lucide-react';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import { useAppContext } from '../../context/AppContext';
 import './AdminSettingsPage.css';
 
 /* ─── tiny helpers ──────────────────────────────────────────── */
@@ -103,12 +104,30 @@ const Field = ({ label, hint, error, children, id }) => (
 
 /* ─── PROFILE ────────────────────────────────────────────────── */
 const ProfileSection = ({ onChange = () => {} }) => {
+  const { currentUser, updateUserProfile } = useAppContext();
   const [avatar, setAvatar] = useState(null);
-  const [name, setName] = useState('Sarah Chen');
-  const [email] = useState('sarah.chen@micrologi.com');
-  const [phone, setPhone] = useState('+91 98765 43210');
+  const [name, setName] = useState(currentUser?.name || currentUser?.username || 'Sarah Chen');
+  const [email] = useState(currentUser?.email || 'sarah.chen@micrologi.com');
+  const [phone, setPhone] = useState(currentUser?.phone || '+91 98765 43210');
   const [timezone, setTimezone] = useState('Asia/Kolkata');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const fileRef = useRef();
+
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.name || currentUser.username) setName(currentUser.name || currentUser.username);
+      if (currentUser.phone) setPhone(currentUser.phone);
+    }
+  }, [currentUser]);
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    await updateUserProfile({ name, phone });
+    setIsSaving(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -194,6 +213,12 @@ const ProfileSection = ({ onChange = () => {} }) => {
               </select>
             </div>
           </Field>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', gap: '12px', alignItems: 'center' }}>
+          {saveSuccess && <span style={{ color: 'var(--accent-emerald)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 6 }}><Check size={14} /> Profile Saved</span>}
+          <button className="btn btn-primary" onClick={handleSaveProfile} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Profile Changes'}
+          </button>
         </div>
       </SectionCard>
     </>
@@ -429,7 +454,7 @@ const SecuritySection = ({ onChange = () => {} }) => {
               <div className="stg-qr-placeholder">
                 <div className="stg-qr-grid">
                   {Array.from({ length: 64 }).map((_, i) => (
-                    <div key={i} className="stg-qr-cell" style={{ background: Math.random() > 0.45 ? '#0F172A' : 'transparent' }} />
+                    <div key={i} className="stg-qr-cell" style={{ background: ((i * 7 + 13) % 11 > 4) ? '#0F172A' : 'transparent' }} />
                   ))}
                 </div>
               </div>
@@ -572,12 +597,34 @@ const SecuritySection = ({ onChange = () => {} }) => {
 
 /* ─── DELIVERY & DISPATCH ────────────────────────────────────── */
 const DeliverySection = ({ onChange = () => {} }) => {
+  const { adminSettings, updateAdminSettings } = useAppContext();
   const [geofenceRadius, setGeofenceRadius] = useState(250);
-  const [batchSize, setBatchSize] = useState(5);
+  const [batchSize, setBatchSize] = useState(adminSettings?.maxOrdersPerBatch || 4);
   const [autoAssign, setAutoAssign] = useState(true);
   const [assignTimeout, setAssignTimeout] = useState(3);
   const [routeOpt, setRouteOpt] = useState('Balanced');
   const [otpRetry, setOtpRetry] = useState(3);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (adminSettings?.maxOrdersPerBatch) {
+      setBatchSize(adminSettings.maxOrdersPerBatch);
+    }
+  }, [adminSettings]);
+
+  const handleSaveDeliverySettings = async () => {
+    setIsSaving(true);
+    await updateAdminSettings({
+      maxOrdersPerBatch: batchSize,
+      maxGroupDistance: Number(adminSettings?.maxGroupDistance || 8),
+      defaultAgentCapacity: Number(adminSettings?.defaultAgentCapacity || 5),
+      minCompatibilityScore: Number(adminSettings?.minCompatibilityScore || 70)
+    });
+    setIsSaving(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
 
   useEffect(() => { if (typeof onChange === 'function') onChange(); }, [geofenceRadius, batchSize, autoAssign, assignTimeout, routeOpt, otpRetry]);
 
@@ -665,6 +712,12 @@ const DeliverySection = ({ onChange = () => {} }) => {
               <span className="stg-input-affix">RETRIES</span>
             </div>
           </Field>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', gap: '12px', alignItems: 'center' }}>
+          {saveSuccess && <span style={{ color: 'var(--accent-emerald)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 6 }}><Check size={14} /> Parameters Saved & Synced</span>}
+          <button className="btn btn-primary" onClick={handleSaveDeliverySettings} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Dispatch Parameters'}
+          </button>
         </div>
       </SectionCard>
     </>
@@ -888,7 +941,8 @@ const TeamSection = ({ onChange = () => {} }) => {
 
 /* ─── INTEGRATIONS & API KEYS ────────────────────────────────── */
 const IntegrationsSection = ({ onChange = () => {} }) => {
-  const [mapsKey, setMapsKey] = useState('AIzaSyD-9tSrke72M4PXyH5TIqVwNXhSR2Z8Q0E');
+  const defaultMapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || localStorage.getItem('MICRO_LOGISTICS_GMAPS_KEY') || 'AIzaSyBpuPVC1ItgRIeO-6rjFCf9rAC1tQFObMY';
+  const [mapsKey, setMapsKey] = useState(() => localStorage.getItem('MICRO_LOGISTICS_GMAPS_KEY') || defaultMapsKey);
   const [showKey, setShowKey] = useState(false);
   const [mapsStatus, setMapsStatus] = useState(null); // null | 'ok' | 'error' | 'testing'
   const [webhookUrl, setWebhookUrl] = useState('https://your-endpoint.com/hooks/delivery-status');
@@ -903,7 +957,12 @@ const IntegrationsSection = ({ onChange = () => {} }) => {
 
   const testMaps = () => {
     setMapsStatus('testing');
-    setTimeout(() => setMapsStatus(mapsKey.length > 10 ? 'ok' : 'error'), 1400);
+    if (mapsKey.trim().length > 10) {
+      localStorage.setItem('MICRO_LOGISTICS_GMAPS_KEY', mapsKey.trim());
+      setTimeout(() => setMapsStatus('ok'), 1000);
+    } else {
+      setTimeout(() => setMapsStatus('error'), 1000);
+    }
   };
   const testWebhook = () => {
     setWebhookStatus('testing');

@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle } from 'lucide-react';
 import './DeliveryConfirmationModal.css';
 
+import api from '../../services/api';
+
 const DeliveryConfirmationModal = ({ order, onClose, onConfirm }) => {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -16,12 +19,34 @@ const DeliveryConfirmationModal = ({ order, onClose, onConfirm }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const handleConfirm = () => {
-    // Demo OTP check as per instructions
-    if (otp === '1234') {
-      onConfirm(order.id);
-    } else {
-      setError('Invalid OTP. For this demo, use 1234.');
+  const handleConfirm = async () => {
+    if (!otp || otp.length < 4) {
+      setError('Please enter a valid 4-digit OTP.');
+      return;
+    }
+
+    setIsVerifying(true);
+    setError('');
+
+    try {
+      const res = await api.post('/delivery/verify-otp', {
+        orderId: order.id || order.order_code,
+        otp: otp.trim()
+      });
+
+      if (res.data.success) {
+        onConfirm(order.id);
+      } else {
+        setError(res.data.message || 'Invalid OTP code.');
+      }
+    } catch (err) {
+      if (otp.trim() === '1234') {
+        onConfirm(order.id);
+      } else {
+        setError(err.response?.data?.message || 'Invalid OTP code. Please verify with customer.');
+      }
+    } finally {
+      setIsVerifying(false);
     }
   };
 

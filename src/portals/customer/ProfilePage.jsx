@@ -5,9 +5,51 @@ import './ProfilePage.css';
 import './CustomerProfilePage.css';
 
 const ProfilePage = () => {
-  const { currentUser, updateUserProfile } = useAppContext();
+  const { currentUser, updateUserProfile, addToCart, addNotification } = useAppContext();
 
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'password'
+  const [wishlistItems, setWishlistItems] = useState([
+    {
+      id: 'w1',
+      name: 'Fresh Apples (1kg)',
+      price: 120.00,
+      image: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=200',
+      vendorId: 'v1'
+    },
+    {
+      id: 'w2',
+      name: 'Whole Wheat Bread',
+      price: 45.00,
+      image: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&q=80&w=200',
+      vendorId: 'v2'
+    },
+    {
+      id: 'w3',
+      name: 'Organic Milk (1L)',
+      price: 65.00,
+      image: 'https://images.unsplash.com/photo-1587049352847-8d4e8941554a?auto=format&fit=crop&q=80&w=200',
+      vendorId: 'v1'
+    }
+  ]);
+
+  const handleRemoveWishlist = (itemId, itemName) => {
+    setWishlistItems(prev => prev.filter(item => item.id !== itemId));
+    if (addNotification) {
+      addNotification(`Removed "${itemName}" from wishlist.`, 'system');
+    }
+  };
+
+  const handleAddToCartFromWishlist = (item) => {
+    if (addToCart) {
+      addToCart({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        image: item.image,
+        vendorId: item.vendorId
+      }, 1);
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: currentUser?.name || 'Priya Rajan',
@@ -273,48 +315,45 @@ const ProfilePage = () => {
           {activeTab === 'wishlist' && (
             <div className="customer-wishlist-view">
               <h3 className="form-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Heart size={20} fill="#ef4444" color="#ef4444" /> My Wishlist
+                <Heart size={20} fill="#ef4444" color="#ef4444" /> My Wishlist ({wishlistItems.length})
               </h3>
               <p style={{ color: '#64748b', fontSize: '14px', margin: '-12px 0 16px 0' }}>Saved items from your favorite local sellers.</p>
               
-              <div className="customer-wishlist-grid">
-                {/* Mock Visual Wishlist Items */}
-                <div className="wishlist-mock-card">
-                  <div className="wishlist-img-box">
-                    <img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=200" alt="Fresh Apples" />
-                    <button className="remove-wishlist-btn" title="Remove"><Trash2 size={16} /></button>
-                  </div>
-                  <div className="wishlist-info">
-                    <h4>Fresh Apples (1kg)</h4>
-                    <span className="price">₹120.00</span>
-                    <button className="wishlist-action-btn"><ShoppingCart size={14} /> Add to Cart</button>
-                  </div>
+              {wishlistItems.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                  <Heart size={36} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
+                  <p>Your wishlist is currently empty.</p>
                 </div>
-
-                <div className="wishlist-mock-card">
-                  <div className="wishlist-img-box">
-                    <img src="https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&q=80&w=200" alt="Whole Wheat Bread" />
-                    <button className="remove-wishlist-btn" title="Remove"><Trash2 size={16} /></button>
-                  </div>
-                  <div className="wishlist-info">
-                    <h4>Whole Wheat Bread</h4>
-                    <span className="price">₹45.00</span>
-                    <button className="wishlist-action-btn"><ShoppingCart size={14} /> Add to Cart</button>
-                  </div>
+              ) : (
+                <div className="customer-wishlist-grid">
+                  {wishlistItems.map((item) => (
+                    <div key={item.id} className="wishlist-mock-card">
+                      <div className="wishlist-img-box">
+                        <img src={item.image} alt={item.name} />
+                        <button 
+                          type="button"
+                          className="remove-wishlist-btn" 
+                          title="Remove item"
+                          onClick={() => handleRemoveWishlist(item.id, item.name)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      <div className="wishlist-info">
+                        <h4>{item.name}</h4>
+                        <span className="price">₹{item.price.toFixed(2)}</span>
+                        <button 
+                          type="button"
+                          className="wishlist-action-btn"
+                          onClick={() => handleAddToCartFromWishlist(item)}
+                        >
+                          <ShoppingCart size={14} /> Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="wishlist-mock-card">
-                  <div className="wishlist-img-box">
-                    <img src="https://images.unsplash.com/photo-1587049352847-8d4e8941554a?auto=format&fit=crop&q=80&w=200" alt="Organic Milk" />
-                    <button className="remove-wishlist-btn" title="Remove"><Trash2 size={16} /></button>
-                  </div>
-                  <div className="wishlist-info">
-                    <h4>Organic Milk (1L)</h4>
-                    <span className="price">₹65.00</span>
-                    <button className="wishlist-action-btn"><ShoppingCart size={14} /> Add to Cart</button>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>

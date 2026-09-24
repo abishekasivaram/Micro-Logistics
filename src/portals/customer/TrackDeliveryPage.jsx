@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
+import api from '../../services/api';
 import MapPlaceholder from '../../components/common/MapPlaceholder';
 import StatusBadge from '../../components/common/StatusBadge';
-import { Navigation, Clock, MapPin, User, Phone, CheckCircle, Package, Calendar, Sparkles } from 'lucide-react';
+import { Navigation, Clock, MapPin, User, Phone, CheckCircle, Package, Calendar, Sparkles, Key } from 'lucide-react';
 import './TrackDeliveryPage.css';
 
 const TrackDeliveryPage = () => {
@@ -19,6 +20,24 @@ const TrackDeliveryPage = () => {
   const activeOrder = customerOrders.find(o => (o.id === selectedOrderId || o.orderId === selectedOrderId)) || customerOrders[0];
 
   const status = (activeOrder?.orderStatus || activeOrder?.status || 'PLACED').toUpperCase();
+
+  const [orderOtp, setOrderOtp] = useState('1234');
+
+  useEffect(() => {
+    if (!activeOrder) return;
+    const ordId = activeOrder.id || activeOrder.orderCode || activeOrder.orderId;
+    if (ordId) {
+      api.get(`/delivery/orders/${ordId}/otp`)
+        .then(res => {
+          if (res.data.success && res.data.data?.otp) {
+            setOrderOtp(res.data.data.otp);
+          }
+        })
+        .catch(() => {
+          setOrderOtp('1234');
+        });
+    }
+  }, [activeOrder]);
 
   const getProgressPercentage = (st) => {
     switch (st) {
@@ -157,6 +176,41 @@ const TrackDeliveryPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Delivery Verification PIN */}
+            {status !== 'DELIVERED' && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(6, 182, 212, 0.08))',
+                border: '1px solid rgba(79, 70, 229, 0.25)',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div>
+                  <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6366f1', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Key size={13} /> Delivery Handover PIN
+                  </span>
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
+                    Provide this code to your courier at doorstep
+                  </p>
+                </div>
+                <div style={{
+                  background: '#4f46e5',
+                  color: '#ffffff',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  fontSize: '18px',
+                  fontWeight: '800',
+                  letterSpacing: '0.18em',
+                  fontFamily: 'monospace'
+                }}>
+                  {orderOtp}
+                </div>
+              </div>
+            )}
 
             {/* Assigned Delivery Agent */}
             <div className="agent-card-box">

@@ -59,7 +59,7 @@ const OrdersPage = () => {
 
   const handleAggregate = () => {
     if (selectedOrders.length === 0) return;
-    navigate('/order-aggregation', { state: { preSelectedOrders: selectedOrders } });
+    navigate('/admin/order-aggregation', { state: { preSelectedOrders: selectedOrders } });
   };
 
   const statusOptions = [

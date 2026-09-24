@@ -399,7 +399,7 @@ const DashboardOverview = () => {
         <div className="chart-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ margin: 0 }}>Delivery Coordination Status</h3>
-            <button className="btn-link" style={{ fontSize: '13px', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }} onClick={() => navigate('/order-aggregation')}>
+            <button className="btn-link" style={{ fontSize: '13px', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }} onClick={() => navigate('/admin/order-aggregation')}>
               Aggregation View
             </button>
           </div>

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -285,6 +285,7 @@ function App() {
                     <DashboardLayout><OrderAggregationPage /></DashboardLayout>
                   </ProtectedRoute>
                 } />
+                <Route path="/order-aggregation" element={<Navigate to="/admin/order-aggregation" replace />} />
                 <Route path="/admin/delivery-management" element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <DashboardLayout><DeliveryManagementPage /></DashboardLayout>
