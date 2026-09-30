@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import DashboardLayout from './layouts/DashboardLayout';
+import DeliveryAppShell from './components/delivery/DeliveryAppShell';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import LoadingFallback from './components/common/LoadingFallback';
@@ -323,49 +324,51 @@ function App() {
                 } />
 
                 {/* Delivery Partner Dedicated Portal Routes */}
-                <Route path="/delivery-dashboard" element={
+                <Route path="/delivery" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><DeliveryDashboard /></DashboardLayout>
+                    <DeliveryAppShell><DeliveryDashboard /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
+                <Route path="/delivery-dashboard" element={<Navigate to="/delivery" replace />} />
+                <Route path="/delivery/dashboard" element={<Navigate to="/delivery" replace />} />
                 <Route path="/delivery/deliveries" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><MyDeliveriesPage /></DashboardLayout>
+                    <DeliveryAppShell><MyDeliveriesPage /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/delivery/pickup" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><PickupPage /></DashboardLayout>
+                    <DeliveryAppShell><PickupPage /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/delivery/route" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><RoutePage /></DashboardLayout>
+                    <DeliveryAppShell><RoutePage /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/delivery/status" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><DeliveryStatusPage /></DashboardLayout>
+                    <DeliveryAppShell><DeliveryStatusPage /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/delivery/history" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><DeliveryHistoryPage /></DashboardLayout>
+                    <DeliveryAppShell><DeliveryHistoryPage /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/delivery/notifications" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><NotificationsPageDelivery /></DashboardLayout>
+                    <DeliveryAppShell><NotificationsPageDelivery /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/delivery/profile" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><DeliveryProfilePage /></DashboardLayout>
+                    <DeliveryAppShell><DeliveryProfilePage /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/delivery/help" element={
                   <ProtectedRoute allowedRoles={['delivery_partner']}>
-                    <DashboardLayout><DeliveryHelpPage /></DashboardLayout>
+                    <DeliveryAppShell><DeliveryHelpPage /></DeliveryAppShell>
                   </ProtectedRoute>
                 } />
 

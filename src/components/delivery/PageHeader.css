@@ -1,0 +1,80 @@
+.dl-page-header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.header-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--dl-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.crumb-separator {
+  opacity: 0.4;
+}
+
+.crumb-item:last-child {
+  color: var(--dl-primary);
+}
+
+.header-title-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.title-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dl-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dl-text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.title-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  background: var(--dl-primary-light);
+  color: var(--dl-primary);
+  border-radius: var(--dl-radius-full);
+  border: 1px solid rgba(79, 70, 229, 0.25);
+}
+
+.dl-page-subtitle {
+  font-size: 0.875rem;
+  color: var(--dl-text-secondary);
+  margin: 0;
+}
+
+.header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.header-bottom-slot {
+  margin-top: 0.75rem;
+}

@@ -1,0 +1,94 @@
+.dl-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: var(--dl-bg-card);
+  border: 1px dashed var(--dl-border);
+  border-radius: var(--dl-radius-lg);
+  margin: 1rem 0;
+}
+
+.empty-icon-halo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--dl-primary-light) 0%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.empty-icon-inner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dl-primary);
+  box-shadow: var(--dl-shadow-subtle);
+}
+
+.empty-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--dl-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.empty-desc {
+  font-size: 0.875rem;
+  color: var(--dl-text-secondary);
+  max-width: 360px;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Button primitive classes */
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--dl-radius-sm);
+  cursor: pointer;
+  transition: all var(--dl-transition-fast);
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.dl-btn-primary {
+  background: var(--dl-primary);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.2);
+}
+.dl-btn-primary:hover {
+  background: var(--dl-primary-hover);
+  transform: translateY(-1px);
+}
+
+.dl-btn-secondary {
+  background: var(--dl-bg-surface);
+  color: var(--dl-text-primary);
+  border-color: var(--dl-border);
+}
+.dl-btn-secondary:hover {
+  background: var(--dl-border-hover);
+}

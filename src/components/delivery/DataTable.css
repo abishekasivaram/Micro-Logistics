@@ -1,0 +1,115 @@
+.dl-table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--dl-radius-md);
+  border: 1px solid var(--dl-border);
+  background: var(--dl-bg-card);
+  box-shadow: var(--dl-shadow-subtle);
+}
+
+.dl-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.dl-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--dl-bg-surface);
+  border-bottom: 1px solid var(--dl-border);
+  z-index: 2;
+}
+
+.dl-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--dl-text-secondary);
+  white-space: nowrap;
+}
+
+.dl-table th.sortable-th {
+  cursor: pointer;
+  user-select: none;
+}
+
+.dl-table th.sortable-th:hover {
+  color: var(--dl-text-primary);
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-icon {
+  opacity: 0.5;
+  transition: opacity var(--dl-transition-fast);
+}
+
+.sortable-th:hover .sort-icon {
+  opacity: 1;
+}
+
+.dl-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--dl-border-subtle);
+  color: var(--dl-text-primary);
+  vertical-align: middle;
+}
+
+.dl-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dl-table-row {
+  transition: background-color var(--dl-transition-fast);
+}
+
+.dl-row-clickable {
+  cursor: pointer;
+}
+
+.dl-table-row:hover {
+  background-color: var(--dl-bg-card-hover);
+}
+
+[data-theme="dark"] .dl-table-row:hover {
+  background-color: var(--dl-bg-surface);
+}
+
+.row-action-td {
+  text-align: right;
+  padding-right: 0.75rem;
+}
+
+.row-hover-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--dl-radius-sm);
+  color: var(--dl-text-muted);
+  transition: all var(--dl-transition-fast);
+}
+
+.dl-table-row:hover .row-hover-btn {
+  color: var(--dl-primary);
+  background: var(--dl-primary-light);
+}
+
+.dl-table-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--dl-text-muted);
+}
+
+.dl-table-skeleton-row td {
+  padding: 1rem;
+}

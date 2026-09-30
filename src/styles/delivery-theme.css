@@ -1,0 +1,217 @@
+/* ==========================================================================
+   MicroLogi Control Tower — Delivery Fleet Enterprise Design System
+   Modern SaaS / Linear / Stripe / Vercel Aesthetic
+   ========================================================================== */
+
+:root,
+[data-theme="light"] {
+  /* Brand Primary */
+  --dl-primary: #4F46E5;
+  --dl-primary-hover: #4338CA;
+  --dl-primary-light: #EEF2FF;
+  --dl-primary-gradient: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+  --dl-primary-glow: rgba(79, 70, 229, 0.25);
+
+  /* Semantic System */
+  --dl-success: #10B981;
+  --dl-success-light: #ECFDF5;
+  --dl-success-border: rgba(16, 185, 129, 0.25);
+  --dl-success-text: #065F46;
+
+  --dl-warning: #F59E0B;
+  --dl-warning-light: #FEF3C7;
+  --dl-warning-border: rgba(245, 158, 11, 0.25);
+  --dl-warning-text: #92400E;
+
+  --dl-danger: #EF4444;
+  --dl-danger-light: #FEF2F2;
+  --dl-danger-border: rgba(239, 68, 68, 0.25);
+  --dl-danger-text: #991B1B;
+
+  --dl-info: #0EA5E9;
+  --dl-info-light: #F0F9FF;
+  --dl-info-border: rgba(14, 165, 233, 0.25);
+  --dl-info-text: #0369A1;
+
+  /* Typography */
+  --dl-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --dl-font-heading: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --dl-font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  /* Light Theme Surfaces & Neutrals */
+  --dl-bg-page: #F8FAFC;
+  --dl-bg-card: #FFFFFF;
+  --dl-bg-card-hover: #F8FAFC;
+  --dl-bg-surface: #F1F5F9;
+  --dl-bg-surface-elevated: #FFFFFF;
+  --dl-bg-header: rgba(255, 255, 255, 0.88);
+  --dl-bg-sidebar: #FFFFFF;
+  --dl-bg-sidebar-hover: #F1F5F9;
+  --dl-bg-sidebar-active: #EEF2FF;
+
+  --dl-border: #E2E8F0;
+  --dl-border-subtle: #F1F5F9;
+  --dl-border-hover: #CBD5E1;
+  --dl-border-focus: #6366F1;
+  --dl-border-sidebar: #E2E8F0;
+
+  --dl-text-primary: #0F172A;
+  --dl-text-secondary: #334155;
+  --dl-text-muted: #64748B;
+  --dl-text-sidebar: #475569;
+  --dl-text-sidebar-active: #4F46E5;
+
+  /* Radius & Shadows */
+  --dl-radius-sm: 8px;
+  --dl-radius-md: 12px;
+  --dl-radius-lg: 16px;
+  --dl-radius-full: 9999px;
+
+  --dl-shadow-subtle: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --dl-shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 4px 12px 0 rgba(15, 23, 42, 0.03);
+  --dl-shadow-card-hover: 0 6px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --dl-shadow-drawer: -4px 0 24px 0 rgba(15, 23, 42, 0.15);
+  --dl-shadow-modal: 0 20px 25px -5px rgba(15, 23, 42, 0.2), 0 10px 10px -5px rgba(15, 23, 42, 0.08);
+
+  /* Transition timing */
+  --dl-transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --dl-transition-normal: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   DARK THEME OVERRIDES
+   ========================================================================== */
+[data-theme="dark"] {
+  --dl-bg-page: #080B11;
+  --dl-bg-card: #0F1626;
+  --dl-bg-card-hover: #141C30;
+  --dl-bg-surface: #172138;
+  --dl-bg-surface-elevated: #1A243E;
+  --dl-bg-header: rgba(15, 22, 38, 0.85);
+  --dl-bg-sidebar: #060910;
+  --dl-bg-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --dl-bg-sidebar-active: rgba(99, 102, 241, 0.22);
+
+  --dl-border: #1F2C46;
+  --dl-border-subtle: #151E32;
+  --dl-border-hover: #2D3E62;
+  --dl-border-focus: #818CF8;
+  --dl-border-sidebar: rgba(255, 255, 255, 0.06);
+
+  --dl-text-primary: #F8FAFC;
+  --dl-text-secondary: #94A3B8;
+  --dl-text-muted: #64748B;
+  --dl-text-sidebar: #94A3B8;
+  --dl-text-sidebar-active: #FFFFFF;
+
+  --dl-primary-light: rgba(79, 70, 229, 0.2);
+  --dl-success-light: rgba(16, 185, 129, 0.15);
+  --dl-success-text: #34D399;
+  --dl-warning-light: rgba(245, 158, 11, 0.15);
+  --dl-warning-text: #FBBF24;
+  --dl-danger-light: rgba(239, 68, 68, 0.15);
+  --dl-danger-text: #F87171;
+  --dl-info-light: rgba(14, 165, 233, 0.15);
+  --dl-info-text: #38BDF8;
+
+  --dl-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 12px 0 rgba(0, 0, 0, 0.2);
+  --dl-shadow-card-hover: 0 8px 24px -2px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   GLOBAL UTILITIES FOR DELIVERY PORTAL
+   ========================================================================== */
+.dl-portal-root {
+  font-family: var(--dl-font-sans);
+  color: var(--dl-text-primary);
+  background-color: var(--dl-bg-page);
+  min-height: 100vh;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dl-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.dl-heading {
+  font-family: var(--dl-font-heading);
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+/* Glassmorphism */
+.dl-glass {
+  background: var(--dl-bg-header);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--dl-border);
+}
+
+/* Card primitives */
+.dl-card {
+  background: var(--dl-bg-card);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-md);
+  box-shadow: var(--dl-shadow-card);
+  transition: all var(--dl-transition-normal);
+}
+
+.dl-card:hover {
+  border-color: var(--dl-border-hover);
+}
+
+.dl-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--dl-shadow-card-hover);
+}
+
+/* Focus ring for accessibility */
+.dl-focus-ring:focus-visible {
+  outline: 2px solid var(--dl-border-focus);
+  outline-offset: 2px;
+}
+
+/* Shimmer animation for Skeletons */
+@keyframes dlShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.dl-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--dl-bg-surface) 25%,
+    var(--dl-border-hover) 37%,
+    var(--dl-bg-surface) 63%
+  );
+  background-size: 400% 100%;
+  animation: dlShimmer 1.5s ease-in-out infinite;
+  border-radius: var(--dl-radius-sm);
+}
+
+/* Pulsing online dot */
+@keyframes dlPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.15);
+  }
+}
+
+.dl-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--dl-success);
+  display: inline-block;
+  animation: dlPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

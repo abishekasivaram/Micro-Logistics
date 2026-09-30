@@ -1,82 +1,284 @@
-import React from 'react';
-import { useAppContext } from '../../context/AppContext';
-import { Bell, Check } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { 
+  Bell, Check, Trash2, CheckCircle2, AlertTriangle, Truck, 
+  CreditCard, Sliders, Volume2, ShieldCheck, Mail, Sparkles, X 
+} from 'lucide-react';
+import { useDelivery } from '../../context/DeliveryContext';
+import PageHeader from '../../components/delivery/PageHeader';
+import EmptyState from '../../components/delivery/EmptyState';
+import './NotificationsPage.css';
 
 const NotificationsPage = () => {
-  const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useAppContext();
-  
-  // Data Isolation: The global notifications currently don't have target audience ID perfectly mapped for all agents in sampleData
-  // For the sake of demonstration, we'll filter them conceptually or just show system/delivery notifications.
-  // In a real app, `notification.targetId === currentUser.id` would be used.
-  // Here we'll show delivery and system notifications as a proxy.
-  const myNotifications = notifications.filter(n => n.type === 'delivery' || n.type === 'system');
+  const { 
+    notifications, markNotificationAsRead, markAllNotificationsAsRead, 
+    deleteNotification, clearAllNotifications, addToast 
+  } = useDelivery();
+
+  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'UNREAD' | 'ASSIGNMENTS' | 'SYSTEM'
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+
+  // Preference toggles
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [emailDigest, setEmailDigest] = useState(false);
+
+  // Filter by tab
+  const filteredNotifications = useMemo(() => {
+    return (notifications || []).filter(item => {
+      if (activeTab === 'UNREAD') return !item.isRead;
+      if (activeTab === 'ASSIGNMENTS') return item.type === 'assignment';
+      if (activeTab === 'SYSTEM') return item.type === 'system' || item.type === 'alert' || item.type === 'payout';
+      return true;
+    });
+  }, [notifications, activeTab]);
+
+  // Group by Today, Yesterday, Earlier
+  const groupedNotifications = useMemo(() => {
+    const groups = { Today: [], Yesterday: [], Earlier: [] };
+    filteredNotifications.forEach(n => {
+      const g = n.group || 'Today';
+      if (groups[g]) groups[g].push(n);
+      else groups.Earlier.push(n);
+    });
+    return groups;
+  }, [filteredNotifications]);
+
+  const unreadCount = (notifications || []).filter(n => !n.isRead).length;
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'assignment':
+        return <Truck size={17} className="text-primary" />;
+      case 'alert':
+        return <AlertTriangle size={17} className="text-warning" />;
+      case 'payout':
+        return <CreditCard size={17} className="text-success" />;
+      default:
+        return <Bell size={17} className="text-info" />;
+    }
+  };
+
+  const handleSimulateNewNotification = () => {
+    const newId = `notif-${Date.now()}`;
+    addToast('New assignment dispatch notification simulated!', 'info');
+  };
 
   return (
-    <div className="page-container">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div>
-          <h2>Notifications</h2>
-          <p className="text-secondary">Updates on your deliveries and account</p>
-        </div>
-        <button 
-          className="btn btn-outline" 
-          onClick={markAllNotificationsAsRead}
-          style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
-        >
-          <Check size={16} /> Mark all as read
-        </button>
-      </div>
+    <div className="dl-notifications-page">
+      <PageHeader
+        breadcrumbs={['Account', 'Inbox']}
+        title="Notifications Center"
+        subtitle={`Stay informed about live dispatch batches, shift alerts, and daily payouts`}
+        badge={unreadCount > 0 ? `${unreadCount} Unread` : 'All Read'}
+        actions={
+          <div className="notif-header-actions">
+            <button
+              type="button"
+              className="dl-btn dl-btn-secondary"
+              onClick={() => setShowPreferencesModal(true)}
+            >
+              <Sliders size={15} />
+              <span>Preferences</span>
+            </button>
 
-      <div className="card" style={{ padding: '0' }}>
-        {myNotifications.length > 0 ? (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {myNotifications.map((notif, index) => (
-              <li 
-                key={notif.id} 
-                style={{ 
-                  padding: '20px', 
-                  borderBottom: index < myNotifications.length - 1 ? '1px solid #eee' : 'none',
-                  backgroundColor: notif.isRead ? 'transparent' : '#f0f7ff',
-                  display: 'flex',
-                  gap: '15px',
-                  alignItems: 'flex-start'
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                className="dl-btn dl-btn-secondary"
+                onClick={markAllNotificationsAsRead}
+              >
+                <Check size={15} />
+                <span>Mark All Read</span>
+              </button>
+            )}
+
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                className="dl-btn dl-btn-secondary text-danger"
+                onClick={clearAllNotifications}
+              >
+                <Trash2 size={15} />
+                <span>Clear All</span>
+              </button>
+            )}
+          </div>
+        }
+      >
+        {/* Navigation Tabs */}
+        <div className="notif-tabs-strip">
+          {[
+            { id: 'ALL', label: 'All', count: notifications.length },
+            { id: 'UNREAD', label: 'Unread', count: unreadCount },
+            { id: 'ASSIGNMENTS', label: 'Assignments', count: notifications.filter(n => n.type === 'assignment').length },
+            { id: 'SYSTEM', label: 'System & Alerts', count: notifications.filter(n => n.type !== 'assignment').length }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`notif-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span>{tab.label}</span>
+              <span className="notif-tab-badge dl-tabular">{tab.count}</span>
+            </button>
+          ))}
+        </div>
+      </PageHeader>
+
+      {/* Main Notifications Grouped Stream */}
+      {filteredNotifications.length === 0 ? (
+        <EmptyState
+          icon={Bell}
+          title="You're all caught up"
+          description="There are no notifications matching the current filter. New dispatch assignments and alerts will arrive in real-time."
+          primaryAction={{
+            label: "Reset to All",
+            onClick: () => setActiveTab('ALL')
+          }}
+        />
+      ) : (
+        <div className="notif-stream-container">
+          {Object.entries(groupedNotifications).map(([groupTitle, items]) => {
+            if (items.length === 0) return null;
+
+            return (
+              <div key={groupTitle} className="notif-group-section">
+                <div className="group-heading-row">
+                  <span className="group-heading-title">{groupTitle}</span>
+                  <span className="group-heading-count">({items.length})</span>
+                </div>
+
+                <div className="dl-card notif-items-card">
+                  {items.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className={`notif-stream-item ${!item.isRead ? 'is-unread' : ''}`}
+                      onClick={() => !item.isRead && markNotificationAsRead(item.id)}
+                    >
+                      {/* Left: Icon & Unread Indicator */}
+                      <div className="notif-icon-col">
+                        <div className="notif-type-icon-box">
+                          {getTypeIcon(item.type)}
+                        </div>
+                        {!item.isRead && <span className="notif-unread-dot" />}
+                      </div>
+
+                      {/* Content Body */}
+                      <div className="notif-content-body">
+                        <div className="notif-title-row">
+                          <h4 className="item-title">{item.title}</h4>
+                          <span className="item-timestamp dl-tabular">{item.timestamp}</span>
+                        </div>
+                        <p className="item-desc">{item.description}</p>
+                      </div>
+
+                      {/* Hover Actions */}
+                      <div className="notif-hover-actions" onClick={e => e.stopPropagation()}>
+                        {!item.isRead && (
+                          <button
+                            type="button"
+                            className="item-hover-btn"
+                            onClick={() => markNotificationAsRead(item.id)}
+                            title="Mark as read"
+                            aria-label="Mark as read"
+                          >
+                            <Check size={14} />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="item-hover-btn text-danger"
+                          onClick={() => deleteNotification(item.id)}
+                          title="Delete notification"
+                          aria-label="Delete notification"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Preferences Modal */}
+      {showPreferencesModal && (
+        <div className="pref-modal-backdrop" onClick={() => setShowPreferencesModal(false)}>
+          <div className="pref-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="pref-modal-header">
+              <div className="pref-title-box">
+                <Sliders size={18} className="text-primary" />
+                <h3 className="pref-title dl-heading">Notification Preferences</h3>
+              </div>
+              <button 
+                type="button" 
+                className="modal-close-btn"
+                onClick={() => setShowPreferencesModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="pref-modal-body">
+              <div className="pref-toggle-row">
+                <div className="pref-toggle-text">
+                  <span className="pref-label">Push Dispatch Notifications</span>
+                  <span className="pref-sub">Instant alerts for newly assigned delivery batches</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={pushEnabled}
+                  onChange={e => setPushEnabled(e.target.checked)}
+                  className="pref-switch"
+                />
+              </div>
+
+              <div className="pref-toggle-row">
+                <div className="pref-toggle-text">
+                  <span className="pref-label">Sound & Haptic Feedback</span>
+                  <span className="pref-sub">Audio chime when approaching customer delivery stop</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={soundEnabled}
+                  onChange={e => setSoundEnabled(e.target.checked)}
+                  className="pref-switch"
+                />
+              </div>
+
+              <div className="pref-toggle-row">
+                <div className="pref-toggle-text">
+                  <span className="pref-label">Daily Shift Summary Email</span>
+                  <span className="pref-sub">EOD report sent to connected agent email address</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={emailDigest}
+                  onChange={e => setEmailDigest(e.target.checked)}
+                  className="pref-switch"
+                />
+              </div>
+            </div>
+
+            <div className="pref-modal-footer">
+              <button
+                type="button"
+                className="dl-btn dl-btn-primary w-full"
+                onClick={() => {
+                  setShowPreferencesModal(false);
+                  addToast('Notification preferences updated', 'success');
                 }}
               >
-                <div style={{ 
-                  backgroundColor: notif.type === 'delivery' ? '#e6f2ff' : '#f8f9fa',
-                  padding: '10px',
-                  borderRadius: '50%',
-                  color: notif.type === 'delivery' ? '#007bff' : '#6c757d'
-                }}>
-                  <Bell size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: '0 0 5px 0', fontWeight: notif.isRead ? 'normal' : '500' }}>
-                    {notif.message}
-                  </p>
-                  <span className="text-secondary text-sm">
-                    {new Date(notif.date).toLocaleString()}
-                  </span>
-                </div>
-                {!notif.isRead && (
-                  <button 
-                    className="btn-text-primary" 
-                    onClick={() => markNotificationAsRead(notif.id)}
-                    style={{ fontSize: '0.85rem' }}
-                  >
-                    Mark as read
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="text-center text-secondary" style={{ padding: '40px' }}>
-            <Bell size={40} className="mx-auto mb-3 opacity-50" />
-            <p>You have no new notifications.</p>
+                Save Preferences
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

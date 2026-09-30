@@ -1,168 +1,521 @@
-import React, { useState } from 'react';
-import { useAppContext } from '../../context/AppContext';
-import { User, Phone, MapPin, Truck, CheckCircle, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  User, Phone, MapPin, Truck, ShieldCheck, Star, 
+  Calendar, FileText, Lock, Globe, Bell, Compass, 
+  Save, AlertTriangle, Upload, Check, RotateCcw, Smartphone, Laptop
+} from 'lucide-react';
+import { useDelivery } from '../../context/DeliveryContext';
+import PageHeader from '../../components/delivery/PageHeader';
+import DeliveryStatusBadge from '../../components/delivery/DeliveryStatusBadge';
+import './DeliveryProfilePage.css';
 
 const DeliveryProfilePage = () => {
-  const { currentUser, updateDeliveryAgent } = useAppContext();
-  
-  // Local state for edits
-  const [availability, setAvailability] = useState(currentUser?.availability || 'Available');
-  const [phone, setPhone] = useState(currentUser?.phone || '');
-  const [currentArea, setCurrentArea] = useState(currentUser?.currentArea || '');
-  const [isSaved, setIsSaved] = useState(false);
+  const { agentProfile, updateProfileFields, updateAgentAvailability, theme, toggleTheme, addToast } = useDelivery();
 
-  const handleSave = () => {
-    // In a real app we would call updateUserProfile or updateDeliveryAgent
-    // Note: To completely integrate with Admin page we need to update the deliveryAgents array
-    updateDeliveryAgent(currentUser.id, {
-      availability,
-      phone,
-      currentArea
-    });
-    
-    // Also update currentUser context
-    // In our context structure, updateDeliveryAgent doesn't immediately update currentUser, 
-    // but the next login would. So for UX:
-    
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+  const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'vehicle' | 'performance' | 'preferences' | 'security'
+
+  // Editable Form State
+  const initialForm = {
+    name: agentProfile?.name || 'David Anand',
+    phone: agentProfile?.phone || '+91 98401 23456',
+    email: agentProfile?.email || 'david.anand@micrologi.com',
+    emergencyContact: '+91 94440 99887 (Brother)',
+    currentArea: agentProfile?.currentArea || 'T. Nagar & Central Chennai',
+    bloodGroup: 'O+ Positive',
+    vehicleType: agentProfile?.vehicle?.type || 'Electric Cargo Scooter',
+    vehiclePlate: agentProfile?.vehicle?.plateNumber || 'TN-01-AB-1234',
+    defaultMapApp: agentProfile?.preferences?.defaultMapApp || 'Google Maps',
+    language: agentProfile?.preferences?.language || 'English (IN)'
   };
 
+  const [form, setForm] = useState(initialForm);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const handleFieldChange = (key, val) => {
+    setForm(prev => {
+      const next = { ...prev, [key]: val };
+      // Check if dirty
+      const hasChanged = Object.keys(initialForm).some(k => next[k] !== initialForm[k]);
+      setIsDirty(hasChanged);
+      return next;
+    });
+  };
+
+  const handleDiscard = () => {
+    setForm(initialForm);
+    setIsDirty(false);
+    addToast('Changes discarded', 'neutral');
+  };
+
+  const handleSave = (e) => {
+    if (e) e.preventDefault();
+    updateProfileFields({
+      name: form.name,
+      phone: form.phone,
+      email: form.email,
+      currentArea: form.currentArea,
+      vehicle: {
+        ...agentProfile.vehicle,
+        type: form.vehicleType,
+        plateNumber: form.vehiclePlate
+      },
+      preferences: {
+        ...agentProfile.preferences,
+        defaultMapApp: form.defaultMapApp,
+        language: form.language
+      }
+    });
+    setIsDirty(false);
+  };
+
+  const availability = agentProfile?.availability || 'Available';
+
   return (
-    <div className="page-container">
-      <div className="page-header" style={{ marginBottom: '20px' }}>
-        <h2>Profile & Availability</h2>
-        <p className="text-secondary">Manage your delivery partner settings</p>
-      </div>
+    <div className="dl-profile-page">
+      <PageHeader
+        breadcrumbs={['Account', 'Fleet Member']}
+        title="Fleet Profile & Credentials"
+        subtitle="Manage agent credentials, cargo vehicle telemetry, and dispatch preferences"
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-        <div className="card">
-          <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <User size={20} className="text-primary" /> Personal Information
-          </h3>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-            <div style={{ 
-              width: '80px', height: '80px', borderRadius: '50%', 
-              backgroundColor: '#e9ecef', display: 'flex', alignItems: 'center', 
-              justifyContent: 'center', fontSize: '2rem', color: '#adb5bd' 
-            }}>
-              {currentUser?.name?.charAt(0) || 'U'}
-            </div>
-            <div>
-              <h4 style={{ margin: '0 0 5px 0' }}>{currentUser?.name}</h4>
-              <p className="text-secondary" style={{ margin: 0 }}>ID: {currentUser?.id}</p>
-            </div>
+      {/* Header Profile Card with Gradient Cover */}
+      <div className="dl-card profile-hero-card">
+        <div className="profile-cover-gradient" />
+
+        <div className="profile-hero-content">
+          {/* Avatar with Upload Simulation */}
+          <div className="profile-avatar-wrapper">
+            {agentProfile?.avatar ? (
+              <img src={agentProfile.avatar} alt={agentProfile.name} className="profile-avatar-img" />
+            ) : (
+              <div className="profile-avatar-fallback">{(agentProfile?.name || 'Da1').charAt(0)}</div>
+            )}
+            <button 
+              type="button" 
+              className="avatar-upload-overlay-btn" 
+              title="Change Profile Photo"
+              onClick={() => addToast('Photo upload dialog opened', 'info')}
+            >
+              <Upload size={14} />
+            </button>
           </div>
 
-          <div className="form-group" style={{ marginBottom: '15px' }}>
-            <label htmlFor="del-phone" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Phone Number</label>
-            <div style={{ display: 'flex', alignItems: 'center', background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '4px', padding: '8px 12px' }}>
-              <Phone size={16} className="text-secondary" style={{ marginRight: '10px' }} />
-              <input 
-                type="text" 
-                id="del-phone"
-                value={phone} 
-                onChange={(e) => setPhone(e.target.value)}
-                style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%' }}
-              />
+          {/* Identity Meta */}
+          <div className="profile-identity-col">
+            <div className="identity-top-row">
+              <h2 className="profile-agent-name dl-heading">{agentProfile?.name || 'David Anand (Da1)'}</h2>
+              <span className="agent-id-pill">{agentProfile?.agentCode || 'DA-4091'}</span>
+              <DeliveryStatusBadge status={availability} size="sm" />
             </div>
-          </div>
 
-          <div className="form-group" style={{ marginBottom: '15px' }}>
-            <label htmlFor="del-area" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Service Area</label>
-            <div style={{ display: 'flex', alignItems: 'center', background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '4px', padding: '8px 12px' }}>
-              <MapPin size={16} className="text-secondary" style={{ marginRight: '10px' }} />
-              <input 
-                type="text" 
-                id="del-area"
-                value={currentArea} 
-                onChange={(e) => setCurrentArea(e.target.value)}
-                style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%' }}
-              />
-            </div>
-          </div>
+            <p className="profile-role-title">Delivery Fleet Operations • Central Logistics Hub</p>
 
-          <div className="form-group" style={{ marginBottom: '15px' }}>
-            <label htmlFor="del-vehicle" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Vehicle Information</label>
-            <div style={{ display: 'flex', alignItems: 'center', background: '#e9ecef', border: '1px solid #dee2e6', borderRadius: '4px', padding: '8px 12px', color: '#495057' }}>
-              <Truck size={16} className="text-secondary" style={{ marginRight: '10px' }} />
-              <input 
-                type="text" 
-                id="del-vehicle"
-                value={currentUser?.vehicle || 'N/A'} 
-                readOnly
-                style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', color: '#495057' }}
-              />
+            <div className="profile-badges-row">
+              <div className="meta-chip">
+                <Star size={14} className="star-icon text-warning" />
+                <span className="font-semibold">{agentProfile?.rating || 4.95}</span>
+                <span className="text-muted">({agentProfile?.ratingsCount || 382} reviews)</span>
+              </div>
+              <div className="meta-chip">
+                <Calendar size={14} className="text-muted" />
+                <span>Joined {agentProfile?.joinedDate || 'March 2024'}</span>
+              </div>
+              <div className="meta-chip">
+                <Truck size={14} className="text-muted" />
+                <span>{agentProfile?.vehicle?.plateNumber || 'TN-01-AB-1234'}</span>
+              </div>
             </div>
-            <span style={{ fontSize: '0.8rem', color: '#6c757d', marginTop: '5px', display: 'block' }}>Contact admin to change vehicle details.</span>
           </div>
         </div>
+      </div>
 
-        <div className="card" style={{ alignSelf: 'flex-start' }}>
-          <h3 style={{ marginBottom: '20px' }}>Current Status</h3>
-          
-          <div style={{ marginBottom: '25px' }}>
-            <label style={{ display: 'block', marginBottom: '10px', fontWeight: '500' }}>Set Availability</label>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <label htmlFor="avail-available" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'Available' ? '#28a745' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'Available' ? '#f0fff4' : 'transparent' }}>
-                <input 
-                  id="avail-available"
-                  type="radio" 
-                  name="availability" 
-                  value="Available"
-                  checked={availability === 'Available'}
-                  onChange={(e) => setAvailability(e.target.value)}
+      {/* Profile Navigation Tabs */}
+      <div className="profile-tabs-nav">
+        {[
+          { id: 'personal', label: 'Personal Info', icon: User },
+          { id: 'vehicle', label: 'Vehicle & Documents', icon: Truck },
+          { id: 'performance', label: 'Performance', icon: Star },
+          { id: 'preferences', label: 'Preferences', icon: Globe },
+          { id: 'security', label: 'Security & Sessions', icon: Lock }
+        ].map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              className={`profile-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <Icon size={16} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab Panels */}
+      <div className="profile-tab-content">
+        {/* Tab 1: Personal Info */}
+        {activeTab === 'personal' && (
+          <div className="dl-card profile-form-card">
+            <h3 className="section-box-title dl-heading">Personal Information</h3>
+            <div className="profile-form-grid">
+              <div className="form-group-item">
+                <label className="field-label" htmlFor="prof-name">Full Legal Name</label>
+                <input
+                  id="prof-name"
+                  type="text"
+                  value={form.name}
+                  onChange={e => handleFieldChange('name', e.target.value)}
+                  className="dl-form-input"
                 />
-                <div>
-                  <strong style={{ display: 'block' }}>Available</strong>
-                  <span style={{ fontSize: '0.85rem', color: '#6c757d' }}>Ready to receive new batches</span>
-                </div>
-              </label>
-              
-              <label htmlFor="avail-ondelivery" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'On Delivery' ? '#007bff' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'On Delivery' ? '#e6f2ff' : 'transparent' }}>
-                <input 
-                  id="avail-ondelivery"
-                  type="radio" 
-                  name="availability" 
-                  value="On Delivery"
-                  checked={availability === 'On Delivery'}
-                  onChange={(e) => setAvailability(e.target.value)}
+              </div>
+
+              <div className="form-group-item">
+                <label className="field-label" htmlFor="prof-phone">Registered Contact Phone</label>
+                <input
+                  id="prof-phone"
+                  type="text"
+                  value={form.phone}
+                  onChange={e => handleFieldChange('phone', e.target.value)}
+                  className="dl-form-input"
                 />
-                <div>
-                  <strong style={{ display: 'block' }}>On Delivery</strong>
-                  <span style={{ fontSize: '0.85rem', color: '#6c757d' }}>Currently handling an assigned batch</span>
-                </div>
-              </label>
-              
-              <label htmlFor="avail-offline" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', border: `1px solid ${availability === 'Offline' ? '#6c757d' : '#dee2e6'}`, borderRadius: '4px', cursor: 'pointer', backgroundColor: availability === 'Offline' ? '#f8f9fa' : 'transparent' }}>
-                <input 
-                  id="avail-offline"
-                  type="radio" 
-                  name="availability" 
-                  value="Offline"
-                  checked={availability === 'Offline'}
-                  onChange={(e) => setAvailability(e.target.value)}
+              </div>
+
+              <div className="form-group-item">
+                <label className="field-label" htmlFor="prof-email">Email Address</label>
+                <input
+                  id="prof-email"
+                  type="email"
+                  value={form.email}
+                  onChange={e => handleFieldChange('email', e.target.value)}
+                  className="dl-form-input"
                 />
-                <div>
-                  <strong style={{ display: 'block' }}>Offline</strong>
-                  <span style={{ fontSize: '0.85rem', color: '#6c757d' }}>Not accepting new batches</span>
-                </div>
-              </label>
+              </div>
+
+              <div className="form-group-item">
+                <label className="field-label" htmlFor="prof-area">Assigned Service Area</label>
+                <input
+                  id="prof-area"
+                  type="text"
+                  value={form.currentArea}
+                  onChange={e => handleFieldChange('currentArea', e.target.value)}
+                  className="dl-form-input"
+                />
+              </div>
+
+              <div className="form-group-item">
+                <label className="field-label" htmlFor="prof-emergency">Emergency Contact</label>
+                <input
+                  id="prof-emergency"
+                  type="text"
+                  value={form.emergencyContact}
+                  onChange={e => handleFieldChange('emergencyContact', e.target.value)}
+                  className="dl-form-input"
+                />
+              </div>
+
+              <div className="form-group-item">
+                <label className="field-label" htmlFor="prof-blood">Blood Group (Medical Registry)</label>
+                <input
+                  id="prof-blood"
+                  type="text"
+                  value={form.bloodGroup}
+                  onChange={e => handleFieldChange('bloodGroup', e.target.value)}
+                  className="dl-form-input"
+                />
+              </div>
             </div>
           </div>
+        )}
 
-          <button 
-            className="btn btn-primary w-full"
-            onClick={handleSave}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-          >
-            {isSaved ? <CheckCircle size={18} /> : <Save size={18} />}
-            {isSaved ? 'Saved Successfully' : 'Save Changes'}
-          </button>
-        </div>
+        {/* Tab 2: Vehicle & Documents */}
+        {activeTab === 'vehicle' && (
+          <div className="profile-docs-container">
+            {/* Vehicle Details Card */}
+            <div className="dl-card profile-form-card">
+              <h3 className="section-box-title dl-heading">Fleet Cargo Vehicle</h3>
+              <div className="profile-form-grid">
+                <div className="form-group-item">
+                  <label className="field-label" htmlFor="prof-veh-type">Vehicle Model & Type</label>
+                  <input
+                    id="prof-veh-type"
+                    type="text"
+                    value={form.vehicleType}
+                    onChange={e => handleFieldChange('vehicleType', e.target.value)}
+                    className="dl-form-input"
+                  />
+                </div>
+
+                <div className="form-group-item">
+                  <label className="field-label" htmlFor="prof-veh-plate">Registration Plate Number</label>
+                  <input
+                    id="prof-veh-plate"
+                    type="text"
+                    value={form.vehiclePlate}
+                    onChange={e => handleFieldChange('vehiclePlate', e.target.value)}
+                    className="dl-form-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Regulatory Documents & Expiry Warnings */}
+            <div className="dl-card profile-form-card">
+              <h3 className="section-box-title dl-heading">KYC Verification & Regulatory Documents</h3>
+              <div className="documents-list-grid">
+                {/* Document 1: Driving License */}
+                <div className="doc-item-card">
+                  <div className="doc-icon-box">
+                    <FileText size={20} className="text-primary" />
+                  </div>
+                  <div className="doc-meta-info">
+                    <span className="doc-name">Commercial Driving License (MCWG/LMV)</span>
+                    <span className="doc-number font-mono">{agentProfile?.documents?.licenseNumber}</span>
+                    <span className="doc-status text-success">
+                      <ShieldCheck size={13} /> Verified • Valid till Nov 2028
+                    </span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="dl-btn dl-btn-secondary doc-btn"
+                    onClick={() => addToast('Uploaded new license document', 'info')}
+                  >
+                    Replace
+                  </button>
+                </div>
+
+                {/* Document 2: Insurance with EXPIRY WARNING */}
+                <div className="doc-item-card is-warning-doc">
+                  <div className="doc-icon-box box-warning">
+                    <AlertTriangle size={20} className="text-warning" />
+                  </div>
+                  <div className="doc-meta-info">
+                    <div className="doc-name-row">
+                      <span className="doc-name">Third Party Cargo Insurance Policy</span>
+                      <span className="expiry-warning-badge">Expires in 46 days</span>
+                    </div>
+                    <span className="doc-number font-mono">{agentProfile?.documents?.insurancePolicy}</span>
+                    <span className="doc-status text-warning">
+                      Renewal Required by Dec 15, 2026
+                    </span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="dl-btn dl-btn-primary doc-btn"
+                    onClick={() => addToast('Opening insurance renewal portal...', 'info')}
+                  >
+                    Renew Policy
+                  </button>
+                </div>
+
+                {/* Document 3: PAN / Tax ID */}
+                <div className="doc-item-card">
+                  <div className="doc-icon-box">
+                    <ShieldCheck size={20} className="text-success" />
+                  </div>
+                  <div className="doc-meta-info">
+                    <span className="doc-name">Income Tax PAN Identification</span>
+                    <span className="doc-number font-mono">{agentProfile?.documents?.pancardNumber}</span>
+                    <span className="doc-status text-success">
+                      Verified Identity on File
+                    </span>
+                  </div>
+                  <span className="verified-check-tag">Verified</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Performance */}
+        {activeTab === 'performance' && (
+          <div className="profile-perf-container">
+            <div className="dl-card profile-form-card">
+              <h3 className="section-box-title dl-heading">Fleet Performance Telemetry</h3>
+              <div className="perf-stats-strip">
+                <div className="perf-stat-box">
+                  <span className="perf-label">Customer Rating</span>
+                  <span className="perf-val text-warning">4.95 ★</span>
+                  <span className="perf-sub">382 total ratings</span>
+                </div>
+                <div className="perf-stat-box">
+                  <span className="perf-label">On-Time Delivery</span>
+                  <span className="perf-val text-success">98.4%</span>
+                  <span className="perf-sub">+2.1% vs hub avg</span>
+                </div>
+                <div className="perf-stat-box">
+                  <span className="perf-label">Completed Drops</span>
+                  <span className="perf-val">428 orders</span>
+                  <span className="perf-sub">Lifetime deliveries</span>
+                </div>
+                <div className="perf-stat-box">
+                  <span className="perf-label">Average Drop Time</span>
+                  <span className="perf-val">22.4 mins</span>
+                  <span className="perf-sub">From merchant pickup</span>
+                </div>
+              </div>
+
+              {/* Accolades */}
+              <div className="perf-accolades-section">
+                <span className="accolades-title">Customer Feedback Badges</span>
+                <div className="accolades-pills">
+                  <span className="accolade-chip">⚡ Lightning Fast Delivery (142)</span>
+                  <span className="accolade-chip">🤝 Polite & Professional (210)</span>
+                  <span className="accolade-chip">📦 Careful Package Handling (188)</span>
+                  <span className="accolade-chip">🌧️ All-Weather Champion (65)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Preferences */}
+        {activeTab === 'preferences' && (
+          <div className="dl-card profile-form-card">
+            <h3 className="section-box-title dl-heading">Application & Dispatch Preferences</h3>
+            <div className="profile-form-grid">
+              <div className="form-group-item">
+                <label className="field-label">Interface Theme Mode</label>
+                <div className="pref-theme-options">
+                  <button
+                    type="button"
+                    className={`theme-choice-btn ${theme === 'light' ? 'active' : ''}`}
+                    onClick={() => { if (theme !== 'light') toggleTheme(); }}
+                  >
+                    <span>Light Mode</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`theme-choice-btn ${theme === 'dark' ? 'active' : ''}`}
+                    onClick={() => { if (theme !== 'dark') toggleTheme(); }}
+                  >
+                    <span>Dark Mode (Tactical)</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group-item">
+                <label className="field-label" htmlFor="prof-map">Default Navigation App</label>
+                <select
+                  id="prof-map"
+                  value={form.defaultMapApp}
+                  onChange={e => handleFieldChange('defaultMapApp', e.target.value)}
+                  className="dl-form-input"
+                >
+                  <option value="Google Maps">Google Maps</option>
+                  <option value="Apple Maps">Apple Maps</option>
+                  <option value="Waze">Waze</option>
+                </select>
+              </div>
+
+              <div className="form-group-item">
+                <label className="field-label" htmlFor="prof-lang">Display Language</label>
+                <select
+                  id="prof-lang"
+                  value={form.language}
+                  onChange={e => handleFieldChange('language', e.target.value)}
+                  className="dl-form-input"
+                >
+                  <option value="English (IN)">English (India)</option>
+                  <option value="Tamil">தமிழ் (Tamil)</option>
+                  <option value="Hindi">हिन्दी (Hindi)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 5: Security */}
+        {activeTab === 'security' && (
+          <div className="profile-security-container">
+            <div className="dl-card profile-form-card">
+              <h3 className="section-box-title dl-heading">Password & Authentication</h3>
+              <div className="profile-form-grid">
+                <div className="form-group-item">
+                  <label className="field-label" htmlFor="sec-cur-pwd">Current Password</label>
+                  <input
+                    id="sec-cur-pwd"
+                    type="password"
+                    placeholder="••••••••••••"
+                    className="dl-form-input"
+                  />
+                </div>
+                <div className="form-group-item">
+                  <label className="field-label" htmlFor="sec-new-pwd">New Password</label>
+                  <input
+                    id="sec-new-pwd"
+                    type="password"
+                    placeholder="At least 8 characters"
+                    className="dl-form-input"
+                  />
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="dl-btn dl-btn-secondary mt-3"
+                onClick={() => addToast('Password updated successfully', 'success')}
+              >
+                Update Password
+              </button>
+            </div>
+
+            {/* Active Sessions */}
+            <div className="dl-card profile-form-card">
+              <h3 className="section-box-title dl-heading">Active Login Sessions</h3>
+              <div className="active-sessions-list">
+                <div className="session-item">
+                  <Smartphone size={20} className="text-primary" />
+                  <div className="session-info">
+                    <span className="session-device">Agent Mobile App (Android 14)</span>
+                    <span className="session-meta">Chennai, India • Active Now • IP: 106.51.24.12</span>
+                  </div>
+                  <span className="current-badge">Current Device</span>
+                </div>
+                <div className="session-item">
+                  <Laptop size={20} className="text-muted" />
+                  <div className="session-info">
+                    <span className="session-device">Web Control Tower (Chrome / Windows)</span>
+                    <span className="session-meta">Chennai, India • 2 hours ago</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Sticky Save Changes Bar (Appears ONLY when form is dirty!) */}
+      {isDirty && (
+        <div className="sticky-save-bar" role="alert" aria-live="assertive">
+          <div className="save-bar-content">
+            <div className="save-bar-message">
+              <AlertTriangle size={18} className="text-warning" />
+              <span>You have unsaved changes to your profile credentials.</span>
+            </div>
+
+            <div className="save-bar-actions">
+              <button 
+                type="button" 
+                className="dl-btn dl-btn-secondary"
+                onClick={handleDiscard}
+              >
+                <RotateCcw size={14} />
+                <span>Discard</span>
+              </button>
+
+              <button 
+                type="button" 
+                className="dl-btn dl-btn-primary"
+                onClick={handleSave}
+              >
+                <Save size={14} />
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

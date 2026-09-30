@@ -1,0 +1,108 @@
+.dl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  border-radius: var(--dl-radius-full);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  transition: all var(--dl-transition-fast);
+  border: 1px solid transparent;
+}
+
+.dl-badge-sm {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.dl-badge-md {
+  padding: 4px 10px;
+  font-size: 0.8125rem;
+}
+
+.dl-badge-lg {
+  padding: 6px 14px;
+  font-size: 0.875rem;
+}
+
+.dl-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Pulse animation */
+@keyframes badgePulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 5px rgba(79, 70, 229, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+  }
+}
+
+.dl-badge-dot.has-pulse {
+  animation: badgePulse 2s infinite;
+}
+
+/* Variant styles */
+.dl-badge-primary {
+  background-color: var(--dl-primary-light);
+  color: var(--dl-primary);
+  border-color: rgba(79, 70, 229, 0.25);
+}
+.dl-badge-primary .dl-badge-dot {
+  background-color: var(--dl-primary);
+}
+
+.dl-badge-success {
+  background-color: var(--dl-success-light);
+  color: var(--dl-success-text);
+  border-color: var(--dl-success-border);
+}
+.dl-badge-success .dl-badge-dot {
+  background-color: var(--dl-success);
+}
+
+.dl-badge-warning {
+  background-color: var(--dl-warning-light);
+  color: var(--dl-warning-text);
+  border-color: var(--dl-warning-border);
+}
+.dl-badge-warning .dl-badge-dot {
+  background-color: var(--dl-warning);
+}
+
+.dl-badge-danger {
+  background-color: var(--dl-danger-light);
+  color: var(--dl-danger-text);
+  border-color: var(--dl-danger-border);
+}
+.dl-badge-danger .dl-badge-dot {
+  background-color: var(--dl-danger);
+}
+
+.dl-badge-info {
+  background-color: var(--dl-info-light);
+  color: var(--dl-info-text);
+  border-color: var(--dl-info-border);
+}
+.dl-badge-info .dl-badge-dot {
+  background-color: var(--dl-info);
+}
+
+.dl-badge-neutral {
+  background-color: var(--dl-bg-surface);
+  color: var(--dl-text-secondary);
+  border-color: var(--dl-border);
+}
+.dl-badge-neutral .dl-badge-dot {
+  background-color: var(--dl-text-muted);
+}

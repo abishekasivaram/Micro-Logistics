@@ -1,0 +1,370 @@
+.dl-deliveries-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.deliveries-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* View Mode Segmented Toggle */
+.view-mode-toggle {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-sm);
+  gap: 2px;
+}
+
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--dl-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--dl-transition-fast);
+}
+
+.toggle-btn.active {
+  background: var(--dl-bg-card);
+  color: var(--dl-primary);
+  font-weight: 600;
+  box-shadow: var(--dl-shadow-subtle);
+}
+
+/* Filter Bar Controls */
+.dl-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-search-box {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 0.85rem;
+  background: var(--dl-bg-card);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-sm);
+  transition: border-color var(--dl-transition-fast);
+}
+
+.filter-search-box:focus-within {
+  border-color: var(--dl-border-focus);
+}
+
+.filter-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  color: var(--dl-text-primary);
+  font-family: inherit;
+}
+
+.search-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--dl-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.filter-select-wrapper {
+  position: relative;
+}
+
+.filter-select {
+  padding: 0.5rem 0.85rem;
+  background: var(--dl-bg-card);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-sm);
+  color: var(--dl-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.filter-select:focus {
+  border-color: var(--dl-border-focus);
+}
+
+/* Status Filter Chips */
+.filter-chips-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--dl-radius-full);
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  color: var(--dl-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--dl-transition-fast);
+}
+
+.filter-chip:hover {
+  background: var(--dl-border-hover);
+  color: var(--dl-text-primary);
+}
+
+.filter-chip.is-selected {
+  background: var(--dl-primary-light);
+  border-color: rgba(79, 70, 229, 0.3);
+  color: var(--dl-primary);
+  font-weight: 600;
+}
+
+.chip-count-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--dl-radius-full);
+  background: var(--dl-bg-card);
+  border: 1px solid var(--dl-border);
+}
+
+/* Table Cells Formatting */
+.order-id-cell {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--dl-primary);
+}
+
+.table-customer-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.customer-name-bold {
+  font-weight: 600;
+  color: var(--dl-text-primary);
+}
+
+.customer-phone-sub {
+  font-size: 0.75rem;
+  color: var(--dl-text-muted);
+}
+
+.table-address-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 280px;
+}
+
+.address-icon {
+  color: var(--dl-text-muted);
+  flex-shrink: 0;
+}
+
+.address-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  color: var(--dl-text-secondary);
+}
+
+.items-chip-pill {
+  font-size: 0.75rem;
+  padding: 2px 7px;
+  border-radius: var(--dl-radius-full);
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  color: var(--dl-text-secondary);
+  font-weight: 500;
+}
+
+.table-slot-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8125rem;
+  color: var(--dl-text-secondary);
+}
+
+.cod-cell {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.cod-cell.is-cod {
+  color: var(--dl-warning);
+}
+
+.cod-cell.is-prepaid {
+  color: var(--dl-success);
+}
+
+/* Board / Kanban View */
+.deliveries-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+@media (max-width: 1100px) {
+  .deliveries-kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .deliveries-kanban-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kanban-column {
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-md);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--dl-border);
+}
+
+.column-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.column-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dl-text-secondary);
+}
+
+.column-counter {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  background: var(--dl-bg-card);
+  border-radius: var(--dl-radius-full);
+  color: var(--dl-text-primary);
+}
+
+.kanban-cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 120px;
+}
+
+.kanban-empty-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  border: 1px dashed var(--dl-border);
+  border-radius: var(--dl-radius-sm);
+  color: var(--dl-text-muted);
+  font-size: 0.75rem;
+}
+
+.kanban-card {
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.kanban-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-order-code {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--dl-primary);
+}
+
+.card-time-tag {
+  font-size: 0.6875rem;
+  color: var(--dl-text-muted);
+}
+
+.card-customer-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--dl-text-primary);
+}
+
+.card-address-snippet {
+  font-size: 0.75rem;
+  color: var(--dl-text-secondary);
+  line-height: 1.35;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kanban-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--dl-border-subtle);
+}
+
+.card-cod-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.card-cod-badge.cod-val { color: var(--dl-warning); }
+.card-cod-badge.paid-val { color: var(--dl-success); }
+
+.card-click-hint {
+  font-size: 0.75rem;
+  color: var(--dl-primary);
+  font-weight: 500;
+}

@@ -1,0 +1,136 @@
+.dl-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.timeline-item {
+  display: flex;
+  position: relative;
+  min-height: 52px;
+}
+
+.timeline-time-col {
+  width: 72px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 14px;
+  padding-top: 2px;
+}
+
+.timeline-time {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--dl-text-muted);
+}
+
+.timeline-axis {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--dl-bg-card);
+  box-shadow: 0 0 0 2px var(--dl-border);
+  z-index: 1;
+  margin-top: 4px;
+}
+
+.dot-success {
+  background-color: var(--dl-success);
+  box-shadow: 0 0 0 2px var(--dl-success-border);
+}
+
+.dot-info {
+  background-color: var(--dl-info);
+  box-shadow: 0 0 0 2px var(--dl-info-border);
+}
+
+.dot-warning {
+  background-color: var(--dl-warning);
+  box-shadow: 0 0 0 2px var(--dl-warning-border);
+}
+
+.dot-danger {
+  background-color: var(--dl-danger);
+  box-shadow: 0 0 0 2px var(--dl-danger-border);
+}
+
+.dot-neutral {
+  background-color: var(--dl-text-muted);
+}
+
+.timeline-line {
+  position: absolute;
+  top: 14px;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--dl-border);
+}
+
+.timeline-content {
+  flex: 1;
+  padding-left: 14px;
+  padding-bottom: 1.25rem;
+}
+
+.timeline-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.timeline-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dl-text-primary);
+}
+
+.timeline-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--dl-radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-success {
+  background: var(--dl-success-light);
+  color: var(--dl-success-text);
+}
+.badge-info {
+  background: var(--dl-info-light);
+  color: var(--dl-info-text);
+}
+.badge-warning {
+  background: var(--dl-warning-light);
+  color: var(--dl-warning-text);
+}
+.badge-neutral {
+  background: var(--dl-bg-surface);
+  color: var(--dl-text-secondary);
+}
+
+.timeline-desc {
+  font-size: 0.78125rem;
+  color: var(--dl-text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.timeline-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--dl-text-muted);
+  font-size: 0.85rem;
+}

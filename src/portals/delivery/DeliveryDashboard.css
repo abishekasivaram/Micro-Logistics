@@ -1,0 +1,1179 @@
+/* ==========================================================================
+   MicroLogi Control Tower — Premium Command Deck Dashboard CSS
+   Inspired by Linear, Stripe Dashboard & Apple Developer UI
+   ========================================================================== */
+
+.dl-dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding-bottom: 2rem;
+}
+
+/* ==========================================================================
+   1. FLEET HERO COMMAND DECK
+   ========================================================================== */
+.dashboard-hero-deck {
+  position: relative;
+  overflow: hidden;
+  background: var(--dl-bg-card);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-lg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 20px -4px rgba(15, 23, 42, 0.03);
+  padding: 1.75rem 2rem;
+  transition: all var(--dl-transition-normal);
+}
+
+.dashboard-hero-deck:hover {
+  border-color: var(--dl-border-hover);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05), 0 10px 28px -4px rgba(15, 23, 42, 0.06);
+}
+
+/* Subtle luminous mesh gradient aura on top right */
+.hero-deck-glow {
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, rgba(99, 102, 241, 0.03) 50%, transparent 70%);
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(24px);
+}
+
+[data-theme="dark"] .hero-deck-glow {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(16, 185, 129, 0.06) 60%, transparent 80%);
+}
+
+.hero-deck-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+/* Pilot Avatar & Identity Block */
+.hero-pilot-profile {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.pilot-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pilot-avatar-img {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--dl-radius-md);
+  background: var(--dl-primary-gradient);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  border: 2px solid #ffffff;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .pilot-avatar-img {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.pilot-avatar-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pilot-status-beacon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2.5px solid var(--dl-bg-card);
+}
+
+.pilot-status-beacon.is-live {
+  background: var(--dl-success);
+  box-shadow: 0 0 8px var(--dl-success);
+}
+
+.pilot-status-beacon.is-break {
+  background: var(--dl-warning);
+}
+
+.pilot-status-beacon.is-offline {
+  background: var(--dl-text-muted);
+}
+
+.pilot-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pilot-meta-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pilot-date-badge,
+.pilot-shift-chip,
+.pilot-weather-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--dl-radius-full);
+}
+
+.pilot-date-badge {
+  color: var(--dl-text-secondary);
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+}
+
+.pilot-shift-chip {
+  color: var(--dl-primary);
+  background: var(--dl-primary-light);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.pulse-radio-icon {
+  animation: radioPulse 2s infinite;
+}
+
+@keyframes radioPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.15); }
+}
+
+.pilot-weather-chip {
+  color: var(--dl-text-muted);
+  font-size: 0.75rem;
+}
+
+.pilot-greeting {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--dl-text-primary);
+  line-height: 1.15;
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.pilot-highlight-name {
+  background: var(--dl-primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pilot-id-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8125rem;
+  flex-wrap: wrap;
+}
+
+.pilot-badge-id {
+  font-weight: 700;
+  font-size: 0.6875rem;
+  padding: 2px 6px;
+  border-radius: var(--dl-radius-xs);
+  background: var(--dl-bg-surface);
+  color: var(--dl-text-secondary);
+  border: 1px solid var(--dl-border);
+}
+
+.pilot-role-tag,
+.pilot-rating-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--dl-text-secondary);
+}
+
+.text-emerald { color: var(--dl-success); }
+.text-amber { color: var(--dl-warning); }
+.text-sky { color: var(--dl-info); }
+.text-primary { color: var(--dl-primary); }
+.text-muted { color: var(--dl-text-muted); }
+
+/* Tactical Availability Segmented Switcher & Simulator Button */
+.hero-deck-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .hero-deck-actions {
+    align-items: flex-start;
+    width: 100%;
+  }
+}
+
+.availability-segmented-deck {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+@media (max-width: 900px) {
+  .availability-segmented-deck {
+    align-items: flex-start;
+  }
+}
+
+.availability-deck-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dl-text-muted);
+}
+
+.segmented-switch-bar {
+  display: flex;
+  align-items: center;
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  padding: 4px;
+  border-radius: var(--dl-radius-full);
+  gap: 2px;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.segmented-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--dl-radius-full);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dl-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--dl-transition-fast);
+}
+
+.segmented-switch-btn:hover:not(.is-active) {
+  color: var(--dl-text-primary);
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.segmented-switch-btn.is-active {
+  background: #ffffff;
+  color: var(--dl-text-primary);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="dark"] .segmented-switch-btn.is-active {
+  background: var(--dl-bg-card-hover);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.switch-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.dot-available { background: var(--dl-success); box-shadow: 0 0 6px var(--dl-success); }
+.dot-break { background: var(--dl-warning); }
+.dot-offline { background: var(--dl-text-muted); }
+
+.mission-mode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  padding: 5px 12px;
+  border-radius: var(--dl-radius-full);
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  color: var(--dl-text-secondary);
+  cursor: pointer;
+  transition: all var(--dl-transition-fast);
+}
+
+.mission-mode-toggle-btn:hover {
+  background: var(--dl-border-hover);
+  color: var(--dl-text-primary);
+}
+
+/* ==========================================================================
+   2. KPI STATS GRID
+   ========================================================================== */
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   3. MAIN OPERATIONAL COLUMNS (1.85fr / 1fr)
+   ========================================================================== */
+.dashboard-main-columns {
+  display: grid;
+  grid-template-columns: 1.85fr 1fr;
+  gap: 1.75rem;
+  align-items: flex-start;
+}
+
+@media (max-width: 1080px) {
+  .dashboard-main-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-left-col,
+.dashboard-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.dashboard-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.title-with-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-heading {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--dl-text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.batch-live-indicator-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: var(--dl-radius-full);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--dl-success);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.batch-eta-timer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--dl-text-secondary);
+  background: var(--dl-bg-card);
+  padding: 3px 10px;
+  border-radius: var(--dl-radius-full);
+  border: 1px solid var(--dl-border);
+}
+
+/* ==========================================================================
+   ACTIVE BATCH MISSION DECK CARD
+   ========================================================================== */
+.active-batch-mission-card {
+  background: var(--dl-bg-card);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-lg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px -4px rgba(15, 23, 42, 0.03);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  transition: all var(--dl-transition-normal);
+}
+
+.active-batch-mission-card:hover {
+  border-color: var(--dl-border-hover);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05), 0 12px 32px -4px rgba(15, 23, 42, 0.06);
+}
+
+.mission-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mission-id-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mission-badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--dl-primary-gradient);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: var(--dl-radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.mission-zone-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mission-corridor {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--dl-text-primary);
+}
+
+.mission-priority-tag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--dl-text-muted);
+}
+
+/* 3-Stage Pipeline Tracker */
+.mission-pipeline-tracker {
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.pipeline-stages-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pipeline-stage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.stage-icon-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pipeline-stage.is-completed .stage-icon-circle {
+  background: var(--dl-success);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.pipeline-stage.is-active .stage-icon-circle {
+  background: var(--dl-primary);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.4);
+}
+
+.pulse-stage {
+  animation: stagePulse 1.8s infinite;
+}
+
+@keyframes stagePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+.pipeline-stage.is-pending .stage-icon-circle {
+  background: var(--dl-bg-card);
+  border: 1px solid var(--dl-border);
+  color: var(--dl-text-secondary);
+}
+
+.stage-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.stage-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--dl-text-primary);
+}
+
+.stage-detail {
+  font-size: 0.6875rem;
+  color: var(--dl-text-muted);
+}
+
+.pipeline-connector {
+  width: 28px;
+  height: 2px;
+  background: var(--dl-border);
+}
+
+.pipeline-connector.is-active {
+  background: var(--dl-primary);
+}
+
+@media (max-width: 700px) {
+  .pipeline-stages-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pipeline-connector {
+    display: none;
+  }
+}
+
+.mission-progress-bar-track {
+  width: 100%;
+  height: 7px;
+  background: var(--dl-border);
+  border-radius: var(--dl-radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.mission-progress-bar-fill {
+  height: 100%;
+  background: var(--dl-primary-gradient);
+  border-radius: var(--dl-radius-full);
+  transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.mission-progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: progressShimmer 2s infinite;
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ==========================================================================
+   TACTICAL WAYPOINT TARGET CARD
+   ========================================================================== */
+.tactical-waypoint-card {
+  background: #ffffff;
+  border: 1.5px solid #818CF8;
+  border-radius: var(--dl-radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 4px 18px rgba(79, 70, 229, 0.08);
+  transition: all var(--dl-transition-fast);
+}
+
+[data-theme="dark"] .tactical-waypoint-card {
+  background: var(--dl-bg-surface);
+  border-color: #4F46E5;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.waypoint-header-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.waypoint-radar-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--dl-primary);
+}
+
+.waypoint-eta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dl-primary);
+  background: var(--dl-primary-light);
+  padding: 2px 8px;
+  border-radius: var(--dl-radius-full);
+}
+
+.waypoint-content-grid {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.waypoint-customer-details {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.customer-avatar-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--dl-radius-sm);
+  background: var(--dl-primary-light);
+  color: var(--dl-primary);
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.customer-text-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.customer-name-heading {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--dl-text-primary);
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.customer-destination-addr {
+  font-size: 0.8125rem;
+  color: var(--dl-text-secondary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inline-icon {
+  flex-shrink: 0;
+}
+
+.customer-note-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: #B45309;
+  background: #FEF3C7;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .customer-note-pill {
+  color: #FBBF24;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.waypoint-payment-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.waypoint-cod-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 4px 10px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: var(--dl-radius-sm);
+}
+
+[data-theme="dark"] .waypoint-cod-pill {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.cod-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #D97706;
+}
+
+.cod-amount {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #B45309;
+}
+
+[data-theme="dark"] .cod-amount {
+  color: #FBBF24;
+}
+
+.waypoint-prepaid-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--dl-success);
+  background: var(--dl-success-light);
+  padding: 4px 10px;
+  border-radius: var(--dl-radius-sm);
+}
+
+.items-count-tag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--dl-text-muted);
+}
+
+/* Tactical Quick Action Bar */
+.waypoint-quick-action-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--dl-border);
+}
+
+@media (max-width: 600px) {
+  .waypoint-quick-action-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.wp-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: var(--dl-radius-sm);
+  font-size: 0.78125rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--dl-border);
+  background: var(--dl-bg-surface);
+  color: var(--dl-text-secondary);
+  transition: all var(--dl-transition-fast);
+  cursor: pointer;
+}
+
+.wp-action-btn:hover {
+  background: var(--dl-bg-card-hover);
+  color: var(--dl-text-primary);
+  border-color: var(--dl-border-hover);
+}
+
+.btn-call:hover {
+  color: var(--dl-primary);
+  border-color: var(--dl-primary);
+  background: var(--dl-primary-light);
+}
+
+.btn-wa:hover {
+  color: var(--dl-success);
+  border-color: var(--dl-success);
+  background: var(--dl-success-light);
+}
+
+.btn-nav {
+  background: var(--dl-primary-light);
+  color: var(--dl-primary);
+  border-color: rgba(79, 70, 229, 0.3);
+}
+
+.btn-nav:hover {
+  background: var(--dl-primary);
+  color: #ffffff;
+}
+
+/* Batch Metrics Matrix */
+.mission-metrics-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .mission-metrics-matrix {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.m-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.65rem 0.85rem;
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-sm);
+}
+
+.m-metric-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--dl-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.m-metric-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--dl-text-primary);
+}
+
+/* Mission Action Footer */
+.mission-footer-action-row {
+  display: flex;
+  gap: 12px;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--dl-border-subtle);
+}
+
+@media (max-width: 600px) {
+  .mission-footer-action-row {
+    flex-direction: column;
+  }
+}
+
+.mission-cta-primary {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0.85rem 1.5rem;
+  border-radius: var(--dl-radius-md);
+  background: var(--dl-primary-gradient);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+  transition: all var(--dl-transition-fast);
+}
+
+.mission-cta-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+}
+
+.mission-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--dl-radius-md);
+  background: var(--dl-bg-surface);
+  color: var(--dl-text-secondary);
+  border: 1px solid var(--dl-border);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dl-transition-fast);
+}
+
+.mission-cta-secondary:hover {
+  background: var(--dl-bg-card);
+  color: var(--dl-text-primary);
+  border-color: var(--dl-border-hover);
+}
+
+/* ==========================================================================
+   5. RIGHT COLUMN: SHIFT TELEMETRY & LIVE TIMELINE
+   ========================================================================== */
+.shift-telemetry-advanced-card,
+.live-activity-feed-card {
+  background: var(--dl-bg-card);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-lg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 20px -4px rgba(15, 23, 42, 0.03);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.shift-card-top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.telemetry-title-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.telemetry-spark-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--dl-radius-sm);
+  background: var(--dl-primary-light);
+  color: var(--dl-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.telemetry-header-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--dl-text-primary);
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.telemetry-sub-meta {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--dl-text-muted);
+}
+
+.ev-battery-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--dl-success);
+  background: var(--dl-success-light);
+  padding: 3px 8px;
+  border-radius: var(--dl-radius-full);
+}
+
+/* Battery Gauge Bar */
+.battery-gauge-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-sm);
+  padding: 0.75rem;
+}
+
+.gauge-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.71875rem;
+  font-weight: 600;
+}
+
+.gauge-name {
+  color: var(--dl-text-secondary);
+}
+
+.gauge-range-value {
+  color: var(--dl-success);
+}
+
+.battery-gauge-track {
+  width: 100%;
+  height: 6px;
+  background: var(--dl-border);
+  border-radius: var(--dl-radius-full);
+  overflow: hidden;
+}
+
+.battery-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981 0%, #34D399 100%);
+  border-radius: var(--dl-radius-full);
+}
+
+/* Telemetry Metrics Grid */
+.telemetry-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.telemetry-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.85rem;
+  background: var(--dl-bg-surface);
+  border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-sm);
+  transition: all var(--dl-transition-fast);
+}
+
+.telemetry-cell:hover {
+  background: var(--dl-bg-card-hover);
+  border-color: var(--dl-border-hover);
+}
+
+.cell-earnings-highlight {
+  background: rgba(16, 185, 129, 0.04);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.t-label {
+  font-size: 0.65625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dl-text-muted);
+}
+
+.t-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--dl-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.t-earnings {
+  color: var(--dl-success-text);
+}
+
+.t-subtext {
+  font-size: 0.65625rem;
+  color: var(--dl-text-muted);
+}
+
+.telemetry-footer-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--dl-border-subtle);
+  font-size: 0.75rem;
+}
+
+.efficiency-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--dl-text-secondary);
+}
+
+.sync-timestamp {
+  color: var(--dl-text-muted);
+}
+
+/* Today's Live Activity Feed */
+.feed-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.feed-title-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feed-card-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--dl-text-primary);
+  margin: 0;
+}
+
+.feed-live-beacon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65625rem;
+  font-weight: 800;
+  color: var(--dl-success);
+  background: var(--dl-success-light);
+  padding: 1px 6px;
+  border-radius: var(--dl-radius-full);
+}
+
+.feed-event-count {
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: var(--dl-text-muted);
+}
+
+.feed-items-scroll {
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
