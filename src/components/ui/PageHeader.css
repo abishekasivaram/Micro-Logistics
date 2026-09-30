@@ -1,0 +1,40 @@
+/* src/components/ui/PageHeader.css */
+.ui-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: var(--section-gap);
+  flex-wrap: wrap;
+}
+
+.ui-page-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ui-page-title {
+  font-size: var(--text-24);
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ui-page-subtitle {
+  font-size: var(--text-14);
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 600px;
+}
+
+.ui-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}

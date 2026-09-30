@@ -1,0 +1,36 @@
+/* src/components/ui/Badge.css */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-badge);
+  font-size: var(--text-12);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.ui-badge-info {
+  background-color: var(--info-soft);
+  color: var(--info);
+}
+
+.ui-badge-success {
+  background-color: var(--success-soft);
+  color: var(--success);
+}
+
+.ui-badge-warning {
+  background-color: var(--warning-soft);
+  color: var(--warning);
+}
+
+.ui-badge-danger {
+  background-color: var(--danger-soft);
+  color: var(--danger);
+}
+
+.ui-badge-primary {
+  background-color: var(--primary-soft);
+  color: var(--primary);
+}

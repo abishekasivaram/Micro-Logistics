@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { Settings, Save, CheckCircle, Bell, Shield, Sliders } from 'lucide-react';
-import './OrdersPage.css';
+import './SettingsPage.css';
 
 const SettingsPage = () => {
   const { currentUser, updateUserProfile } = useAppContext();
@@ -31,75 +31,63 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h2>Account & Logistics Preferences</h2>
-          <p>Manage your notification settings, default dispatch window, and profile contact details.</p>
-        </div>
+    <div className="settings-page-wrapper">
+      <div className="settings-header">
+        <h2>Account & Logistics Preferences</h2>
+        <p>Manage your notification settings, default dispatch window, and profile contact details.</p>
       </div>
 
       {savedSuccess && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '12px 16px',
-          background: '#ecfdf5',
-          border: '1px solid #6ee7b7',
-          color: '#065f46',
-          borderRadius: '10px',
-          marginBottom: '20px',
-          maxWidth: '640px'
-        }} role="status">
-          <CheckCircle size={18} />
+        <div className="settings-success-alert" role="status">
+          <CheckCircle size={20} />
           <span>Settings saved successfully!</span>
         </div>
       )}
 
-      <div className="card" style={{ padding: 'var(--spacing-6)', maxWidth: '640px' }}>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div className="form-group flex flex-col gap-2">
-            <label htmlFor="settings-name" className="font-medium text-sm">Account / Display Name</label>
+      <div className="premium-card">
+        <form onSubmit={handleSubmit} className="settings-form">
+          <div className="form-group">
+            <label htmlFor="settings-name" className="form-label">Account / Display Name</label>
             <input 
               type="text" 
               id="settings-name"
-              className="form-control" 
+              className="premium-input" 
               value={settings.name}
               onChange={e => setSettings({ ...settings, name: e.target.value })}
               required 
             />
           </div>
 
-          <div className="form-group flex flex-col gap-2">
-            <label htmlFor="settings-email" className="font-medium text-sm">Email Address</label>
+          <div className="form-group">
+            <label htmlFor="settings-email" className="form-label">Email Address</label>
             <input 
               type="email" 
               id="settings-email"
-              className="form-control" 
+              className="premium-input" 
               value={settings.email}
               onChange={e => setSettings({ ...settings, email: e.target.value })}
               required 
             />
           </div>
 
-          <div className="form-group flex flex-col gap-2">
-            <label htmlFor="settings-phone" className="font-medium text-sm">Phone Number</label>
+          <div className="form-group">
+            <label htmlFor="settings-phone" className="form-label">Phone Number</label>
             <input 
               type="tel" 
               id="settings-phone"
-              className="form-control" 
+              className="premium-input" 
               value={settings.phone}
               onChange={e => setSettings({ ...settings, phone: e.target.value })}
               placeholder="e.g. 9876543210" 
             />
           </div>
 
-          <div className="form-group flex flex-col gap-2">
-            <label htmlFor="settings-window" className="font-medium text-sm">Default Delivery Time Window</label>
+          <div className="form-group">
+            <label htmlFor="settings-window" className="form-label">Default Delivery Time Window</label>
             <select 
               id="settings-window"
-              className="form-control"
+              className="premium-input"
+              style={{ cursor: 'pointer' }}
               value={settings.preferredWindow}
               onChange={e => setSettings({ ...settings, preferredWindow: e.target.value })}
             >
@@ -109,31 +97,40 @@ const SettingsPage = () => {
             </select>
           </div>
 
-          <div className="form-group flex flex-col gap-3 pt-2" style={{ borderTop: '1px solid #f1f5f9' }}>
-            <span className="font-medium text-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Bell size={16} className="text-primary" /> Notifications & Logistics Alerts
+          <div className="settings-divider"></div>
+
+          <div className="form-group">
+            <span className="notification-section-title">
+              <span className="icon"><Bell size={18} /></span>
+              Notifications & Logistics Alerts
             </span>
-            <label htmlFor="settings-email-alerts" className="flex items-center gap-2 cursor-pointer text-sm">
+            
+            <label htmlFor="settings-email-alerts" className={`premium-checkbox-label ${settings.emailAlerts ? 'active' : ''}`}>
               <input 
                 id="settings-email-alerts"
+                className="premium-checkbox"
                 type="checkbox" 
                 checked={settings.emailAlerts}
                 onChange={e => setSettings({ ...settings, emailAlerts: e.target.checked })} 
               /> 
               <span>Email updates for batch dispatch and order confirmations</span>
             </label>
-            <label htmlFor="settings-sms-alerts" className="flex items-center gap-2 cursor-pointer text-sm">
+
+            <label htmlFor="settings-sms-alerts" className={`premium-checkbox-label ${settings.smsAlerts ? 'active' : ''}`}>
               <input 
                 id="settings-sms-alerts"
+                className="premium-checkbox"
                 type="checkbox" 
                 checked={settings.smsAlerts}
                 onChange={e => setSettings({ ...settings, smsAlerts: e.target.checked })} 
               /> 
               <span>SMS notifications with OTP on delivery arrival</span>
             </label>
-            <label htmlFor="settings-auto-agg" className="flex items-center gap-2 cursor-pointer text-sm">
+
+            <label htmlFor="settings-auto-agg" className={`premium-checkbox-label ${settings.autoAggregatedGrouping ? 'active' : ''}`}>
               <input 
                 id="settings-auto-agg"
+                className="premium-checkbox"
                 type="checkbox" 
                 checked={settings.autoAggregatedGrouping}
                 onChange={e => setSettings({ ...settings, autoAggregatedGrouping: e.target.checked })} 
@@ -142,8 +139,8 @@ const SettingsPage = () => {
             </label>
           </div>
 
-          <button type="submit" className="btn btn-primary mt-2 flex items-center gap-2" style={{ alignSelf: 'flex-start' }}>
-            <Save size={16} /> Save Changes
+          <button type="submit" className="btn-save">
+            <Save size={18} /> Save Changes
           </button>
         </form>
       </div>

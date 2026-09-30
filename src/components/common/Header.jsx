@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import ConfirmationModal from './ConfirmationModal';
 import { 
   Search, Bell, ShoppingCart, User, Check, X, Menu, Shield, 
-  Settings, LogOut, ChevronDown, ExternalLink, Activity, Radio
+  Settings, LogOut, ChevronDown, ExternalLink, Activity, Radio,
+  Command
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import './Header.css';
@@ -11,6 +12,7 @@ import './Header.css';
 const Header = ({ onMenuClick }) => {
   const { currentUser, setCurrentUser, notifications, cart, markNotificationAsRead, markAllNotificationsAsRead } = useAppContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -60,18 +62,39 @@ const Header = ({ onMenuClick }) => {
 
   return (
     <header className="header-command-bar">
-      {/* Left side: Greeting and Live Telemetry Indicator */}
+      {/* Left side: Breadcrumb / Greeting */}
       <div className="header-left">
         <button className="mobile-menu-trigger" onClick={onMenuClick} aria-label="Open sidebar navigation">
           <Menu size={20} />
         </button>
         
         <div className="header-brand-info">
-          <div className="header-title-row">
-            <h2 className="header-headline">Welcome back, SuperAdmin</h2>
-          </div>
+          {location.pathname === '/vendor-dashboard' ? (
+            <h2 className="header-headline">Good morning, {currentUser?.shopName || 'Store'}</h2>
+          ) : (
+            <div className="breadcrumb">
+              <span className="breadcrumb-item text-muted">Dashboard</span>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-item active">
+                {location.pathname.split('/').pop().replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Center: Global Search */}
+      {currentUser?.role === 'vendor' && (
+        <div className="header-center">
+          <div className="global-search-container">
+            <Search size={16} className="search-icon" strokeWidth={1.75} />
+            <input type="text" placeholder="Search orders, products..." className="global-search-input" />
+            <div className="search-shortcut">
+              <Command size={12} strokeWidth={2} /> K
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Right side: Actions, Notifications, and Polished Profile Chip */}
       <div className="header-right">
@@ -190,21 +213,21 @@ const Header = ({ onMenuClick }) => {
                   className="profile-menu-item"
                   onClick={() => {
                     setShowProfileMenu(false);
-                    navigate('/admin/settings');
+                    navigate(currentUser?.role === 'vendor' ? '/seller/business-profile' : '/profile');
                   }}
                 >
-                  <Settings size={16} />
-                  <span>Control Settings</span>
+                  <User size={16} strokeWidth={1.75} />
+                  <span>Profile</span>
                 </button>
                 <button 
                   className="profile-menu-item"
                   onClick={() => {
                     setShowProfileMenu(false);
-                    navigate('/admin/analytics');
+                    navigate(currentUser?.role === 'vendor' ? '/settings' : '/admin/settings');
                   }}
                 >
-                  <Activity size={16} />
-                  <span>Telemetry Log</span>
+                  <Settings size={16} strokeWidth={1.75} />
+                  <span>Settings</span>
                 </button>
                 <div className="menu-divider" />
                 <button 
@@ -214,8 +237,8 @@ const Header = ({ onMenuClick }) => {
                     setShowLogoutModal(true);
                   }}
                 >
-                  <LogOut size={16} />
-                  <span>Log Out</span>
+                  <LogOut size={16} strokeWidth={1.75} />
+                  <span>Sign Out</span>
                 </button>
               </div>
             </div>

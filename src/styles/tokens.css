@@ -1,0 +1,151 @@
+/* src/styles/tokens.css */
+:root {
+  /* Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  
+  /* Type Scale */
+  --text-12: 0.75rem;
+  --text-13: 0.8125rem;
+  --text-14: 0.875rem;
+  --text-16: 1rem;
+  --text-20: 1.25rem;
+  --text-24: 1.5rem;
+  --text-30: 1.875rem;
+
+  /* Colors */
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --primary-soft: #EEF2FF;
+  
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --border: #E5E7EB;
+  --border-strong: #D1D5DB;
+  
+  --text: #0F172A;
+  --text-muted: #64748B;
+  
+  --success: #059669;
+  --success-soft: #ECFDF5;
+  
+  --warning: #D97706;
+  --warning-soft: #FFFBEB;
+  
+  --danger: #DC2626;
+  --danger-soft: #FEF2F2;
+  
+  --info: #0284C7;
+  --info-soft: #F0F9FF;
+
+  /* Radius */
+  --radius-input: 8px;
+  --radius-button: 8px;
+  --radius-card: 12px;
+  --radius-badge: 999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 4px 12px rgba(15, 23, 42, 0.08);
+
+  /* Spacing */
+  --page-padding: 32px;
+  --card-padding: 24px;
+  --section-gap: 24px;
+  
+  /* Motion */
+  --motion-duration: 150ms; /* Changed to 150ms for snappier feel */
+  --motion-ease: ease-out;
+  /* Legacy Variables (restored for backward compatibility) */
+  --color-primary: #4F46E5;
+  --color-primary-light: #EEF2FF;
+  --color-primary-hover: #4338CA;
+  
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-border-subtle: #F1F5F9;
+  
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #64748B;
+  --color-text-tertiary: #94A3B8;
+
+  --accent-primary: #4F46E5;
+  --accent-primary-hover: #4338CA;
+  --accent-rose: #E11D48;
+  --accent-rose-light: #FFE4E6;
+  --accent-rose-border: #FECDD3;
+  --accent-emerald: #10B981;
+
+  --bg-surface: #FFFFFF;
+  --bg-surface-secondary: #F8FAFC;
+  
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  --font-size-2xs: 0.65rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 250ms ease-in-out;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  --status-pending-bg: #FFFBEB;
+  --status-pending-text: #B45309;
+  --status-pending-border: #FEF3C7;
+  --status-pending-dot: #F59E0B;
+  
+  --status-progress-bg: #EFF6FF;
+  --status-progress-text: #1D4ED8;
+  --status-progress-border: #DBEAFE;
+  --status-progress-dot: #3B82F6;
+  
+  --status-success-bg: #ECFDF5;
+  --status-success-text: #047857;
+  --status-success-border: #D1FAE5;
+  --status-success-dot: #10B981;
+  
+  --status-danger-bg: #FEF2F2;
+  --status-danger-text: #B91C1C;
+  --status-danger-border: #FEE2E2;
+  --status-danger-dot: #EF4444;
+  
+  --status-neutral-bg: #F8FAFC;
+  --status-neutral-text: #475569;
+  --status-neutral-border: #F1F5F9;
+  --status-neutral-dot: #64748B;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration: 0ms !important;
+  }
+}

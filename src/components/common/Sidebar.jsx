@@ -206,32 +206,40 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
 
   // Render Vendor Links
   const renderVendorLinks = () => (
-    <div className="nav-group">
-      <NavLink to="/vendor-dashboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Dashboard">
-        <div className="nav-icon-wrapper"><LayoutDashboard size={19} /></div>
-        <span className="nav-label">Dashboard</span>
-      </NavLink>
-      <NavLink to="/products" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Products">
-        <div className="nav-icon-wrapper"><Package size={19} /></div>
-        <span className="nav-label">Products</span>
-      </NavLink>
-      <NavLink to="/orders" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Orders">
-        <div className="nav-icon-wrapper"><ShoppingBag size={19} /></div>
-        <span className="nav-label">Orders</span>
-      </NavLink>
-      <NavLink to="/seller-analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Analytics">
-        <div className="nav-icon-wrapper"><BarChart3 size={19} /></div>
-        <span className="nav-label">Analytics</span>
-      </NavLink>
-      <NavLink to="/business-profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Business Profile">
-        <div className="nav-icon-wrapper"><Store size={19} /></div>
-        <span className="nav-label">Business Profile</span>
-      </NavLink>
-      <NavLink to="/notifications" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Notifications">
-        <div className="nav-icon-wrapper"><Bell size={19} /></div>
-        <span className="nav-label">Notifications</span>
-      </NavLink>
-    </div>
+    <>
+      <div className="sidebar-group-label">MAIN</div>
+      <div className="nav-group">
+        <NavLink to="/vendor-dashboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Dashboard">
+          <div className="nav-icon-wrapper"><LayoutDashboard size={18} strokeWidth={1.75} /></div>
+          <span className="nav-label">Dashboard</span>
+        </NavLink>
+        <NavLink to="/seller/products" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Products">
+          <div className="nav-icon-wrapper"><Package size={18} strokeWidth={1.75} /></div>
+          <span className="nav-label">Products</span>
+        </NavLink>
+        <NavLink to="/seller/orders" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Orders">
+          <div className="nav-icon-wrapper"><ShoppingBag size={18} strokeWidth={1.75} /></div>
+          <span className="nav-label">Orders</span>
+        </NavLink>
+        <NavLink to="/seller/analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Analytics">
+          <div className="nav-icon-wrapper"><BarChart3 size={18} strokeWidth={1.75} /></div>
+          <span className="nav-label">Analytics</span>
+        </NavLink>
+      </div>
+      
+      <div className="sidebar-group-label">STORE</div>
+      <div className="nav-group">
+        <NavLink to="/seller/business-profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Business Profile">
+          <div className="nav-icon-wrapper"><Store size={18} strokeWidth={1.75} /></div>
+          <span className="nav-label">Business Profile</span>
+        </NavLink>
+        <NavLink to="/seller/notifications" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Notifications">
+          <div className="nav-icon-wrapper"><Bell size={18} strokeWidth={1.75} /></div>
+          <span className="nav-label">Notifications</span>
+          {unreadNotifCount > 0 && <span className="nav-badge">{unreadNotifCount}</span>}
+        </NavLink>
+      </div>
+    </>
   );
 
   // Render Delivery Partner Links
@@ -317,11 +325,11 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
           {role !== 'admin' && role !== 'delivery_partner' && (
             <>
               <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Settings">
-                <div className="nav-icon-wrapper"><Settings size={19} /></div>
+                <div className="nav-icon-wrapper"><Settings size={18} strokeWidth={1.75} /></div>
                 <span className="nav-label">Settings</span>
               </NavLink>
               <NavLink to="/help" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Help & Support">
-                <div className="nav-icon-wrapper"><HelpCircle size={19} /></div>
+                <div className="nav-icon-wrapper"><HelpCircle size={18} strokeWidth={1.75} /></div>
                 <span className="nav-label">Help & Support</span>
               </NavLink>
             </>
@@ -334,12 +342,27 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
             </NavLink>
           )}
 
-          <button onClick={handleLogoutClick} className="nav-item nav-logout-btn" title="Sign Out">
-            <div className="nav-icon-wrapper"><LogOut size={18} /></div>
+          <button onClick={handleLogoutClick} className="nav-item nav-logout-btn text-danger" title="Sign Out">
+            <div className="nav-icon-wrapper"><LogOut size={18} strokeWidth={1.75} /></div>
             <span className="nav-label">Sign Out</span>
           </button>
         </div>
       </nav>
+
+      {/* Mini Store Card Above Collapse */}
+      {role === 'vendor' && !isCollapsed && (
+        <div className="sidebar-store-card">
+          <div className="store-card-avatar">
+            {currentUser?.shopName ? currentUser.shopName.charAt(0) : 'S'}
+          </div>
+          <div className="store-card-info">
+            <span className="store-card-name">{currentUser?.shopName || 'My Store'}</span>
+            <div className="store-card-status">
+              <span className="status-dot online"></span> Open
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Collapse Toggle Footer */}
       <div className="sidebar-footer">

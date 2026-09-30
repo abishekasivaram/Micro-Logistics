@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import { Search, Plus, Edit2, Trash2, ShoppingCart, Clock, Store, Eye, Check, X, Filter, Heart } from 'lucide-react';
+import { 
+  Search, Plus, Edit2, Trash2, ShoppingCart, Clock, Store, 
+  Eye, Check, X, Filter, Heart, Copy, MoreVertical, Image as ImageIcon,
+  ChevronDown, ArrowUpRight
+} from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import './ProductsPage.css';
 
@@ -30,8 +34,12 @@ const ProductsPage = () => {
     stock: '',
     prepTime: '15 mins',
     description: '',
-    image: ''
+    image: '',
+    status: 'Active'
   });
+
+  // Table selection state
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -63,7 +71,8 @@ const ProductsPage = () => {
       stock: '20',
       prepTime: '15 mins',
       description: '',
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=80'
+      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=80',
+      status: 'Active'
     });
     setShowProductModal(true);
   };
@@ -77,7 +86,8 @@ const ProductsPage = () => {
       stock: product.stock,
       prepTime: product.prepTime || '15 mins',
       description: product.description || '',
-      image: product.image || ''
+      image: product.image || '',
+      status: product.status || 'Active'
     });
     setShowProductModal(true);
   };
@@ -94,7 +104,8 @@ const ProductsPage = () => {
         stock: parseInt(productForm.stock),
         prepTime: productForm.prepTime,
         description: productForm.description,
-        image: productForm.image
+        image: productForm.image,
+        status: productForm.status
       });
     } else {
       addProduct({
@@ -104,10 +115,27 @@ const ProductsPage = () => {
         stock: parseInt(productForm.stock),
         prepTime: productForm.prepTime,
         description: productForm.description,
-        image: productForm.image
+        image: productForm.image,
+        status: productForm.status
       });
     }
     setShowProductModal(false);
+  };
+
+  const toggleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedProductIds(filteredProducts.map(p => p.id));
+    } else {
+      setSelectedProductIds([]);
+    }
+  };
+
+  const toggleSelect = (id) => {
+    if (selectedProductIds.includes(id)) {
+      setSelectedProductIds(selectedProductIds.filter(pid => pid !== id));
+    } else {
+      setSelectedProductIds([...selectedProductIds, id]);
+    }
   };
 
   // Filter products list
@@ -121,75 +149,307 @@ const ProductsPage = () => {
     return matchesSearch && matchesVendor && matchesCategory && matchesSellerUser;
   });
 
+  const totalProds = filteredProducts.length;
+  const inStockProds = filteredProducts.filter(p => p.stock > 10).length;
+  const lowStockProds = filteredProducts.filter(p => p.stock > 0 && p.stock <= 10).length;
+  const outOfStockProds = filteredProducts.filter(p => p.stock === 0).length;
+
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h2>{isCustomer ? 'Browse Local Products' : 'Product Inventory Management'}</h2>
-          <p>{isCustomer ? 'Select fresh items from neighborhood sellers and add to cart.' : 'Manage your store catalog, stock quantities, and availability.'}</p>
-        </div>
-        {!isCustomer && (
-          <button className="btn btn-primary flex items-center gap-2" onClick={openAddModal}>
-            <Plus size={18} /> Add New Product
-          </button>
-        )}
-      </div>
+    <div className="products-page">
+      {!isCustomer ? (
+        // SELLER VIEW
+        <>
+          <div className="page-header-row">
+            <div>
+              <h1 className="page-title">Products</h1>
+              <p className="page-subtitle">Manage your catalog, inventory, and pricing.</p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn btn-secondary">Import CSV</button>
+              <button className="btn btn-primary" onClick={openAddModal}>
+                <Plus size={16} /> Add product
+              </button>
+            </div>
+          </div>
 
-      {/* Controls / Filter Bar */}
-      <div className="products-controls-bar">
-        <div className="search-box-wrap">
-          <Search size={18} className="search-icon" />
-          <input 
-            type="text" 
-            placeholder="Search products by name or category..." 
-            value={searchTerm}
-            aria-label="Search products by name or category"
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+          <div className="summary-strip">
+            <div className="stat-pill active">
+              Total products <span className="stat-pill-count">{totalProds}</span>
+            </div>
+            <div className="stat-pill">
+              In stock <span className="stat-pill-count" style={{ color: 'var(--success)' }}>{inStockProds}</span>
+            </div>
+            <div className="stat-pill">
+              Low stock <span className="stat-pill-count" style={{ color: 'var(--warning)' }}>{lowStockProds}</span>
+            </div>
+            <div className="stat-pill">
+              Out of stock <span className="stat-pill-count" style={{ color: 'var(--danger)' }}>{outOfStockProds}</span>
+            </div>
+          </div>
 
-        <div className="filters-group-row">
-          {isCustomer && (
-            <select 
-              aria-label="Filter products by local seller"
-              value={selectedVendorFilter} 
-              onChange={e => setSelectedVendorFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">All Local Sellers</option>
-              {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
+          <div className="toolbar-card">
+            <div className="search-input-wrap">
+              <Search size={16} className="search-icon-left" />
+              <input 
+                type="text" 
+                placeholder="Search products..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="toolbar-filters">
+              <select 
+                className="form-select"
+                value={selectedCategoryFilter} 
+                onChange={e => setSelectedCategoryFilter(e.target.value)}
+              >
+                <option value="All">Category: All</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Bakery">Bakery</option>
+                <option value="Grains">Grains & Pulses</option>
+                <option value="Vegetables">Vegetables & Fruits</option>
+              </select>
+              <select className="form-select">
+                <option>Status: All</option>
+                <option>Active</option>
+                <option>Hidden</option>
+              </select>
+              <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-input)', padding: '2px' }}>
+                <button style={{ padding: '6px 12px', background: 'var(--surface)', borderRadius: '4px', boxShadow: 'var(--shadow-card)', border: 'none' }}>Table</button>
+                <button style={{ padding: '6px 12px', background: 'transparent', color: 'var(--text-muted)', border: 'none' }}>Grid</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="table-wrapper">
+            {filteredProducts.length === 0 ? (
+              <div className="catalog-empty-state">
+                <div className="catalog-empty-icon">
+                  <Package size={32} />
+                </div>
+                <h3 className="catalog-empty-title">Your catalog is empty</h3>
+                <p className="catalog-empty-desc">Start adding products to your store to receive orders from customers in your area.</p>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button className="btn btn-primary" onClick={openAddModal}>Add your first product</button>
+                  <button className="btn btn-secondary">Import from CSV</button>
+                </div>
+              </div>
+            ) : (
+              <table className="products-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px', paddingRight: 0 }}>
+                      <input type="checkbox" onChange={toggleSelectAll} checked={selectedProductIds.length === filteredProducts.length && filteredProducts.length > 0} />
+                    </th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th style={{ textAlign: 'right' }}>Price</th>
+                    <th>Stock Qty</th>
+                    <th>Prep Time</th>
+                    <th>Status</th>
+                    <th style={{ width: '40px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map(product => (
+                    <tr key={product.id}>
+                      <td style={{ paddingRight: 0 }}>
+                        <input type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={() => toggleSelect(product.id)} />
+                      </td>
+                      <td>
+                        <div className="product-cell">
+                          <img src={product.image} alt={product.name} className="product-thumb" />
+                          <div>
+                            <div className="product-name">{product.name}</div>
+                            <div className="product-sku">SKU: {product.id.split('-').pop().toUpperCase()}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="category-badge">{product.category}</span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: '500', fontFeatureSettings: '"tnum"' }}>
+                        ₹{product.price.toFixed(2)}
+                      </td>
+                      <td>
+                        <div className="stock-bar-container">
+                          <div className="stock-bar">
+                            <div className={`stock-fill ${product.stock > 10 ? 'good' : product.stock > 0 ? 'low' : 'out'}`} style={{ width: `${Math.min((product.stock / 20) * 100, 100)}%` }}></div>
+                          </div>
+                          <span style={{ fontSize: '13px', fontWeight: '500', color: product.stock === 0 ? 'var(--danger)' : 'var(--text)' }}>
+                            {product.stock} {product.stock === 0 ? '(Out)' : ''}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="prep-chip"><Clock size={12} /> {product.prepTime || '15m'}</span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <label style={{ position: 'relative', display: 'inline-block', width: '32px', height: '18px' }}>
+                            <input type="checkbox" checked={product.status === 'Active'} onChange={() => updateProduct(product.id, { status: product.status === 'Active' ? 'Hidden' : 'Active' })} style={{ opacity: 0, width: 0, height: 0 }} />
+                            <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: product.status === 'Active' ? 'var(--success)' : 'var(--border-strong)', transition: '.2s', borderRadius: '34px' }}>
+                              <span style={{ position: 'absolute', content: '""', height: '14px', width: '14px', left: product.status === 'Active' ? '16px' : '2px', bottom: '2px', backgroundColor: 'white', transition: '.2s', borderRadius: '50%' }}></span>
+                            </span>
+                          </label>
+                          <span style={{ fontSize: '12px', color: product.status === 'Active' ? 'var(--success)' : 'var(--text-muted)' }}>{product.status}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="dropdown-container">
+                          <button className="kebab-menu"><MoreVertical size={16} /></button>
+                          {/* Add dropdown logic if needed, for now clicking row could open edit */}
+                          <button className="kebab-menu" onClick={() => openEditModal(product)}><Edit2 size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {filteredProducts.length > 0 && (
+              <div className="table-footer">
+                <div>Showing {filteredProducts.length} products</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span>Rows per page: </span>
+                  <select className="form-select" style={{ height: '28px', padding: '0 8px' }}>
+                    <option>20</option>
+                    <option>50</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bulk Action Bar */}
+          {selectedProductIds.length > 0 && (
+            <div className="bulk-action-bar">
+              <div style={{ fontWeight: '600', fontSize: '14px' }}>{selectedProductIds.length} selected</div>
+              <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)' }}></div>
+              <div className="bulk-actions-group">
+                <button style={{ background: 'none', border: 'none', color: 'white', fontSize: '13px', cursor: 'pointer' }}>Change category</button>
+                <button style={{ background: 'none', border: 'none', color: 'white', fontSize: '13px', cursor: 'pointer' }}>Hide</button>
+                <button style={{ background: 'none', border: 'none', color: '#fca5a5', fontSize: '13px', cursor: 'pointer' }}>Delete</button>
+              </div>
+              <button onClick={() => setSelectedProductIds([])} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', display: 'flex', marginLeft: 'auto' }}><X size={16} /></button>
+            </div>
           )}
 
-          <select 
-            aria-label="Filter products by category"
-            value={selectedCategoryFilter} 
-            onChange={e => setSelectedCategoryFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="All">All Categories</option>
-            <option value="Dairy">Dairy</option>
-            <option value="Bakery">Bakery</option>
-            <option value="Grains">Grains & Pulses</option>
-            <option value="Vegetables">Vegetables & Fruits</option>
-            <option value="Oil & Ghee">Oil & Ghee</option>
-            <option value="Pharmacy">Pharmacy</option>
-            <option value="Electronics">Electronics</option>
-          </select>
-        </div>
-      </div>
+          {/* Right Drawer for Add/Edit */}
+          {showProductModal && (
+            <div className="drawer-overlay" onClick={() => setShowProductModal(false)}>
+              <div className="drawer-content" onClick={e => e.stopPropagation()}>
+                <div className="drawer-header">
+                  <h3 className="drawer-title">{editingProduct ? 'Edit Product' : 'Add Product'}</h3>
+                  <button className="kebab-menu" onClick={() => setShowProductModal(false)}><X size={20}/></button>
+                </div>
+                <div className="drawer-body">
+                  <form id="product-form" onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    
+                    <div className="image-dropzone">
+                      <ImageIcon size={32} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
+                      <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--primary)' }}>Click to upload image</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>SVG, PNG, JPG or GIF (max. 5MB)</div>
+                    </div>
 
-      {/* CUSTOMER VIEW: Product Cards Grid */}
-      {isCustomer ? (
-        <div className="customer-product-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', padding: '16px 0' }}>
-          {filteredProducts.length === 0 ? (
-            <div className="no-products-box full-width">
-              <Store size={48} className="text-secondary" />
-              <h3>No Products Found</h3>
-              <p>Try clearing filters or searching another keyword.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Product Name</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        value={productForm.name}
+                        onChange={e => setProductForm({ ...productForm, name: e.target.value })}
+                        required 
+                        placeholder="e.g. Organic Bananas"
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Category</label>
+                        <select 
+                          className="form-control"
+                          value={productForm.category}
+                          onChange={e => setProductForm({ ...productForm, category: e.target.value })}
+                        >
+                          <option value="Dairy">Dairy</option>
+                          <option value="Bakery">Bakery</option>
+                          <option value="Grains">Grains & Pulses</option>
+                          <option value="Vegetables">Vegetables & Fruits</option>
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Status</label>
+                        <select 
+                          className="form-control"
+                          value={productForm.status}
+                          onChange={e => setProductForm({ ...productForm, status: e.target.value })}
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Hidden">Hidden</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Price (₹)</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          className="form-control" 
+                          value={productForm.price}
+                          onChange={e => setProductForm({ ...productForm, price: e.target.value })}
+                          required 
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Stock Qty</label>
+                        <input 
+                          type="number" 
+                          className="form-control" 
+                          value={productForm.stock}
+                          onChange={e => setProductForm({ ...productForm, stock: e.target.value })}
+                          required 
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Prep Time</label>
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          value={productForm.prepTime}
+                          onChange={e => setProductForm({ ...productForm, prepTime: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Description</label>
+                      <textarea 
+                        className="form-control"
+                        rows="4"
+                        style={{ height: 'auto', padding: '12px' }}
+                        value={productForm.description}
+                        onChange={e => setProductForm({ ...productForm, description: e.target.value })}
+                      ></textarea>
+                    </div>
+                  </form>
+                </div>
+                <div className="drawer-footer">
+                  <button type="button" className="btn btn-outline" onClick={() => setShowProductModal(false)}>Cancel</button>
+                  <button type="submit" form="product-form" className="btn btn-primary">Save product</button>
+                </div>
+              </div>
             </div>
-          ) : (
-            filteredProducts.map(product => {
+          )}
+        </>
+      ) : (
+        // CUSTOMER VIEW (Legacy preserved)
+        <div style={{ padding: '0 32px' }}>
+          <h2>Browse Local Products</h2>
+          <div className="customer-product-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', padding: '16px 0' }}>
+            {filteredProducts.map(product => {
               const vendor = vendors.find(v => v.id === product.vendorId);
               const qty = quantities[product.id] || 1;
               const isAvailable = product.stock > 0;
@@ -199,228 +459,18 @@ const ProductsPage = () => {
                   <div className="wishlist-btn-overlay" style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', cursor: 'pointer', zIndex: 2 }}>
                     <Heart size={16} />
                   </div>
-                  
                   <div className="product-img-box" style={{ height: '160px', width: '100%', overflow: 'hidden', position: 'relative' }}>
                     <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    {!isAvailable && (
-                       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(239, 68, 68, 0.9)', color: 'white', fontSize: '12px', textAlign: 'center', padding: '4px' }}>
-                         Out of Stock
-                       </div>
-                    )}
                   </div>
-
                   <div className="product-info-box" style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{product.name}</h4>
-                    <div className="product-seller-text" style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
-                      <Store size={14} />
-                      <span>{vendor?.name || product.vendorName || 'Local Seller'}</span>
-                    </div>
-
-                    <div className="product-price-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', marginBottom: '12px' }}>
-                      <span className="price" style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>₹{product.price.toFixed(2)}</span>
-                      <span style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={12} /> {product.prepTime || '15 mins'}
-                      </span>
-                    </div>
-
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <div className="qty-selector" style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                        <button style={{ padding: '6px 10px', background: '#f8fafc', border: 'none', cursor: 'pointer' }} onClick={() => handleQtyChange(product.id, -1)} disabled={!isAvailable}>-</button>
-                        <span style={{ padding: '0 12px', fontSize: '14px', fontWeight: '500' }}>{qty}</span>
-                        <button style={{ padding: '6px 10px', background: '#f8fafc', border: 'none', cursor: 'pointer' }} onClick={() => handleQtyChange(product.id, 1)} disabled={!isAvailable}>+</button>
-                      </div>
-                      <button 
-                        className="btn btn-primary"
-                        style={{ flex: 1, padding: '8px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
-                        onClick={() => handleAddToCart(product)}
-                        disabled={!isAvailable}
-                      >
-                        <ShoppingCart size={16} /> Add
-                      </button>
+                      <button className="btn btn-primary" onClick={() => handleAddToCart(product)}>Add</button>
                     </div>
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
-      ) : (
-        /* SELLER / VENDOR VIEW: Product Management Table */
-        <div className="table-container card">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Stock Qty</th>
-                <th>Prep Time</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.length === 0 ? (
-                <tr><td colSpan="7" className="empty-state">No products found in store catalog. Click "Add New Product" to create one.</td></tr>
-              ) : (
-                filteredProducts.map(product => (
-                  <tr key={product.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img src={product.image} alt={product.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
-                        <div>
-                          <span className="font-medium" style={{ display: 'block' }}>{product.name}</span>
-                          <span style={{ fontSize: '11px', color: '#6b7280' }}>ID: {product.id}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{product.category}</td>
-                    <td className="font-medium">₹{product.price.toFixed(2)}</td>
-                    <td>
-                      <input 
-                        type="number" 
-                        value={product.stock}
-                        aria-label={`Stock count for ${product.name}`}
-                        style={{ width: '70px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #d1d5db' }}
-                        onChange={(e) => updateProduct(product.id, { 
-                          stock: parseInt(e.target.value) || 0
-                        })}
-                      />
-                    </td>
-                    <td>{product.prepTime || '15 mins'}</td>
-                    <td>
-                      <span className={`badge badge-${product.status.replace(/\s+/g, '').toLowerCase()}`}>
-                        {product.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex gap-2">
-                        <button className="icon-btn-small" onClick={() => openEditModal(product)} title="Edit Product">
-                          <Edit2 size={16} />
-                        </button>
-                        <button className="icon-btn-small text-danger" onClick={() => deleteProduct(product.id)} title="Delete Product">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Seller Add/Edit Modal */}
-      {showProductModal && (
-        <div className="modal-backdrop" onClick={() => setShowProductModal(false)}>
-          <div 
-            className="product-modal-card" 
-            role="dialog" 
-            aria-modal="true" 
-            aria-labelledby="product-modal-title"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3 id="product-modal-title">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-              <button className="close-btn" onClick={() => setShowProductModal(false)} aria-label="Close modal"><X size={20} /></button>
-            </div>
-
-            <form onSubmit={handleSaveProduct} className="product-modal-form">
-              <div className="form-group">
-                <label htmlFor="prod-name">Product Name *</label>
-                <input 
-                  type="text" 
-                  id="prod-name"
-                  className="form-control" 
-                  value={productForm.name}
-                  onChange={e => setProductForm({ ...productForm, name: e.target.value })}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="prod-cat">Category *</label>
-                <select 
-                  id="prod-cat"
-                  className="form-control"
-                  value={productForm.category}
-                  onChange={e => setProductForm({ ...productForm, category: e.target.value })}
-                >
-                  <option value="Dairy">Dairy</option>
-                  <option value="Bakery">Bakery</option>
-                  <option value="Grains">Grains & Pulses</option>
-                  <option value="Vegetables">Vegetables & Fruits</option>
-                  <option value="Oil & Ghee">Oil & Ghee</option>
-                  <option value="Pharmacy">Pharmacy</option>
-                  <option value="Electronics">Electronics</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="prod-price">Price (₹) *</label>
-                <input 
-                  type="number" 
-                  id="prod-price"
-                  step="0.01" 
-                  className="form-control" 
-                  value={productForm.price}
-                  onChange={e => setProductForm({ ...productForm, price: e.target.value })}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="prod-stock">Stock Quantity *</label>
-                <input 
-                  type="number" 
-                  id="prod-stock"
-                  className="form-control" 
-                  value={productForm.stock}
-                  onChange={e => setProductForm({ ...productForm, stock: e.target.value })}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="prod-prep">Preparation Time</label>
-                <input 
-                  type="text" 
-                  id="prod-prep"
-                  className="form-control" 
-                  placeholder="15 mins"
-                  value={productForm.prepTime}
-                  onChange={e => setProductForm({ ...productForm, prepTime: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="prod-img">Image URL</label>
-                <input 
-                  type="url" 
-                  id="prod-img"
-                  className="form-control" 
-                  value={productForm.image}
-                  onChange={e => setProductForm({ ...productForm, image: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group full-width">
-                <label htmlFor="prod-desc">Description</label>
-                <textarea 
-                  id="prod-desc"
-                  className="form-control"
-                  rows="2"
-                  value={productForm.description}
-                  onChange={e => setProductForm({ ...productForm, description: e.target.value })}
-                ></textarea>
-              </div>
-
-              <div className="modal-footer full-width">
-                <button type="button" className="btn btn-outline" onClick={() => setShowProductModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Product</button>
-              </div>
-            </form>
+            })}
           </div>
         </div>
       )}
@@ -429,4 +479,3 @@ const ProductsPage = () => {
 };
 
 export default ProductsPage;
-

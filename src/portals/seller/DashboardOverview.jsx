@@ -1,496 +1,327 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import { ShoppingBag, Truck, CheckCircle, Clock, Package, AlertTriangle, Store, DollarSign, ArrowRight, Eye, Layers, Brain, Map, MapPin, Zap, Activity, Info, X, TrendingUp } from 'lucide-react';
-import StatusBadge from '../../components/common/StatusBadge';
-import OrderDetailsModal from '../../components/common/OrderDetailsModal';
+import { 
+  ShoppingBag, Truck, CheckCircle, Clock, Package, AlertTriangle, 
+  DollarSign, MapPin, Zap, Info, X, TrendingUp, Sparkles, Copy, 
+  ChevronRight, Calendar
+} from 'lucide-react';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 import './DashboardOverview.css';
 
 const DashboardOverview = () => {
-  const { orders, deliveryGroups, products, currentUser, updateOrderStatus, updateSellerProfile } = useAppContext();
+  const { orders, currentUser, updateSellerProfile, createDeliveryBatch } = useAppContext();
   const navigate = useNavigate();
-  const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
+  const [isStoreClosedModalOpen, setIsStoreClosedModalOpen] = useState(false);
+  const [storeStatus, setStoreStatus] = useState(currentUser?.isOpen !== false);
+  const [copiedId, setCopiedId] = useState(false);
+
+  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : 'seller-uuid-4694-d04c';
+  const displayId = sellerId.slice(0, 8) + '...' + sellerId.slice(-4);
+
   const sellerOrders = orders.filter(o => currentUser?.role === 'admin' || o.vendorId === sellerId);
-
   const totalOrders = sellerOrders.length;
   const newOrders = sellerOrders.filter(o => (o.orderStatus || o.status) === 'PLACED').length;
   const preparingOrders = sellerOrders.filter(o => (o.orderStatus || o.status) === 'PREPARING').length;
   const readyOrders = sellerOrders.filter(o => (o.orderStatus || o.status) === 'READY_FOR_DELIVERY').length;
   const completedOrders = sellerOrders.filter(o => (o.orderStatus || o.status) === 'DELIVERED').length;
-  
-  const todayOrders = sellerOrders.filter(o => {
-    const oDate = new Date(o.date).toDateString();
-    return oDate === new Date().toDateString();
-  }).length;
-
   const todayRevenue = sellerOrders.reduce((sum, o) => sum + (o.total || 0), 0);
 
-  const actionRequiredOrders = sellerOrders.filter(o => ['PLACED', 'CONFIRMED', 'PREPARING'].includes(o.orderStatus || o.status));
-
-  const toggleStoreOpen = () => {
-    updateSellerProfile({ isOpen: !currentUser?.isOpen });
-  };
-
-  // --- AI Delivery Coordinator Mock Logic ---
-  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
-  const { createDeliveryBatch } = useAppContext();
-  
-  // Find orders waiting for aggregation
   const waitingOrders = sellerOrders.filter(o => o.aggregationStatus === 'Waiting for Aggregation');
-  
-  // Mock suggested batch data
-  const suggestedBatch = {
-    orderCount: waitingOrders.length > 0 ? Math.min(waitingOrders.length, 4) : 4,
-    area: 'RS Puram',
-    window: '10:00 AM – 11:30 AM',
-    vehicle: 'Van',
-    distance: 8.4,
-    individualCost: 120,
-    aggregatedCost: 75,
-    saving: 45,
-    savingPercent: 37.5,
-    orders: waitingOrders.length > 0 ? waitingOrders.slice(0, 4) : [
-      { id: 'ORD-1021', customerName: 'John Doe', total: 450 },
-      { id: 'ORD-1022', customerName: 'Jane Smith', total: 320 },
-      { id: 'ORD-1025', customerName: 'Mike Johnson', total: 890 },
-      { id: 'ORD-1027', customerName: 'Sarah Williams', total: 150 }
-    ]
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(sellerId);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
   };
 
-  // Helper to determine priority
-  const getOrderPriority = (order) => {
-    const status = order.orderStatus || order.status;
-    if (status === 'PREPARING' || order.deliveryTimeSlot?.includes('Fast')) return 'URGENT';
-    if (status === 'READY_FOR_DELIVERY') return 'NORMAL';
-    return 'FLEXIBLE';
-  };
-
-  const handleCreateBatch = () => {
-    if (waitingOrders.length > 0) {
-      const orderIds = waitingOrders.slice(0, 4).map(o => o.id);
-      createDeliveryBatch(orderIds, {
-        estimatedDistance: suggestedBatch.distance,
-        estimatedTime: 32
-      });
+  const toggleStatus = () => {
+    if (storeStatus) {
+      setIsStoreClosedModalOpen(true);
+    } else {
+      setStoreStatus(true);
+      updateSellerProfile({ isOpen: true });
     }
-    setIsBatchModalOpen(false);
   };
 
+  const confirmCloseStore = () => {
+    setStoreStatus(false);
+    updateSellerProfile({ isOpen: false });
+    setIsStoreClosedModalOpen(false);
+  };
+
+  // Mock batch details
+  const hasBatches = waitingOrders.length > 0;
+  
   return (
-    <div className="page-container">
-      {/* Header Banner */}
-      <div className="page-header" style={{ alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span className="badge" style={{ backgroundColor: '#059669', color: '#ffffff', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '12px' }}>
+    <div className="dashboard-page">
+      {/* Page Header Row */}
+      <div className="dashboard-header-row">
+        <div className="store-title-group">
+          <div className="store-badge-row">
+            <span style={{ 
+              background: 'var(--success-soft)', color: 'var(--success)', 
+              fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px' 
+            }}>
               SELLER DASHBOARD
             </span>
-            <span style={{ fontSize: '12px', color: '#6b7280' }}>Store ID: {sellerId || 'N/A'}</span>
+            <div className="store-id-tooltip" onClick={handleCopyId} title={sellerId}>
+              {displayId} {copiedId ? <CheckCircle size={12} /> : <Copy size={12} />}
+            </div>
           </div>
-          <h2>{currentUser?.shopName || currentUser?.name || 'Local Seller Store'}</h2>
-          <p>Smarter Local Orders. Better Delivery Coordination.</p>
+          <h1 style={{ fontSize: '24px', fontWeight: '600', letterSpacing: '-0.02em', margin: '4px 0 0 0' }}>
+            {currentUser?.shopName || 'Local Seller Store'}
+          </h1>
         </div>
 
-        {/* Store Status Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#ffffff', padding: '12px 18px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
-          <Store size={20} className={currentUser?.isOpen !== false ? "text-success" : "text-danger"} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface)', padding: '6px', borderRadius: '999px', border: '1px solid var(--border)' }}>
+          <button 
+            style={{ 
+              padding: '6px 16px', borderRadius: '999px', fontSize: '13px', fontWeight: '500',
+              background: storeStatus ? 'var(--success-soft)' : 'transparent',
+              color: storeStatus ? 'var(--success)' : 'var(--text-muted)'
+            }}
+            onClick={() => !storeStatus && toggleStatus()}
+          >
+            Open for orders
+          </button>
+          <button 
+            style={{ 
+              padding: '6px 16px', borderRadius: '999px', fontSize: '13px', fontWeight: '500',
+              background: !storeStatus ? 'var(--danger-soft)' : 'transparent',
+              color: !storeStatus ? 'var(--danger)' : 'var(--text-muted)'
+            }}
+            onClick={() => storeStatus && toggleStatus()}
+          >
+            Closed
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Row */}
+      <div className="kpi-grid">
+        <div className="stat-card" onClick={() => navigate('/orders')}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="stat-icon" style={{ background: 'var(--primary-soft)', color: 'var(--primary)' }}><ShoppingBag size={18} strokeWidth={1.75} /></div>
+            <span className="stat-delta positive">▲ 12%</span>
+          </div>
           <div>
-            <span style={{ display: 'block', fontSize: '11px', color: '#6b7280', fontWeight: 'bold', textTransform: 'uppercase' }}>Store Status</span>
-            <strong style={{ fontSize: '14px', color: currentUser?.isOpen !== false ? "#059669" : "#dc2626" }}>
-              {currentUser?.isOpen !== false ? "OPEN FOR ORDERS" : "STORE CLOSED"}
-            </strong>
-          </div>
-          <button 
-            className={`btn ${currentUser?.isOpen !== false ? 'btn-outline text-danger' : 'btn-primary'}`}
-            style={{ fontSize: '12px', padding: '4px 10px', marginLeft: '8px' }}
-            onClick={toggleStoreOpen}
-          >
-            {currentUser?.isOpen !== false ? "Close Store" : "Open Store"}
-          </button>
-        </div>
-      </div>
-
-      {/* Expanded KPIs Grid */}
-      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-        <div className="kpi-card">
-          <div className="kpi-icon bg-primary-light text-primary">
-            <ShoppingBag size={24} />
-          </div>
-          <div className="kpi-details">
-            <span className="kpi-label">Total Orders</span>
-            <span className="kpi-value">{totalOrders}</span>
+            <div className="stat-value">{totalOrders}</div>
+            <div className="stat-label">Total Orders</div>
           </div>
         </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
-            <Clock size={24} />
+        <div className="stat-card" onClick={() => navigate('/orders?status=new')}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="stat-icon" style={{ background: 'var(--info-soft)', color: 'var(--info)' }}><Package size={18} strokeWidth={1.75} /></div>
+            <span className="stat-delta positive">▲ 4%</span>
           </div>
-          <div className="kpi-details">
-            <span className="kpi-label">New Orders</span>
-            <span className="kpi-value">{newOrders}</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ backgroundColor: '#fed7aa', color: '#c2410c' }}>
-            <Package size={24} />
-          </div>
-          <div className="kpi-details">
-            <span className="kpi-label">Preparing</span>
-            <span className="kpi-value">{preparingOrders}</span>
+          <div>
+            <div className="stat-value">{newOrders}</div>
+            <div className="stat-label">New Orders</div>
           </div>
         </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ backgroundColor: '#e0f2fe', color: '#0284c7' }}>
-            <Truck size={24} />
+        <div className="stat-card" onClick={() => navigate('/orders?status=preparing')}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="stat-icon" style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}><Clock size={18} strokeWidth={1.75} /></div>
+            <span className="stat-delta neutral">–</span>
           </div>
-          <div className="kpi-details">
-            <span className="kpi-label">Ready for Delivery</span>
-            <span className="kpi-value">{readyOrders}</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ backgroundColor: '#d1fae5', color: '#059669' }}>
-            <CheckCircle size={24} />
-          </div>
-          <div className="kpi-details">
-            <span className="kpi-label">Completed</span>
-            <span className="kpi-value">{completedOrders}</span>
+          <div>
+            <div className="stat-value">{preparingOrders}</div>
+            <div className="stat-label">Preparing</div>
           </div>
         </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ backgroundColor: '#e0e7ff', color: '#4f46e5' }}>
-            <DollarSign size={24} />
+        <div className="stat-card" onClick={() => navigate('/orders?status=ready')}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="stat-icon" style={{ background: 'var(--success-soft)', color: 'var(--success)' }}><Truck size={18} strokeWidth={1.75} /></div>
+            <span className="stat-delta positive">▲ 8%</span>
           </div>
-          <div className="kpi-details">
-            <span className="kpi-label">Total Revenue</span>
-            <span className="kpi-value">₹{todayRevenue.toFixed(0)}</span>
+          <div>
+            <div className="stat-value">{readyOrders}</div>
+            <div className="stat-label">Ready for Delivery</div>
+          </div>
+        </div>
+        <div className="stat-card" onClick={() => navigate('/orders?status=completed')}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="stat-icon" style={{ background: 'var(--bg)', color: 'var(--text)' }}><CheckCircle size={18} strokeWidth={1.75} /></div>
+            <span className="stat-delta negative">▼ 2%</span>
+          </div>
+          <div>
+            <div className="stat-value">{completedOrders}</div>
+            <div className="stat-label">Completed</div>
+          </div>
+        </div>
+        <div className="stat-card" onClick={() => navigate('/seller/analytics')}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="stat-icon" style={{ background: 'var(--primary-soft)', color: 'var(--primary)' }}><DollarSign size={18} strokeWidth={1.75} /></div>
+            <span className="stat-delta positive">▲ 15%</span>
+          </div>
+          <div>
+            <div className="stat-value">
+              {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(todayRevenue)}
+            </div>
+            <div className="stat-label">Total Revenue</div>
           </div>
         </div>
       </div>
 
-      {/* AI Features Row */}
-      <div className="ai-top-grid">
-        <div className="ai-card">
-          <div className="ai-card-title">
-            <Brain size={24} />
-            AI Delivery Coordinator
-          </div>
-          <p style={{ color: '#4b5563', marginBottom: '16px', fontSize: '14px' }}>
-            <strong>{suggestedBatch.orderCount} nearby orders detected</strong><br/>
-            Delivery Area: {suggestedBatch.area}<br/>
-            Delivery Window: {suggestedBatch.window}
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Truck size={16} className="text-secondary" />
-              <span>Suggested Vehicle: <strong>{suggestedBatch.vehicle}</strong></span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapPin size={16} className="text-secondary" />
-              <span>Total Distance: <strong>{suggestedBatch.distance} km</strong></span>
-            </div>
-          </div>
-
-          <div className="ai-savings-box">
-            <div>
-              <div style={{ fontSize: '12px', color: '#166534' }}>Estimated Delivery Cost: <strong>₹{suggestedBatch.aggregatedCost}</strong></div>
-              <div style={{ fontSize: '12px', color: '#166534' }}>Individual Delivery Cost: <span style={{ textDecoration: 'line-through' }}>₹{suggestedBatch.individualCost}</span></div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '11px', color: '#166534', textTransform: 'uppercase', fontWeight: 'bold' }}>Potential Saving</div>
-              <div className="ai-savings-value">₹{suggestedBatch.saving} ({suggestedBatch.savingPercent}%)</div>
-            </div>
-          </div>
-
-          <button 
-            className="btn btn-primary" 
-            style={{ width: '100%', marginTop: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-            onClick={() => setIsBatchModalOpen(true)}
-          >
-            <Zap size={16} /> Create Delivery Batch
-          </button>
-        </div>
-
-        <div className="chart-card">
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} className="text-warning" /> Smart Alerts</h3>
-          <div className="smart-alerts-list">
-            <div className="smart-alert-item">
-              <Info size={16} color="#3b82f6" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <div><strong>{suggestedBatch.orderCount} orders</strong> have the same delivery area.</div>
-            </div>
-            <div className="smart-alert-item" style={{ borderLeftColor: '#f59e0b', backgroundColor: '#fffbeb' }}>
-              <Clock size={16} color="#f59e0b" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <div>Order <strong>ORD-1021</strong> has been waiting for aggregation.</div>
-            </div>
-            <div className="smart-alert-item" style={{ borderLeftColor: '#10b981', backgroundColor: '#ecfdf5' }}>
-              <TrendingUp size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <div>High delivery demand detected in <strong>RS Puram</strong>.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Insights Row */}
-      <div className="insights-grid">
-        <div className="chart-card">
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}><Map size={18} className="text-secondary" /> Top Delivery Zones</h3>
-          <div className="zone-bar-container">
-            {[
-              { name: 'RS Puram', count: 28, max: 30 },
-              { name: 'Gandhipuram', count: 21, max: 30 },
-              { name: 'Saibaba Colony', count: 15, max: 30 },
-              { name: 'Peelamedu', count: 12, max: 30 }
-            ].map(z => (
-              <div key={z.name} className="zone-item">
-                <div className="zone-header"><span>{z.name}</span><span>{z.count} orders</span></div>
-                <div className="zone-track">
-                  <div className="zone-fill" style={{ width: `${(z.count / z.max) * 100}%` }}></div>
-                </div>
+      {/* Hero & Alerts */}
+      <div className="middle-row">
+        <div className="ai-hero-card">
+          <div className="ai-sparkle-badge"><Sparkles size={12} /> AI Delivery Coordinator</div>
+          {hasBatches ? (
+            <>
+              <div className="ai-info-chips">
+                <div className="ai-chip"><Package size={14} /> {waitingOrders.length} nearby orders</div>
+                <div className="ai-chip"><MapPin size={14} /> RS Puram</div>
+                <div className="ai-chip"><Clock size={14} /> 10:00 AM – 11:30 AM</div>
+                <div className="ai-chip"><Truck size={14} /> Van Suggested</div>
+                <div className="ai-chip"><MapPin size={14} /> 8.4 km</div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="chart-card">
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}><Activity size={18} className="text-secondary" /> Seller Performance</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
-              <span style={{ color: '#64748b', fontSize: '13px' }}>On-Time Delivery</span>
-              <strong style={{ color: '#059669' }}>94%</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
-              <span style={{ color: '#64748b', fontSize: '13px' }}>Average Preparation</span>
-              <strong>18 min</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
-              <span style={{ color: '#64748b', fontSize: '13px' }}>Completed Orders</span>
-              <strong>126</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#64748b', fontSize: '13px' }}>Customer Rating</span>
-              <strong>⭐ 4.6/5</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="chart-card">
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}><Brain size={18} className="text-secondary" /> AI Demand Forecast</h3>
-          <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', marginTop: '16px', border: '1px solid #e2e8f0' }}>
-            <p style={{ fontSize: '13px', color: '#334155', marginBottom: '12px', lineHeight: '1.5' }}>
-              High grocery demand expected today between <strong>6:00 PM – 8:00 PM</strong>.
-            </p>
-            <div style={{ backgroundColor: '#e0e7ff', padding: '12px', borderRadius: '6px', borderLeft: '3px solid #4f46e5' }}>
-              <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#4338ca', fontWeight: 'bold' }}>Suggested Action</span>
-              <p style={{ fontSize: '12px', color: '#312e81', margin: '4px 0 0 0' }}>Prepare additional fast-moving products.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Orders Requiring Action Widget */}
-      {actionRequiredOrders.length > 0 && (
-        <div className="chart-card" style={{ marginTop: '24px', borderLeft: '4px solid #f59e0b' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle size={18} className="text-warning" />
-              <h3 style={{ margin: 0 }}>Orders Requiring Action ({actionRequiredOrders.length})</h3>
-            </div>
-            <button className="btn-link" style={{ fontSize: '13px', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }} onClick={() => navigate('/orders')}>
-              Manage Orders →
-            </button>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-            {actionRequiredOrders.slice(0, 3).map(ord => (
-              <div key={ord.id} style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong>{ord.id || ord.orderId}</strong>
-                  <StatusBadge status={ord.orderStatus || ord.status} />
+              <div className="ai-savings-split">
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '8px' }}>Individual deliveries</div>
+                  <div style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text-muted)', textDecoration: 'line-through' }}>₹120</div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#4b5563' }}>
-                  Customer: <strong>{ord.customerName}</strong><br />
-                  Slot: <strong>{ord.deliveryTimeSlot || 'Standard'}</strong>
-                </div>
-                <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                  {(ord.orderStatus || ord.status) === 'PLACED' && (
-                    <button className="btn btn-primary" style={{ padding: '4px 8px', fontSize: '11px', flex: 1 }} onClick={() => updateOrderStatus(ord.id, 'CONFIRMED')}>
-                      Confirm Order
-                    </button>
-                  )}
-                  {(ord.orderStatus || ord.status) === 'CONFIRMED' && (
-                    <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px', flex: 1 }} onClick={() => updateOrderStatus(ord.id, 'PREPARING')}>
-                      Start Prep
-                    </button>
-                  )}
-                  {(ord.orderStatus || ord.status) === 'PREPARING' && (
-                    <button className="btn btn-primary" style={{ padding: '4px 8px', fontSize: '11px', flex: 1, backgroundColor: '#10b981', borderColor: '#10b981' }} onClick={() => updateOrderStatus(ord.id, 'READY_FOR_DELIVERY')}>
-                      Mark Ready
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tables Row: Recent Seller Orders & Aggregation Visibility */}
-      <div className="dashboard-charts" style={{ marginTop: '24px' }}>
-        <div className="chart-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0 }}>Recent Orders</h3>
-            <button className="btn-link" style={{ fontSize: '13px', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }} onClick={() => navigate('/orders')}>
-              View All
-            </button>
-          </div>
-
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sellerOrders.length === 0 ? (
-                <tr><td colSpan="6" className="empty-state">No recent seller orders.</td></tr>
-              ) : (
-                [...sellerOrders].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 5).map(o => {
-                  const priority = getOrderPriority(o);
-                  return (
-                    <tr key={o.id}>
-                      <td className="font-medium">{o.id || o.orderId}</td>
-                      <td>{o.customerName || 'Customer'}</td>
-                      <td>
-                        <span className={`priority-badge ${priority === 'URGENT' ? 'priority-urgent' : priority === 'NORMAL' ? 'priority-normal' : 'priority-flexible'}`}>
-                          {priority}
-                        </span>
-                      </td>
-                      <td>
-                        <StatusBadge status={o.orderStatus || o.status} />
-                      </td>
-                      <td className="font-medium">₹{(o.total || 0).toFixed(2)}</td>
-                      <td>
-                        <button className="icon-btn-small" onClick={() => setSelectedOrder(o)}>
-                          <Eye size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Aggregation & Delivery Coordination Status */}
-        <div className="chart-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0 }}>Delivery Coordination Status</h3>
-            <button className="btn-link" style={{ fontSize: '13px', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }} onClick={() => navigate('/order-aggregation')}>
-              Aggregation View
-            </button>
-          </div>
-
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Delivery Window</th>
-                <th>Aggregation Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sellerOrders.length === 0 ? (
-                <tr><td colSpan="3" className="empty-state">No delivery activity.</td></tr>
-              ) : (
-                sellerOrders.slice(0, 5).map(o => (
-                  <tr key={o.id}>
-                    <td className="font-medium">{o.id || o.orderId}</td>
-                    <td>{o.deliveryTimeSlot || 'Standard Window'}</td>
-                    <td>
-                      <span className="badge" style={{ backgroundColor: '#e0e7ff', color: '#3730a3', fontSize: '11px', fontWeight: '600' }}>
-                        {o.aggregationStatus || 'Waiting for Aggregation'}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Order Timeline Modal */}
-      {selectedOrder && (
-        <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
-      )}
-
-      {/* Batch Creation Modal */}
-      {isBatchModalOpen && (
-        <div className="batch-modal-overlay" onClick={() => setIsBatchModalOpen(false)}>
-          <div className="batch-modal-content" onClick={e => e.stopPropagation()}>
-            <div className="batch-modal-header">
-              <h3 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}><Zap size={20} color="#4f46e5" /> Delivery Batch #B102</h3>
-              <button className="icon-btn-small" onClick={() => setIsBatchModalOpen(false)}><X size={20} /></button>
-            </div>
-            
-            <div className="batch-modal-section">
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569' }}>Orders Included ({suggestedBatch.orderCount})</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {suggestedBatch.orders.map(o => (
-                  <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', backgroundColor: 'white', padding: '8px 12px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                    <span style={{ fontWeight: '500' }}>{o.id || o.orderId}</span>
-                    <span style={{ color: '#64748b' }}>{o.customerName || 'Customer'}</span>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '8px' }}>Batched delivery</div>
+                  <div className="savings-highlight">Save ₹45 · 37.5%</div>
+                  <div style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text)' }}>₹75</div>
+                  <div className="progress-bar-thin">
+                    <div className="progress-fill" style={{ width: '62.5%' }}></div>
                   </div>
-                ))}
+                </div>
               </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="btn btn-primary" style={{ padding: '8px 24px', fontSize: '14px', borderRadius: '8px', background: 'var(--primary)', color: 'white' }}>
+                  Create Delivery Batch
+                </button>
+                <button className="btn btn-secondary" style={{ padding: '8px 24px', fontSize: '14px', borderRadius: '8px', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+                  Review orders
+                </button>
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: '40px 0', textAlign: 'center' }}>
+              <Zap size={48} color="var(--primary)" style={{ opacity: 0.2, marginBottom: '16px' }} />
+              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No batches to suggest yet</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>New aggregation suggestions will appear here when nearby orders match time windows.</p>
             </div>
+          )}
+        </div>
 
-            <div className="batch-modal-section">
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569' }}>Delivery Logistics</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
-                <div><span style={{ color: '#64748b' }}>Area:</span> <br/><strong>{suggestedBatch.area}</strong></div>
-                <div><span style={{ color: '#64748b' }}>Window:</span> <br/><strong>{suggestedBatch.window}</strong></div>
-                <div><span style={{ color: '#64748b' }}>Total Distance:</span> <br/><strong>{suggestedBatch.distance} km</strong></div>
-                <div><span style={{ color: '#64748b' }}>Estimated Time:</span> <br/><strong>32 min</strong></div>
+        <div className="alert-card">
+          <h3 className="card-title-h3" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} /> Smart Alerts</h3>
+          <div className="alert-list">
+            <div className="alert-item">
+              <Info size={16} color="var(--info)" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div className="alert-content">
+                <div className="alert-title">Stock warning</div>
+                <div className="alert-desc">Aashirvaad Atta is running low (2 left).</div>
+                <div className="alert-time">5 min ago</div>
               </div>
+              <button className="alert-dismiss"><X size={14}/></button>
             </div>
-
-            <div className="batch-modal-section" style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#166534' }}>Cost Breakdown</h4>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
-                <span style={{ color: '#166534' }}>Estimated Cost:</span>
-                <strong style={{ color: '#166534' }}>₹{suggestedBatch.aggregatedCost}</strong>
+            <div className="alert-item">
+              <TrendingUp size={16} color="var(--success)" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div className="alert-content">
+                <div className="alert-title">High Demand</div>
+                <div className="alert-desc">Orders in RS Puram are up 15% today.</div>
+                <div className="alert-time">1 hour ago</div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', borderTop: '1px solid #bbf7d0', paddingTop: '8px' }}>
-                <span style={{ color: '#166534', fontWeight: '600' }}>Potential Saving:</span>
-                <strong style={{ color: '#166534', fontSize: '15px' }}>₹{suggestedBatch.saving}</strong>
-              </div>
+              <button className="alert-dismiss"><X size={14}/></button>
             </div>
+            <div className="alert-item">
+              <Clock size={16} color="var(--warning)" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div className="alert-content">
+                <div className="alert-title">Prep time increase</div>
+                <div className="alert-desc">Average prep time is 22m (target 15m).</div>
+                <div className="alert-time">2 hours ago</div>
+              </div>
+              <button className="alert-dismiss"><X size={14}/></button>
+            </div>
+          </div>
+          <button style={{ marginTop: 'auto', paddingTop: '16px', background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '500', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={() => navigate('/seller/notifications')}>
+            View all alerts <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
 
-            <div className="batch-modal-actions">
-              <button className="btn btn-outline" onClick={() => setIsBatchModalOpen(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleCreateBatch}>Confirm Batch</button>
+      {/* Bottom Row */}
+      <div className="bottom-row">
+        <div className="alert-card">
+          <h3 className="card-title-h3">Top Delivery Zones</h3>
+          <div className="zone-list">
+            <div className="zone-row">
+              <div className="zone-header"><span>RS Puram</span> <span>28</span></div>
+              <div className="zone-bar-bg"><div className="zone-bar-fill" style={{ width: '90%' }}></div></div>
+            </div>
+            <div className="zone-row">
+              <div className="zone-header"><span>Gandhipuram</span> <span>21</span></div>
+              <div className="zone-bar-bg"><div className="zone-bar-fill" style={{ width: '70%' }}></div></div>
+            </div>
+            <div className="zone-row">
+              <div className="zone-header"><span>Saibaba Colony</span> <span>15</span></div>
+              <div className="zone-bar-bg"><div className="zone-bar-fill" style={{ width: '50%' }}></div></div>
+            </div>
+            <div className="zone-row">
+              <div className="zone-header"><span>Peelamedu</span> <span>12</span></div>
+              <div className="zone-bar-bg"><div className="zone-bar-fill" style={{ width: '40%' }}></div></div>
             </div>
           </div>
         </div>
-      )}
+
+        <div className="alert-card">
+          <h3 className="card-title-h3">Seller Performance</h3>
+          <div className="perf-meter">
+            <div className="perf-header">
+              <span style={{ color: 'var(--text-muted)' }}>On-time delivery</span>
+              <span style={{ color: 'var(--success)', fontWeight: '600' }}>94%</span>
+            </div>
+            <div className="zone-bar-bg"><div className="zone-bar-fill" style={{ width: '94%', background: 'var(--success)' }}></div></div>
+          </div>
+          <div className="perf-meter">
+            <div className="perf-header">
+              <span style={{ color: 'var(--text-muted)' }}>Avg prep time</span>
+              <span style={{ color: 'var(--warning)', fontWeight: '600' }}>18m</span>
+            </div>
+            <div className="zone-bar-bg"><div className="zone-bar-fill" style={{ width: '80%', background: 'var(--warning)' }}></div></div>
+          </div>
+          <div className="perf-meter">
+            <div className="perf-header">
+              <span style={{ color: 'var(--text-muted)' }}>Acceptance rate</span>
+              <span style={{ color: 'var(--primary)', fontWeight: '600' }}>98%</span>
+            </div>
+            <div className="zone-bar-bg"><div className="zone-bar-fill" style={{ width: '98%', background: 'var(--primary)' }}></div></div>
+          </div>
+        </div>
+
+        <div className="alert-card">
+          <h3 className="card-title-h3">AI Demand Forecast</h3>
+          <div style={{ height: '100px', display: 'flex', alignItems: 'flex-end', gap: '4px', marginBottom: '16px' }}>
+            {[30, 40, 25, 60, 80, 50, 45].map((h, i) => (
+              <div key={i} style={{ flex: 1, background: i === 4 ? 'var(--primary)' : 'var(--primary-soft)', height: `${h}%`, borderRadius: '4px 4px 0 0' }}></div>
+            ))}
+          </div>
+          <div style={{ background: 'var(--info-soft)', padding: '12px', borderRadius: '8px', borderLeft: '3px solid var(--info)' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--info)', textTransform: 'uppercase', marginBottom: '4px' }}>Peak Day Expected</div>
+            <div style={{ fontSize: '13px', color: 'var(--text)' }}>Demand spikes on Friday (80+ orders). Pre-pack top items.</div>
+          </div>
+        </div>
+      </div>
+
+      <ConfirmationModal
+        isOpen={isStoreClosedModalOpen}
+        onClose={() => setIsStoreClosedModalOpen(false)}
+        onConfirm={confirmCloseStore}
+        title="Close Store?"
+        message="Are you sure you want to stop receiving new orders? You will still need to fulfill any active orders."
+        confirmText="Yes, close store"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };
 
 export default DashboardOverview;
-

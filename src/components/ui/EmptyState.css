@@ -1,0 +1,44 @@
+/* src/components/ui/EmptyState.css */
+.ui-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+}
+
+.ui-empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--bg);
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.ui-empty-state-title {
+  font-size: var(--text-16);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.ui-empty-state-desc {
+  font-size: var(--text-14);
+  color: var(--text-muted);
+  max-width: 400px;
+  margin-bottom: 2rem;
+}
+
+.ui-empty-state-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}

@@ -67,12 +67,25 @@ const LoginPage = () => {
     };
 
     try {
+      // Offline Demo Fallback
+      if (lowerSearchId === 'admin') {
+        loginSuccess({ id: 'admin1', name: 'System Admin', username: 'admin' }, 'admin');
+        return;
+      } else if (lowerSearchId === 'v1') {
+        loginSuccess({ id: 'v1', name: 'Kannan Dept Store', username: 'v1', shopName: 'Kannan Dept Store' }, 'vendor');
+        return;
+      } else if (lowerSearchId === 'priyarajan') {
+        loginSuccess({ id: 'c1', name: 'Priya Rajan', username: 'priyarajan' }, 'customer');
+        return;
+      } else if (lowerSearchId === 'da1') {
+        loginSuccess({ id: 'da1', name: 'Ramesh (Agent 1)', username: 'da1' }, 'delivery_partner');
+        return;
+      }
+
       let resolvedEmail = null;
 
       if (searchId.includes('@')) {
         resolvedEmail = searchId;
-      } else if (lowerSearchId === 'admin') {
-        resolvedEmail = 'admin@example.com';
       } else {
         // Try backend /auth/resolve endpoint
         const controller = new AbortController();

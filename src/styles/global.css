@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-@import './design-system.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import './tokens.css';
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -10,10 +10,10 @@
 html, body, #root {
   width: 100%;
   min-height: 100%;
-  background-color: var(--bg-canvas);
-  color: var(--color-text-primary);
-  font-family: var(--font-family-sans);
-  font-size: 15px;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-14);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

@@ -1,0 +1,13 @@
+/* src/components/ui/Card.css */
+.ui-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--card-padding);
+  transition: box-shadow var(--motion-duration) var(--motion-ease);
+}
+
+.ui-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
