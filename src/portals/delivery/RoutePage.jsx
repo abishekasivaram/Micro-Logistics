@@ -50,6 +50,12 @@ const RoutePage = () => {
 
   const routeStops = [...pickups, ...deliveries];
 
+  const handleOpenNavigation = () => {
+    const targetAddress = routeStops[0]?.location || activeBatch.deliveryArea || 'Chennai, Tamil Nadu';
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(targetAddress)}`;
+    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="page-container">
       <div className="page-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -57,7 +63,12 @@ const RoutePage = () => {
           <h2>Delivery Route</h2>
           <p className="text-secondary">Batch {activeBatch.batchId}</p>
         </div>
-        <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <button 
+          className="btn btn-primary" 
+          onClick={handleOpenNavigation}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+          title="Open Google Maps Directions"
+        >
           <Navigation size={16} /> Open Navigation
         </button>
       </div>

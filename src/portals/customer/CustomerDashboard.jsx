@@ -90,7 +90,7 @@ const CustomerDashboard = () => {
               </div>
               <div className="stat-item">
                 <MapPin size={14} />
-                <span>{(Math.random() * 3 + 1).toFixed(1)} km</span>
+                <span>{vendor.distance || (((vendor.id?.toString().charCodeAt(0) || 7) * 3 % 25) / 10 + 1.2).toFixed(1)} km</span>
               </div>
               <div className="stat-item">
                 <Truck size={14} />
@@ -126,7 +126,7 @@ const CustomerDashboard = () => {
                 <h4>{product.name}</h4>
                 <div className="product-seller-text">
                   <Store size={14} />
-                  <span>{seller.name} • {(Math.random() * 3 + 1).toFixed(1)} km</span>
+                  <span>{seller.name} • {seller.distance || (((seller.id?.toString().charCodeAt(0) || 7) * 3 % 25) / 10 + 1.2).toFixed(1)} km</span>
                 </div>
                 <div className="product-price-row">
                   <span className="price">₹{product.price.toFixed(2)}</span>

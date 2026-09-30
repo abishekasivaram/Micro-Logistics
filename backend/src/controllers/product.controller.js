@@ -104,16 +104,23 @@ const updateProduct = async (req, res) => {
         if (updates.stock !== undefined) {
             status = (updates.stock > 10) ? 'In Stock' : (updates.stock > 0 ? 'Low Stock' : 'Out of Stock');
         }
-        const { data, error } = await supabase_1.supabase.from('products').update({
-            name: updates.name,
-            category: updates.category,
-            price: updates.price,
-            stock: updates.stock,
-            prep_time: updates.prepTime,
-            status: status,
-            image: updates.image,
-            description: updates.description
-        }).eq('id', existing.id).select('*, vendor:vendors(id, legacy_id, shop_name)').single();
+
+        const fieldsToUpdate = {};
+        if (updates.name !== undefined) fieldsToUpdate.name = updates.name;
+        if (updates.category !== undefined) fieldsToUpdate.category = updates.category;
+        if (updates.price !== undefined) fieldsToUpdate.price = updates.price;
+        if (updates.stock !== undefined) fieldsToUpdate.stock = updates.stock;
+        if (updates.prepTime !== undefined) fieldsToUpdate.prep_time = updates.prepTime;
+        if (updates.prep_time !== undefined) fieldsToUpdate.prep_time = updates.prep_time;
+        if (status !== undefined) fieldsToUpdate.status = status;
+        if (updates.image !== undefined) fieldsToUpdate.image = updates.image;
+        if (updates.description !== undefined) fieldsToUpdate.description = updates.description;
+
+        const { data, error } = await supabase_1.supabase.from('products').update(fieldsToUpdate)
+            .eq('id', existing.id)
+            .select('*, vendor:vendors(id, legacy_id, shop_name)')
+            .single();
+
         if (error)
             throw error;
         res.json({ success: true, data: (0, mappings_1.mapProductToFrontend)(data) });

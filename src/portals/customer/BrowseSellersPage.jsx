@@ -132,11 +132,11 @@ const BrowseSellersPage = () => {
                   <div className="seller-card-stats">
                     <div className="stat-item">
                       <Star size={14} color="#f59e0b" fill="#f59e0b" />
-                      <span><strong>{seller.rating}</strong> (Mock)</span>
+                      <span><strong>{seller.rating}</strong></span>
                     </div>
                     <div className="stat-item">
                       <MapPin size={14} />
-                      <span>{(Math.random() * 3 + 1).toFixed(1)} km</span>
+                      <span>{seller.distance || (((seller.id?.toString().charCodeAt(0) || 5) * 5 % 28) / 10 + 1.1).toFixed(1)} km</span>
                     </div>
                     <div className="stat-item">
                       <Clock size={14} />

@@ -14,4 +14,6 @@ router.get('/batches/:id', delivery_controller_1.getBatchById);
 router.post('/batches', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.createBatch);
 router.post('/batches/:id/assign', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.assignBatch);
 router.patch('/batches/:id/status', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.updateBatchStatus);
+router.get('/orders/:id/otp', delivery_controller_1.getOrderOtp);
+router.post('/verify-otp', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.verifyDeliveryOtp);
 exports.default = router;

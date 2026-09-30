@@ -27,22 +27,27 @@ const CheckoutPage = () => {
   const uniqueSellers = Array.from(new Set(cart.map(item => item.product.vendorName || 'Local Seller')));
   const isMultiSeller = uniqueSellers.length > 1;
 
-  const handlePlaceOrderSubmit = (e) => {
+  const handlePlaceOrderSubmit = async (e) => {
     e.preventDefault();
     if (!deliveryAddress || !contactPhone || !deliveryDate || !selectedTimeSlot) return;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const created = placeOrder({
+    try {
+      const created = await placeOrder({
         deliveryAddress,
         contactPhone,
         deliveryDate,
         deliveryTimeSlot: selectedTimeSlot
       });
       setIsSubmitting(false);
-      setPlacedOrders(created);
-    }, 600);
+      if (created && Array.isArray(created) && created.length > 0) {
+        setPlacedOrders(created);
+      }
+    } catch (err) {
+      console.error('Error placing order:', err);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -199,16 +204,16 @@ const CheckoutPage = () => {
           <p>Your local items will be processed and routed through our smart logistics network.</p>
 
           <div className="placed-orders-box">
-            <h4>Generated Orders ({placedOrders.length}):</h4>
-            {placedOrders.map(ord => (
-              <div key={ord.id} className="placed-ord-item">
+            <h4>Generated Orders ({placedOrders?.length || 0}):</h4>
+            {(placedOrders || []).map((ord, idx) => (
+              <div key={ord.id || ord.orderCode || `placed-ord-${idx}`} className="placed-ord-item">
                 <div>
-                  <strong>{ord.id}</strong> — <Store size={12} style={{display:'inline'}}/> {ord.vendorName}
+                  <strong>{ord.id || ord.orderCode}</strong> — <Store size={12} style={{display:'inline'}}/> {ord.vendorName || ord.sellerName || 'Local Seller'}
                   <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>
                     📅 {ord.deliveryDate} ({ord.deliveryTimeSlot})
                   </div>
                 </div>
-                <span style={{ fontWeight: '600', color: '#4f46e5' }}>₹{ord.total.toFixed(2)}</span>
+                <span style={{ fontWeight: '600', color: '#4f46e5' }}>₹{(Number(ord.total) || 0).toFixed(2)}</span>
               </div>
             ))}
           </div>

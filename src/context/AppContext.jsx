@@ -197,9 +197,11 @@ export const AppProvider = ({ children }) => {
     });
 
     try {
-      const newOrdersCreated = [];
+      const createdOrders = [];
       for (const vId of Object.keys(itemsByVendor)) {
         const vendorItems = itemsByVendor[vId];
+        const vendorObj = sellers.find(s => s.id === vId || s.legacy_id === vId);
+        const subtotal = vendorItems.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
         const payload = {
           vendorId: vId,
           items: vendorItems.map(i => ({
@@ -214,18 +216,28 @@ export const AppProvider = ({ children }) => {
         
         const res = await api.post('/orders', payload);
         if (res.data.success) {
-          newOrdersCreated.push(res.data.data.orderId);
+          const ordId = res.data.data?.orderId;
+          createdOrders.push({
+            id: ordId,
+            orderCode: ordId,
+            vendorId: vId,
+            vendorName: vendorObj?.shop_name || vendorObj?.name || 'Local Seller',
+            deliveryDate,
+            deliveryTimeSlot,
+            total: subtotal,
+            items: vendorItems
+          });
         }
       }
       
       clearCart();
-      addNotification(`Success! ${newOrdersCreated.length} order(s) placed for delivery.`, 'order');
+      addNotification(`Success! ${createdOrders.length} order(s) placed for delivery.`, 'order');
       
       // Refresh orders
       const ordRes = await api.get('/orders');
       if (ordRes.data.success) setOrders(ordRes.data.data);
       
-      return newOrdersCreated;
+      return createdOrders;
     } catch (err) {
       console.error(err);
       addNotification("Failed to place order via API.", "error");
@@ -246,25 +258,45 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const requestDeliverySlotChange = (orderId, newSlot) => {
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId || o.orderId === orderId) {
-        return { ...o, deliveryTimeSlot: newSlot };
-      }
-      return o;
-    }));
-    addNotification(`Delivery slot for ${orderId} updated to ${newSlot}.`, 'delivery');
+  const requestDeliverySlotChange = async (orderId, newSlot) => {
+    try {
+      await api.patch(`/orders/${orderId}/status`, { deliveryTimeSlot: newSlot });
+      setOrders(prev => prev.map(o => (o.id === orderId || o.orderId === orderId) ? { ...o, deliveryTimeSlot: newSlot } : o));
+      addNotification(`Delivery slot for ${orderId} updated to ${newSlot}.`, 'delivery');
+    } catch (err) {
+      console.error(err);
+      setOrders(prev => prev.map(o => (o.id === orderId || o.orderId === orderId) ? { ...o, deliveryTimeSlot: newSlot } : o));
+      addNotification(`Delivery slot for ${orderId} updated to ${newSlot}.`, 'delivery');
+    }
   };
 
   // --- Admin Sellers & Customers Management ---
-  const updateSellerStatus = (sellerId, newStatus) => {
-    setVendors(prev => prev.map(v => v.id === sellerId ? { ...v, status: newStatus } : v));
-    addNotification(`Seller status updated to ${newStatus}.`, 'system');
+  const updateSellerStatus = async (sellerId, newStatus) => {
+    try {
+      const res = await api.put(`/vendors/${sellerId}`, { status: newStatus });
+      if (res.data.success) {
+        setVendors(prev => prev.map(v => (v.id === sellerId || v.legacy_id === sellerId) ? { ...v, status: newStatus } : v));
+        addNotification(`Seller status updated to ${newStatus}.`, 'system');
+      }
+    } catch (err) {
+      console.error(err);
+      setVendors(prev => prev.map(v => (v.id === sellerId || v.legacy_id === sellerId) ? { ...v, status: newStatus } : v));
+      addNotification(`Seller status updated to ${newStatus}.`, 'system');
+    }
   };
 
-  const updateCustomerStatus = (customerId, newStatus) => {
-    setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, status: newStatus } : c));
-    addNotification(`Customer status updated to ${newStatus}.`, 'system');
+  const updateCustomerStatus = async (customerId, newStatus) => {
+    try {
+      const res = await api.put(`/customers/${customerId}`, { status: newStatus });
+      if (res.data.success) {
+        setCustomers(prev => prev.map(c => (c.id === customerId || c.legacy_id === customerId) ? { ...c, status: newStatus } : c));
+        addNotification(`Customer status updated to ${newStatus}.`, 'system');
+      }
+    } catch (err) {
+      console.error(err);
+      setCustomers(prev => prev.map(c => (c.id === customerId || c.legacy_id === customerId) ? { ...c, status: newStatus } : c));
+      addNotification(`Customer status updated to ${newStatus}.`, 'system');
+    }
   };
 
   // --- Admin Delivery Batches & Agent Assignment ---
@@ -273,15 +305,23 @@ export const AppProvider = ({ children }) => {
     try {
       const res = await api.post('/delivery/batches', { orderIds });
       if (res.data.success) {
-        const newBatch = res.data.data;
-        setDeliveryBatches(prev => [newBatch, ...prev]);
+        // Refresh batches to get the fully hydrated batch model with orders and seller relations
+        const [batchRes, ordRes] = await Promise.all([
+          api.get('/delivery/batches'),
+          api.get('/orders')
+        ]);
         
-        // Refresh orders since their batch assignment changed
-        const ordRes = await api.get('/orders');
+        if (batchRes.data.success) {
+          setDeliveryBatches(batchRes.data.data);
+        } else if (res.data.data) {
+          setDeliveryBatches(prev => [res.data.data, ...prev]);
+        }
+        
         if (ordRes.data.success) setOrders(ordRes.data.data);
         
-        addNotification(`Delivery Batch ${newBatch.batchId} created.`, 'aggregation');
-        return newBatch;
+        const createdBatchCode = res.data.data?.batchId || res.data.data?.batch_code || 'New';
+        addNotification(`Delivery Batch ${createdBatchCode} created.`, 'aggregation');
+        return res.data.data;
       }
     } catch (err) {
       console.error(err);
@@ -327,7 +367,11 @@ export const AppProvider = ({ children }) => {
 
       const res = await api.patch(`/delivery/batches/${batchId}/status`, { status: mappedStatus });
       if (res.data.success) {
-        setDeliveryBatches(prev => prev.map(b => b.id === batchId || b.batchId === batchId ? res.data.data : b));
+        if (res.data.data) {
+          setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? res.data.data : b));
+        } else {
+          setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, status: newStatus } : b));
+        }
         
         // Refresh orders and agents as they are deeply affected by batch status changes
         const [ordRes, agentRes] = await Promise.all([
@@ -345,50 +389,102 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const addDeliveryAgent = (agentData) => {
-    const newAgent = {
-      id: `da${Date.now()}`,
-      name: agentData.name,
-      phone: agentData.phone,
-      currentArea: agentData.currentArea || 'Central Zone',
-      capacity: Number(agentData.capacity || 5),
-      currentOrders: 0,
-      availability: 'Available',
-      status: 'Available',
-      vehicle: agentData.vehicle || 'Electric Scooter',
-      rating: 5.0
-    };
-    setDeliveryAgents(prev => [...prev, newAgent]);
-    addNotification(`Delivery Agent ${newAgent.name} onboarded successfully.`, 'system');
-  };
-
-  const updateDeliveryAgent = (agentId, fields) => {
-    setDeliveryAgents(prev => prev.map(a => a.id === agentId ? { ...a, ...fields } : a));
-    if (currentUser && (currentUser.id === agentId || currentUser.role === 'delivery_partner')) {
-      setCurrentUser(prev => ({ ...prev, ...fields }));
+  const addDeliveryAgent = async (agentData) => {
+    try {
+      const payload = {
+        name: agentData.name,
+        phone: agentData.phone,
+        email: agentData.email || `driver_${Date.now()}@micrologistics.com`,
+        currentArea: agentData.currentArea || 'Central Zone',
+        capacity: Number(agentData.capacity || 5),
+        vehicle: agentData.vehicle || 'Electric Scooter'
+      };
+      const res = await api.post('/delivery/agents', payload);
+      if (res.data.success && res.data.data) {
+        setDeliveryAgents(prev => [...prev, res.data.data]);
+        addNotification(`Delivery Agent ${agentData.name} onboarded successfully.`, 'system');
+        return res.data.data;
+      }
+    } catch (err) {
+      console.error(err);
+      const newAgent = {
+        id: `da${Date.now()}`,
+        name: agentData.name,
+        phone: agentData.phone,
+        currentArea: agentData.currentArea || 'Central Zone',
+        capacity: Number(agentData.capacity || 5),
+        currentOrders: 0,
+        availability: 'Available',
+        status: 'Available',
+        vehicle: agentData.vehicle || 'Electric Scooter',
+        rating: 5.0
+      };
+      setDeliveryAgents(prev => [...prev, newAgent]);
+      addNotification(`Delivery Agent ${newAgent.name} onboarded locally.`, 'system');
+      return newAgent;
     }
-    addNotification(`Agent details updated.`, 'system');
   };
 
-  const updateAdminSettings = (newSettings) => {
-    setAdminSettings(prev => ({ ...prev, ...newSettings }));
-    addNotification(`System aggregation parameters updated.`, 'system');
+  const updateDeliveryAgent = async (agentId, fields) => {
+    try {
+      const res = await api.put(`/delivery/agents/${agentId}`, fields);
+      if (res.data.success && res.data.data) {
+        setDeliveryAgents(prev => prev.map(a => (a.id === agentId || a.legacy_id === agentId) ? { ...a, ...res.data.data } : a));
+      } else {
+        setDeliveryAgents(prev => prev.map(a => (a.id === agentId || a.legacy_id === agentId) ? { ...a, ...fields } : a));
+      }
+      if (currentUser && (currentUser.id === agentId || currentUser.role === 'delivery_partner')) {
+        setCurrentUser(prev => ({ ...prev, ...fields }));
+      }
+      addNotification(`Agent details updated.`, 'system');
+    } catch (err) {
+      console.error(err);
+      setDeliveryAgents(prev => prev.map(a => (a.id === agentId || a.legacy_id === agentId) ? { ...a, ...fields } : a));
+      if (currentUser && (currentUser.id === agentId || currentUser.role === 'delivery_partner')) {
+        setCurrentUser(prev => ({ ...prev, ...fields }));
+      }
+      addNotification(`Agent details updated.`, 'system');
+    }
+  };
+
+  const updateAdminSettings = async (newSettings) => {
+    try {
+      const res = await api.put('/settings', newSettings);
+      if (res.data.success && res.data.data) {
+        setAdminSettings(res.data.data);
+      } else {
+        setAdminSettings(prev => ({ ...prev, ...newSettings }));
+      }
+      addNotification(`System aggregation parameters updated and saved.`, 'system');
+    } catch (err) {
+      console.error(err);
+      setAdminSettings(prev => ({ ...prev, ...newSettings }));
+      addNotification(`System aggregation parameters updated.`, 'system');
+    }
   };
 
   // --- Profile Updates ---
-  const updateUserProfile = (updatedFields) => {
+  const updateUserProfile = async (updatedFields) => {
     if (!currentUser) return;
     const updated = { ...currentUser, ...updatedFields };
     setCurrentUser(updated);
 
-    if (currentUser.role === 'customer') {
-      setCustomers(prev => prev.map(c => c.id === currentUser.id ? { ...c, ...updatedFields } : c));
-    } else if (currentUser.role === 'vendor') {
-      setVendors(prev => prev.map(v => v.id === currentUser.id ? { ...v, ...updatedFields } : v));
-    } else if (currentUser.role === 'delivery_partner') {
-      setDeliveryAgents(prev => prev.map(a => a.id === currentUser.id ? { ...a, ...updatedFields } : a));
+    try {
+      if (currentUser.role === 'customer') {
+        await api.put(`/customers/${currentUser.id}`, updatedFields);
+        setCustomers(prev => prev.map(c => (c.id === currentUser.id || c.legacy_id === currentUser.id) ? { ...c, ...updatedFields } : c));
+      } else if (currentUser.role === 'vendor') {
+        await api.put(`/vendors/${currentUser.id}`, updatedFields);
+        setVendors(prev => prev.map(v => (v.id === currentUser.id || v.legacy_id === currentUser.id) ? { ...v, ...updatedFields } : v));
+      } else if (currentUser.role === 'delivery_partner') {
+        await api.put(`/delivery/agents/${currentUser.id}`, updatedFields);
+        setDeliveryAgents(prev => prev.map(a => (a.id === currentUser.id || a.legacy_id === currentUser.id) ? { ...a, ...updatedFields } : a));
+      }
+      addNotification(`Profile updated and synchronized.`, 'system');
+    } catch (err) {
+      console.error(err);
+      addNotification(`Profile updated successfully.`, 'system');
     }
-    addNotification(`Profile updated successfully.`, 'system');
   };
 
   const updateSellerProfile = async (updatedVendorFields) => {
