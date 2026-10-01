@@ -53,22 +53,11 @@
   }
 }
 
-/* Accent Ribbon on Top */
+/* Accent Ribbon on Top (Removed) */
 .confirm-modal-ribbon {
-  height: 4px;
-  width: 100%;
-}
-
-.confirm-modal-ribbon.variant-danger {
-  background: linear-gradient(90deg, #EF4444 0%, #DC2626 100%);
-}
-
-.confirm-modal-ribbon.variant-warning {
-  background: linear-gradient(90deg, #F59E0B 0%, #D97706 100%);
-}
-
-.confirm-modal-ribbon.variant-info {
-  background: linear-gradient(90deg, #6366F1 0%, #4F46E5 100%);
+  display: none !important;
+  height: 0;
+  width: 0;
 }
 
 /* Header & Close Button */

@@ -24,6 +24,7 @@ const TrackDeliveryPage = lazy(() => import('./portals/customer/TrackDeliveryPag
 const DeliverySchedulePage = lazy(() => import('./portals/customer/DeliverySchedulePage'));
 const ProfilePage = lazy(() => import('./portals/customer/ProfilePage'));
 const OrdersPage = lazy(() => import('./portals/customer/OrdersPage'));
+const SellerOrdersPage = lazy(() => import('./portals/seller/OrdersPage'));
 const NotificationsPage = lazy(() => import('./portals/customer/NotificationsPage'));
 const SettingsPage = lazy(() => import('./portals/customer/SettingsPage'));
 const HelpPage = lazy(() => import('./portals/customer/HelpPage'));
@@ -36,6 +37,7 @@ const CustomersPage = lazy(() => import('./portals/seller/CustomersPage'));
 const DeliveriesPage = lazy(() => import('./portals/seller/DeliveriesPage'));
 const SellerAnalyticsPage = lazy(() => import('./portals/seller/SellerAnalyticsPage'));
 const BusinessProfilePage = lazy(() => import('./portals/seller/BusinessProfilePage'));
+const SellerNotificationsPage = lazy(() => import('./portals/seller/SellerNotificationsPage'));
 
 // Admin Dedicated Pages (Lazy loaded chunks)
 const AdminDashboard = lazy(() => import('./portals/admin/AdminDashboard'));
@@ -231,7 +233,7 @@ function App() {
                 } />
                 <Route path="/seller/orders" element={
                   <ProtectedRoute allowedRoles={['vendor']}>
-                    <DashboardLayout><OrdersPage /></DashboardLayout>
+                    <DashboardLayout><SellerOrdersPage /></DashboardLayout>
                   </ProtectedRoute>
                 } />
                 <Route path="/seller/customers" element={
@@ -256,7 +258,7 @@ function App() {
                 } />
                 <Route path="/seller/notifications" element={
                   <ProtectedRoute allowedRoles={['vendor']}>
-                    <DashboardLayout><NotificationsPage /></DashboardLayout>
+                    <DashboardLayout><SellerNotificationsPage /></DashboardLayout>
                   </ProtectedRoute>
                 } />
 

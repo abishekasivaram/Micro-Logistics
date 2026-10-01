@@ -18,10 +18,29 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0;
+  padding: 28px 40px 72px;
   display: flex;
   flex-direction: column;
   position: relative;
+  background: var(--bg);
+}
+
+.dashboard-content > * {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-content {
+    padding: 20px 24px 48px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 16px 16px 40px;
+  }
 }
 
 /* Page container (used inside the routes) */

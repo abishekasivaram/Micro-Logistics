@@ -1,65 +1,103 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { 
   Search, Plus, Edit2, Trash2, ShoppingCart, Clock, Store, 
-  Eye, Check, X, Filter, Heart, Copy, MoreVertical, Image as ImageIcon,
-  ChevronDown, ArrowUpRight
+  Eye, Check, X, Filter, Image as ImageIcon, ChevronRight,
+  Package, LayoutGrid, List, AlertTriangle, ArrowUpDown, Sparkles
 } from 'lucide-react';
-import StatusBadge from '../../components/common/StatusBadge';
 import './ProductsPage.css';
 
 const ProductsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { products, vendors, currentUser, addToCart, addProduct, updateProduct, deleteProduct } = useAppContext();
+  const { products = [], currentUser, addToCart, addProduct, updateProduct, deleteProduct } = useAppContext();
 
   const isCustomer = currentUser?.role === 'customer';
-  const initialVendorId = location.state?.vendorId || 'all';
+  const initialVendorFilter = location.state?.vendorId || 'all';
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedVendorFilter, setSelectedVendorFilter] = useState(initialVendorId);
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedStockFilter, setSelectedStockFilter] = useState('All'); // 'All', 'Good', 'Low', 'Out'
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'grid'
   
-  // Quantities state per product for customer view
+  // Customer view quantities
   const [quantities, setQuantities] = useState({});
 
-  // Product Add/Edit Modal state for seller/vendor
-  const [showProductModal, setShowProductModal] = useState(false);
+  // Drawer Add/Edit Modal
+  const [showDrawer, setShowDrawer] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
     name: '',
     category: 'Dairy',
     price: '',
-    stock: '',
+    stock: '20',
     prepTime: '15 mins',
     description: '',
-    image: '',
+    image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&auto=format&fit=crop&q=80',
     status: 'Active'
   });
 
-  // Table selection state
-  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  // Bulk actions
+  const [selectedIds, setSelectedIds] = useState([]);
 
+  // Close modal on Escape and lock background scroll
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && showProductModal) {
-        setShowProductModal(false);
+      if (e.key === 'Escape' && showDrawer) {
+        setShowDrawer(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showProductModal]);
+    if (showDrawer) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showDrawer]);
 
-  const handleQtyChange = (productId, delta) => {
-    const currentQty = quantities[productId] || 1;
-    const newQty = Math.max(1, currentQty + delta);
-    setQuantities({ ...quantities, [productId]: newQty });
+  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : 'v1';
+
+  // Filter products scoped to seller if in seller mode
+  const scopedProducts = products.filter(p => {
+    if (isCustomer) return true;
+    if (currentUser?.role === 'admin') return true;
+    return p.vendorId === sellerId || p.vendorId === 'v1';
+  });
+
+  // Filtered list
+  const filteredProducts = scopedProducts.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    
+    let matchesStock = true;
+    if (selectedStockFilter === 'Good') matchesStock = p.stock > 10;
+    else if (selectedStockFilter === 'Low') matchesStock = p.stock > 0 && p.stock <= 10;
+    else if (selectedStockFilter === 'Out') matchesStock = p.stock === 0;
+
+    return matchesSearch && matchesCategory && matchesStock;
+  });
+
+  // Metrics
+  const totalCount = scopedProducts.length;
+  const inStockCount = scopedProducts.filter(p => p.stock > 10).length;
+  const lowStockCount = scopedProducts.filter(p => p.stock > 0 && p.stock <= 10).length;
+  const outOfStockCount = scopedProducts.filter(p => p.stock === 0).length;
+
+  const handleStockAdjust = (product, delta) => {
+    const newStock = Math.max(0, (product.stock || 0) + delta);
+    updateProduct(product.id, { stock: newStock });
   };
 
-  const handleAddToCart = (product) => {
-    const qty = quantities[product.id] || 1;
-    addToCart(product, qty);
+  const handleToggleStatus = (product) => {
+    const newStatus = product.status === 'Active' ? 'Hidden' : 'Active';
+    updateProduct(product.id, { status: newStatus });
   };
 
   const openAddModal = () => {
@@ -68,122 +106,551 @@ const ProductsPage = () => {
       name: '',
       category: 'Dairy',
       price: '',
-      stock: '20',
+      stock: '25',
       prepTime: '15 mins',
       description: '',
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
       status: 'Active'
     });
-    setShowProductModal(true);
+    setShowDrawer(true);
   };
 
   const openEditModal = (product) => {
     setEditingProduct(product);
     setProductForm({
       name: product.name,
-      category: product.category,
-      price: product.price,
-      stock: product.stock,
+      category: product.category || 'Dairy',
+      price: product.price || '',
+      stock: product.stock !== undefined ? product.stock : 20,
       prepTime: product.prepTime || '15 mins',
       description: product.description || '',
-      image: product.image || '',
+      image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
       status: product.status || 'Active'
     });
-    setShowProductModal(true);
+    setShowDrawer(true);
   };
 
   const handleSaveProduct = (e) => {
     e.preventDefault();
     if (!productForm.name || !productForm.price) return;
 
+    const payload = {
+      name: productForm.name,
+      category: productForm.category,
+      price: parseFloat(productForm.price),
+      stock: parseInt(productForm.stock) || 0,
+      prepTime: productForm.prepTime,
+      description: productForm.description,
+      image: productForm.image,
+      status: productForm.status
+    };
+
     if (editingProduct) {
-      updateProduct(editingProduct.id, {
-        name: productForm.name,
-        category: productForm.category,
-        price: parseFloat(productForm.price),
-        stock: parseInt(productForm.stock),
-        prepTime: productForm.prepTime,
-        description: productForm.description,
-        image: productForm.image,
-        status: productForm.status
-      });
+      updateProduct(editingProduct.id, payload);
     } else {
-      addProduct({
-        name: productForm.name,
-        category: productForm.category,
-        price: parseFloat(productForm.price),
-        stock: parseInt(productForm.stock),
-        prepTime: productForm.prepTime,
-        description: productForm.description,
-        image: productForm.image,
-        status: productForm.status
-      });
+      addProduct(payload);
     }
-    setShowProductModal(false);
+    setShowDrawer(false);
   };
 
   const toggleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedProductIds(filteredProducts.map(p => p.id));
+      setSelectedIds(filteredProducts.map(p => p.id));
     } else {
-      setSelectedProductIds([]);
+      setSelectedIds([]);
     }
   };
 
   const toggleSelect = (id) => {
-    if (selectedProductIds.includes(id)) {
-      setSelectedProductIds(selectedProductIds.filter(pid => pid !== id));
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(pid => pid !== id));
     } else {
-      setSelectedProductIds([...selectedProductIds, id]);
+      setSelectedIds([...selectedIds, id]);
     }
   };
 
-  // Filter products list
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          product.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesVendor = selectedVendorFilter === 'all' || product.vendorId === selectedVendorFilter;
-    const matchesCategory = selectedCategoryFilter === 'All' || product.category === selectedCategoryFilter;
-    const matchesSellerUser = !isCustomer && currentUser?.role === 'vendor' ? product.vendorId === currentUser.id : true;
-
-    return matchesSearch && matchesVendor && matchesCategory && matchesSellerUser;
-  });
-
-  const totalProds = filteredProducts.length;
-  const inStockProds = filteredProducts.filter(p => p.stock > 10).length;
-  const lowStockProds = filteredProducts.filter(p => p.stock > 0 && p.stock <= 10).length;
-  const outOfStockProds = filteredProducts.filter(p => p.stock === 0).length;
+  const handleCustomerQtyChange = (productId, delta) => {
+    const current = quantities[productId] || 1;
+    setQuantities({ ...quantities, [productId]: Math.max(1, current + delta) });
+  };
 
   return (
     <div className="products-page">
       {!isCustomer ? (
-        // SELLER VIEW
+        // SELLER / MERCHANT VIEW
         <>
+          {/* Header */}
           <div className="page-header-row">
             <div>
-              <h1 className="page-title">Products</h1>
-              <p className="page-subtitle">Manage your catalog, inventory, and pricing.</p>
+              <h1 className="page-title">Catalog & Inventory</h1>
+              <p className="page-subtitle">
+                Manage your store offerings, real-time stock availability, and quick pricing.
+              </p>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button className="btn btn-secondary">Import CSV</button>
-              <button className="btn btn-primary" onClick={openAddModal}>
-                <Plus size={16} /> Add product
+              <button className="orders-action-btn primary" onClick={openAddModal}>
+                <Plus size={16} /> Add Product
               </button>
             </div>
           </div>
 
-          <div className="summary-strip">
-            <div className="stat-pill active">
-              Total products <span className="stat-pill-count">{totalProds}</span>
+          {/* Quick Metrics Strip */}
+          <div className="products-summary-strip">
+            <button 
+              className={`products-stat-pill ${selectedStockFilter === 'All' ? 'active' : ''}`}
+              onClick={() => setSelectedStockFilter('All')}
+            >
+              All SKUs <span className="products-stat-count">{totalCount}</span>
+            </button>
+            <button 
+              className={`products-stat-pill ${selectedStockFilter === 'Good' ? 'active' : ''}`}
+              onClick={() => setSelectedStockFilter('Good')}
+            >
+              Healthy Stock <span className="products-stat-count" style={{ color: '#059669' }}>{inStockCount}</span>
+            </button>
+            <button 
+              className={`products-stat-pill ${selectedStockFilter === 'Low' ? 'active' : ''}`}
+              onClick={() => setSelectedStockFilter('Low')}
+            >
+              Low Stock (&le;10) <span className="products-stat-count" style={{ color: '#d97706' }}>{lowStockCount}</span>
+            </button>
+            <button 
+              className={`products-stat-pill ${selectedStockFilter === 'Out' ? 'active' : ''}`}
+              onClick={() => setSelectedStockFilter('Out')}
+            >
+              Out of Stock <span className="products-stat-count" style={{ color: '#dc2626' }}>{outOfStockCount}</span>
+            </button>
+          </div>
+
+          {/* Toolbar */}
+          <div className="toolbar-card">
+            <div className="search-input-wrap">
+              <Search size={16} className="search-icon-left" />
+              <input 
+                type="text" 
+                placeholder="Search products by name or category..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <div className="stat-pill">
-              In stock <span className="stat-pill-count" style={{ color: 'var(--success)' }}>{inStockProds}</span>
+
+            <div className="toolbar-filters">
+              <select 
+                className="form-select"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="All">All Categories</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Bakery">Bakery</option>
+                <option value="Grains">Grains & Pulses</option>
+                <option value="Vegetables">Vegetables & Fruits</option>
+                <option value="Snacks">Snacks & Beverages</option>
+              </select>
+
+              <div className="view-mode-toggle">
+                <button 
+                  className={`view-btn ${viewMode === 'table' ? 'active' : ''}`}
+                  onClick={() => setViewMode('table')}
+                  title="Table View"
+                >
+                  <List size={15} /> Table
+                </button>
+                <button 
+                  className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => setViewMode('grid')}
+                  title="Card Grid View"
+                >
+                  <LayoutGrid size={15} /> Grid
+                </button>
+              </div>
             </div>
-            <div className="stat-pill">
-              Low stock <span className="stat-pill-count" style={{ color: 'var(--warning)' }}>{lowStockProds}</span>
+          </div>
+
+          {/* Catalog Content */}
+          {filteredProducts.length === 0 ? (
+            <div className="orders-empty-state">
+              <div className="orders-empty-icon">
+                <Package size={28} />
+              </div>
+              <h3 className="orders-empty-title">No products found</h3>
+              <p className="orders-empty-desc">
+                {searchTerm ? `No catalog items matched "${searchTerm}".` : 'Get started by creating your first product in this category.'}
+              </p>
+              <button className="orders-action-btn primary" onClick={openAddModal}>
+                <Plus size={15} /> Add New Item
+              </button>
             </div>
-            <div className="stat-pill">
-              Out of stock <span className="stat-pill-count" style={{ color: 'var(--danger)' }}>{outOfStockProds}</span>
+          ) : viewMode === 'table' ? (
+            /* Table View */
+            <div className="table-wrapper">
+              <table className="products-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px', paddingRight: 0 }}>
+                      <input 
+                        type="checkbox" 
+                        onChange={toggleSelectAll} 
+                        checked={selectedIds.length === filteredProducts.length && filteredProducts.length > 0} 
+                      />
+                    </th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th style={{ textAlign: 'right' }}>Price</th>
+                    <th>Stock Adjustment</th>
+                    <th>Prep SLA</th>
+                    <th>Store Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map(product => {
+                    const isOutOfStock = product.stock === 0;
+                    const isLowStock = product.stock > 0 && product.stock <= 10;
+                    const stockClass = isOutOfStock ? 'out' : isLowStock ? 'low' : 'good';
+                    const displaySku = (product.id || '').slice(-6).toUpperCase();
+
+                    return (
+                      <tr key={product.id}>
+                        <td style={{ paddingRight: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedIds.includes(product.id)}
+                            onChange={() => toggleSelect(product.id)}
+                          />
+                        </td>
+                        <td>
+                          <div className="product-cell">
+                            <img 
+                              src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'} 
+                              alt={product.name} 
+                              className="product-thumb"
+                              onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'; }}
+                            />
+                            <div>
+                              <div className="product-name">{product.name}</div>
+                              <div className="product-sku">SKU: #{displaySku}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="category-badge">{product.category || 'General'}</span>
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: '700', fontFeatureSettings: '"tnum"' }}>
+                          ₹{Number(product.price || 0).toFixed(2)}
+                        </td>
+                        <td>
+                          <div className="stock-stepper-wrap">
+                            <button 
+                              className="stock-stepper-btn"
+                              onClick={() => handleStockAdjust(product, -1)}
+                              title="Decrease Stock"
+                            >
+                              -
+                            </button>
+                            <span className={`stock-badge-pill ${stockClass}`}>
+                              {product.stock || 0}
+                            </span>
+                            <button 
+                              className="stock-stepper-btn"
+                              onClick={() => handleStockAdjust(product, 1)}
+                              title="Increase Stock"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="prep-chip">
+                            <Clock size={12} /> {product.prepTime || '15 mins'}
+                          </span>
+                        </td>
+                        <td>
+                          <button 
+                            className={`products-stat-pill ${product.status === 'Active' ? 'active' : ''}`}
+                            style={{ padding: '3px 10px', fontSize: '11px' }}
+                            onClick={() => handleToggleStatus(product)}
+                          >
+                            {product.status || 'Active'}
+                          </button>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '6px' }}>
+                            <button 
+                              className="stock-stepper-btn"
+                              onClick={() => openEditModal(product)}
+                              title="Edit Product"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button 
+                              className="stock-stepper-btn"
+                              onClick={() => deleteProduct(product.id)}
+                              title="Delete Product"
+                            >
+                              <Trash2 size={13} color="#dc2626" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* Grid View */
+            <div className="products-cards-grid">
+              {filteredProducts.map(product => {
+                const isOutOfStock = product.stock === 0;
+                const isLowStock = product.stock > 0 && product.stock <= 10;
+                const stockClass = isOutOfStock ? 'out' : isLowStock ? 'low' : 'good';
+
+                return (
+                  <div key={product.id} className="catalog-card">
+                    <div className="catalog-card-image-wrap">
+                      <img 
+                        src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'} 
+                        alt={product.name} 
+                        className="catalog-card-img"
+                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'; }}
+                      />
+                      <div className="catalog-card-status-overlay">
+                        <span className={`stock-badge-pill ${stockClass}`}>
+                          {isOutOfStock ? 'Out of Stock' : `${product.stock} in stock`}
+                        </span>
+                      </div>
+                      <div className="catalog-card-price-overlay">
+                        ₹{Number(product.price || 0).toFixed(2)}
+                      </div>
+                    </div>
+
+                    <div className="catalog-card-body">
+                      <span className="category-badge" style={{ alignSelf: 'flex-start' }}>
+                        {product.category || 'General'}
+                      </span>
+                      <h3 className="catalog-card-title">{product.name}</h3>
+
+                      <div className="catalog-card-meta">
+                        <span className="prep-chip">
+                          <Clock size={12} /> {product.prepTime || '15 mins'}
+                        </span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          Status: <strong>{product.status || 'Active'}</strong>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="catalog-card-footer">
+                      <div className="stock-stepper-wrap">
+                        <button className="stock-stepper-btn" onClick={() => handleStockAdjust(product, -1)}>-</button>
+                        <span style={{ fontWeight: '700', fontSize: '13px' }}>{product.stock || 0}</span>
+                        <button className="stock-stepper-btn" onClick={() => handleStockAdjust(product, 1)}>+</button>
+                      </div>
+
+                      <button 
+                        className="orders-action-btn"
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                        onClick={() => openEditModal(product)}
+                      >
+                        <Edit2 size={12} /> Edit
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Enterprise Centered Popup Modal with Frosted Glass Blur (Portaled to Body) */}
+          {showDrawer && createPortal(
+            <div 
+              className="product-popup-backdrop" 
+              onClick={() => setShowDrawer(false)}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="product-popup-title"
+            >
+              <div className="product-popup-dialog" onClick={(e) => e.stopPropagation()}>
+                {/* Modal Header */}
+                <div className="product-popup-header">
+                  <div className="product-popup-header-info">
+                    <div className="product-popup-icon-badge">
+                      <Package size={22} />
+                    </div>
+                    <div>
+                      <h3 id="product-popup-title" className="product-popup-title">
+                        {editingProduct ? 'Edit Catalog Product' : 'Add New Store Product'}
+                      </h3>
+                      <p className="product-popup-subtitle">
+                        {editingProduct ? 'Update live SKU details, real-time stock units, and pricing.' : 'Publish a new product item to your local customer catalog.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="product-popup-close-btn" 
+                    onClick={() => setShowDrawer(false)} 
+                    title="Close Dialog"
+                    aria-label="Close Dialog"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Modal Body Form */}
+                <div className="product-popup-body">
+                  <form id="product-form" onSubmit={handleSaveProduct} className="product-popup-form">
+                    <div className="form-group-full">
+                      <label className="product-field-label">
+                        Product Name <span className="req-star">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        required 
+                        className="product-field-input"
+                        placeholder="e.g., Organic Whole Farm Milk 500ml" 
+                        value={productForm.name}
+                        onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                        autoFocus
+                      />
+                    </div>
+
+                    <div className="form-grid-row">
+                      <div className="form-group-full">
+                        <label className="product-field-label">Category</label>
+                        <select 
+                          className="product-field-select"
+                          value={productForm.category}
+                          onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                        >
+                          <option value="Dairy">Dairy</option>
+                          <option value="Bakery">Bakery</option>
+                          <option value="Grains">Grains & Pulses</option>
+                          <option value="Vegetables">Vegetables & Fruits</option>
+                          <option value="Snacks">Snacks & Beverages</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group-full">
+                        <label className="product-field-label">
+                          Price (INR ₹) <span className="req-star">*</span>
+                        </label>
+                        <div className="input-prefix-wrapper">
+                          <span className="input-currency-prefix">₹</span>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0"
+                            required 
+                            className="product-field-input has-prefix"
+                            placeholder="48.00" 
+                            value={productForm.price}
+                            onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="form-grid-row">
+                      <div className="form-group-full">
+                        <label className="product-field-label">Initial Stock Units</label>
+                        <input 
+                          type="number" 
+                          min="0"
+                          className="product-field-input"
+                          placeholder="25" 
+                          value={productForm.stock}
+                          onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="form-group-full">
+                        <label className="product-field-label">Prep Time Estimate</label>
+                        <input 
+                          type="text" 
+                          className="product-field-input"
+                          placeholder="e.g. 10 mins" 
+                          value={productForm.prepTime}
+                          onChange={(e) => setProductForm({ ...productForm, prepTime: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group-full">
+                      <label className="product-field-label">Product Image URL</label>
+                      <input 
+                        type="url" 
+                        className="product-field-input"
+                        placeholder="https://images.unsplash.com/photo-..." 
+                        value={productForm.image}
+                        onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
+                      />
+                    </div>
+
+                    {/* Image Live Preview */}
+                    <div className="product-image-preview-box">
+                      {productForm.image ? (
+                        <div className="preview-image-container">
+                          <img 
+                            src={productForm.image} 
+                            alt="Live Preview" 
+                            className="preview-img"
+                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'; }}
+                          />
+                          <span className="preview-badge">Live Image Preview</span>
+                        </div>
+                      ) : (
+                        <div className="preview-placeholder">
+                          <ImageIcon size={20} className="placeholder-icon" />
+                          <span>Paste an image link above to preview photo instantly</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group-full">
+                      <label className="product-field-label">Product Description</label>
+                      <textarea 
+                        className="product-field-textarea" 
+                        rows={3}
+                        placeholder="Fresh daily farm product sourced locally with premium packaging..."
+                        value={productForm.description}
+                        onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                      />
+                    </div>
+                  </form>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="product-popup-footer">
+                  <button 
+                    type="button" 
+                    className="popup-btn-cancel"
+                    onClick={() => setShowDrawer(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    form="product-form"
+                    className="popup-btn-submit"
+                  >
+                    <Check size={16} />
+                    <span>{editingProduct ? 'Save Changes' : 'Publish Product'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+        </>
+      ) : (
+        /* CUSTOMER EXPLORE VIEW */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="page-header-row">
+            <div>
+              <h1 className="page-title">Explore Fresh Local Products</h1>
+              <p className="page-subtitle">Shop from certified local neighborhood merchants delivered together.</p>
             </div>
           </div>
 
@@ -197,275 +664,35 @@ const ProductsPage = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="toolbar-filters">
-              <select 
-                className="form-select"
-                value={selectedCategoryFilter} 
-                onChange={e => setSelectedCategoryFilter(e.target.value)}
-              >
-                <option value="All">Category: All</option>
-                <option value="Dairy">Dairy</option>
-                <option value="Bakery">Bakery</option>
-                <option value="Grains">Grains & Pulses</option>
-                <option value="Vegetables">Vegetables & Fruits</option>
-              </select>
-              <select className="form-select">
-                <option>Status: All</option>
-                <option>Active</option>
-                <option>Hidden</option>
-              </select>
-              <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-input)', padding: '2px' }}>
-                <button style={{ padding: '6px 12px', background: 'var(--surface)', borderRadius: '4px', boxShadow: 'var(--shadow-card)', border: 'none' }}>Table</button>
-                <button style={{ padding: '6px 12px', background: 'transparent', color: 'var(--text-muted)', border: 'none' }}>Grid</button>
-              </div>
-            </div>
           </div>
 
-          <div className="table-wrapper">
-            {filteredProducts.length === 0 ? (
-              <div className="catalog-empty-state">
-                <div className="catalog-empty-icon">
-                  <Package size={32} />
-                </div>
-                <h3 className="catalog-empty-title">Your catalog is empty</h3>
-                <p className="catalog-empty-desc">Start adding products to your store to receive orders from customers in your area.</p>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button className="btn btn-primary" onClick={openAddModal}>Add your first product</button>
-                  <button className="btn btn-secondary">Import from CSV</button>
-                </div>
-              </div>
-            ) : (
-              <table className="products-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '40px', paddingRight: 0 }}>
-                      <input type="checkbox" onChange={toggleSelectAll} checked={selectedProductIds.length === filteredProducts.length && filteredProducts.length > 0} />
-                    </th>
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th style={{ textAlign: 'right' }}>Price</th>
-                    <th>Stock Qty</th>
-                    <th>Prep Time</th>
-                    <th>Status</th>
-                    <th style={{ width: '40px' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map(product => (
-                    <tr key={product.id}>
-                      <td style={{ paddingRight: 0 }}>
-                        <input type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={() => toggleSelect(product.id)} />
-                      </td>
-                      <td>
-                        <div className="product-cell">
-                          <img src={product.image} alt={product.name} className="product-thumb" />
-                          <div>
-                            <div className="product-name">{product.name}</div>
-                            <div className="product-sku">SKU: {product.id.split('-').pop().toUpperCase()}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="category-badge">{product.category}</span>
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: '500', fontFeatureSettings: '"tnum"' }}>
-                        ₹{product.price.toFixed(2)}
-                      </td>
-                      <td>
-                        <div className="stock-bar-container">
-                          <div className="stock-bar">
-                            <div className={`stock-fill ${product.stock > 10 ? 'good' : product.stock > 0 ? 'low' : 'out'}`} style={{ width: `${Math.min((product.stock / 20) * 100, 100)}%` }}></div>
-                          </div>
-                          <span style={{ fontSize: '13px', fontWeight: '500', color: product.stock === 0 ? 'var(--danger)' : 'var(--text)' }}>
-                            {product.stock} {product.stock === 0 ? '(Out)' : ''}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="prep-chip"><Clock size={12} /> {product.prepTime || '15m'}</span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <label style={{ position: 'relative', display: 'inline-block', width: '32px', height: '18px' }}>
-                            <input type="checkbox" checked={product.status === 'Active'} onChange={() => updateProduct(product.id, { status: product.status === 'Active' ? 'Hidden' : 'Active' })} style={{ opacity: 0, width: 0, height: 0 }} />
-                            <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: product.status === 'Active' ? 'var(--success)' : 'var(--border-strong)', transition: '.2s', borderRadius: '34px' }}>
-                              <span style={{ position: 'absolute', content: '""', height: '14px', width: '14px', left: product.status === 'Active' ? '16px' : '2px', bottom: '2px', backgroundColor: 'white', transition: '.2s', borderRadius: '50%' }}></span>
-                            </span>
-                          </label>
-                          <span style={{ fontSize: '12px', color: product.status === 'Active' ? 'var(--success)' : 'var(--text-muted)' }}>{product.status}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="dropdown-container">
-                          <button className="kebab-menu"><MoreVertical size={16} /></button>
-                          {/* Add dropdown logic if needed, for now clicking row could open edit */}
-                          <button className="kebab-menu" onClick={() => openEditModal(product)}><Edit2 size={14} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            {filteredProducts.length > 0 && (
-              <div className="table-footer">
-                <div>Showing {filteredProducts.length} products</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span>Rows per page: </span>
-                  <select className="form-select" style={{ height: '28px', padding: '0 8px' }}>
-                    <option>20</option>
-                    <option>50</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Bulk Action Bar */}
-          {selectedProductIds.length > 0 && (
-            <div className="bulk-action-bar">
-              <div style={{ fontWeight: '600', fontSize: '14px' }}>{selectedProductIds.length} selected</div>
-              <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)' }}></div>
-              <div className="bulk-actions-group">
-                <button style={{ background: 'none', border: 'none', color: 'white', fontSize: '13px', cursor: 'pointer' }}>Change category</button>
-                <button style={{ background: 'none', border: 'none', color: 'white', fontSize: '13px', cursor: 'pointer' }}>Hide</button>
-                <button style={{ background: 'none', border: 'none', color: '#fca5a5', fontSize: '13px', cursor: 'pointer' }}>Delete</button>
-              </div>
-              <button onClick={() => setSelectedProductIds([])} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', display: 'flex', marginLeft: 'auto' }}><X size={16} /></button>
-            </div>
-          )}
-
-          {/* Right Drawer for Add/Edit */}
-          {showProductModal && (
-            <div className="drawer-overlay" onClick={() => setShowProductModal(false)}>
-              <div className="drawer-content" onClick={e => e.stopPropagation()}>
-                <div className="drawer-header">
-                  <h3 className="drawer-title">{editingProduct ? 'Edit Product' : 'Add Product'}</h3>
-                  <button className="kebab-menu" onClick={() => setShowProductModal(false)}><X size={20}/></button>
-                </div>
-                <div className="drawer-body">
-                  <form id="product-form" onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    
-                    <div className="image-dropzone">
-                      <ImageIcon size={32} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
-                      <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--primary)' }}>Click to upload image</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>SVG, PNG, JPG or GIF (max. 5MB)</div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Product Name</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        value={productForm.name}
-                        onChange={e => setProductForm({ ...productForm, name: e.target.value })}
-                        required 
-                        placeholder="e.g. Organic Bananas"
-                      />
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Category</label>
-                        <select 
-                          className="form-control"
-                          value={productForm.category}
-                          onChange={e => setProductForm({ ...productForm, category: e.target.value })}
-                        >
-                          <option value="Dairy">Dairy</option>
-                          <option value="Bakery">Bakery</option>
-                          <option value="Grains">Grains & Pulses</option>
-                          <option value="Vegetables">Vegetables & Fruits</option>
-                        </select>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Status</label>
-                        <select 
-                          className="form-control"
-                          value={productForm.status}
-                          onChange={e => setProductForm({ ...productForm, status: e.target.value })}
-                        >
-                          <option value="Active">Active</option>
-                          <option value="Hidden">Hidden</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Price (₹)</label>
-                        <input 
-                          type="number" 
-                          step="0.01" 
-                          className="form-control" 
-                          value={productForm.price}
-                          onChange={e => setProductForm({ ...productForm, price: e.target.value })}
-                          required 
-                        />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Stock Qty</label>
-                        <input 
-                          type="number" 
-                          className="form-control" 
-                          value={productForm.stock}
-                          onChange={e => setProductForm({ ...productForm, stock: e.target.value })}
-                          required 
-                        />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Prep Time</label>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={productForm.prepTime}
-                          onChange={e => setProductForm({ ...productForm, prepTime: e.target.value })}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>Description</label>
-                      <textarea 
-                        className="form-control"
-                        rows="4"
-                        style={{ height: 'auto', padding: '12px' }}
-                        value={productForm.description}
-                        onChange={e => setProductForm({ ...productForm, description: e.target.value })}
-                      ></textarea>
-                    </div>
-                  </form>
-                </div>
-                <div className="drawer-footer">
-                  <button type="button" className="btn btn-outline" onClick={() => setShowProductModal(false)}>Cancel</button>
-                  <button type="submit" form="product-form" className="btn btn-primary">Save product</button>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        // CUSTOMER VIEW (Legacy preserved)
-        <div style={{ padding: '0 32px' }}>
-          <h2>Browse Local Products</h2>
-          <div className="customer-product-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', padding: '16px 0' }}>
+          <div className="customer-catalog-grid">
             {filteredProducts.map(product => {
-              const vendor = vendors.find(v => v.id === product.vendorId);
               const qty = quantities[product.id] || 1;
-              const isAvailable = product.stock > 0;
-
               return (
-                <div key={product.id} className="customer-product-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                  <div className="wishlist-btn-overlay" style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', cursor: 'pointer', zIndex: 2 }}>
-                    <Heart size={16} />
-                  </div>
-                  <div className="product-img-box" style={{ height: '160px', width: '100%', overflow: 'hidden', position: 'relative' }}>
-                    <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                  <div className="product-info-box" style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{product.name}</h4>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <button className="btn btn-primary" onClick={() => handleAddToCart(product)}>Add</button>
+                <div key={product.id} className="customer-prod-card">
+                  <img 
+                    src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'} 
+                    alt={product.name} 
+                    className="customer-prod-img" 
+                  />
+                  <div className="customer-prod-info">
+                    <span className="category-badge" style={{ alignSelf: 'flex-start' }}>{product.category}</span>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0 }}>{product.name}</h3>
+                    <div style={{ fontSize: '17px', fontWeight: '800', color: 'var(--text)' }}>₹{product.price}</div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 'auto' }}>
+                      <div className="stock-stepper-wrap">
+                        <button className="stock-stepper-btn" onClick={() => handleCustomerQtyChange(product.id, -1)}>-</button>
+                        <span style={{ fontWeight: '700', fontSize: '13px' }}>{qty}</span>
+                        <button className="stock-stepper-btn" onClick={() => handleCustomerQtyChange(product.id, 1)}>+</button>
+                      </div>
+                      <button 
+                        className="customer-add-btn"
+                        onClick={() => addToCart(product, qty)}
+                      >
+                        <ShoppingCart size={15} /> Add to Cart
+                      </button>
                     </div>
                   </div>
                 </div>

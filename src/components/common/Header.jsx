@@ -16,14 +16,12 @@ const Header = ({ onMenuClick }) => {
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
   const notifRef = useRef(null);
   const profileRef = useRef(null);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
@@ -70,7 +68,11 @@ const Header = ({ onMenuClick }) => {
         
         <div className="header-brand-info">
           {location.pathname === '/vendor-dashboard' ? (
-            <h2 className="header-headline">Good morning, {currentUser?.shopName || 'Store'}</h2>
+            <div className="breadcrumb">
+              <span className="breadcrumb-item text-muted">Merchant Hub</span>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-item active">Live Control Tower</span>
+            </div>
           ) : (
             <div className="breadcrumb">
               <span className="breadcrumb-item text-muted">Dashboard</span>
@@ -109,6 +111,7 @@ const Header = ({ onMenuClick }) => {
             {cartItemCount > 0 && <span className="cart-badge-counter">{cartItemCount}</span>}
           </button>
         )}
+
 
         {/* Notifications Dropdown */}
         <div className="dropdown-container" ref={notifRef}>

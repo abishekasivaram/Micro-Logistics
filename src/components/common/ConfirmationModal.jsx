@@ -66,9 +66,6 @@ const ConfirmationModal = ({
         className="confirm-modal-card" 
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Accent Ribbon */}
-        <div className={`confirm-modal-ribbon variant-${variant}`} />
-
         {/* Header */}
         <div className="confirm-modal-header">
           <div className="confirm-icon-and-badge">
