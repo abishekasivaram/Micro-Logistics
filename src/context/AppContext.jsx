@@ -44,6 +44,11 @@ export const AppProvider = ({ children }) => {
     // Only load if user is logged in
     if (!currentUser) return;
 
+    if (currentUser.isDemo) {
+      setOfflineMode(true);
+      return; // Fully isolated read-only demo mode
+    }
+
     const loadData = async () => {
       setGlobalLoading(true);
       try {
