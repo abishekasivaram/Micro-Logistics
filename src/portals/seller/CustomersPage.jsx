@@ -7,12 +7,12 @@ const CustomersPage = () => {
   const { customers = [], orders = [], currentUser } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : 'v1';
+  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
 
   const enrichedCustomers = customers.map(customer => {
     const customerOrders = orders.filter(o => 
       (o.customerId === customer.id || o.customerName === customer.name) &&
-      (currentUser?.role === 'admin' || o.vendorId === sellerId || o.vendorId === 'v1')
+      (currentUser?.role === 'admin' || o.vendorId === sellerId)
     );
     const totalSpent = customerOrders.reduce((sum, o) => sum + (o.total || 0), 0);
     return {

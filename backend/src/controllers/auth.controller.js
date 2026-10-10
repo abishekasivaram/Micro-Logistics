@@ -11,7 +11,7 @@ exports.resolveIdentifier = async (req, res) => {
     // 1. Try profiles directly (username or email)
     const { data: pData } = await supabase.from('profiles')
       .select('email')
-      .or(`username.ilike.${searchId},email.ilike.${searchId}`)
+      .or(`username.ilike."${searchId}",email.ilike."${searchId}"`)
       .limit(1);
       
     if (pData && pData.length > 0) {
@@ -22,7 +22,7 @@ exports.resolveIdentifier = async (req, res) => {
     if (!email) {
       const { data: vData } = await supabase.from('vendors')
         .select('id, profiles!inner(email)')
-        .or(`legacy_id.ilike.${searchId},shop_name.ilike.${searchId}`)
+        .or(`legacy_id.ilike."${searchId}",shop_name.ilike."${searchId}"`)
         .limit(1);
       if (vData && vData.length > 0) email = vData[0].profiles?.email;
     }
@@ -43,12 +43,6 @@ exports.resolveIdentifier = async (req, res) => {
         .eq('legacy_id', searchId)
         .limit(1);
       if (dData && dData.length > 0) email = dData[0].profiles?.email;
-    }
-
-    // 5. Hardcode fallback for admin demo if missing from DB profiles but in auth.users
-    // In Phase 1 seed, 'admin' might not be explicitly seeded, but it's part of sampleData.js mockUsers.
-    if (!email && searchId.toLowerCase() === 'admin') {
-      email = 'admin@example.com';
     }
 
     if (!email) {
@@ -92,30 +86,53 @@ exports.signup = async (req, res) => {
       role
     });
     
-    if (profileError) throw profileError;
+    if (profileError) {
+      await supabase.auth.admin.deleteUser(userId);
+      throw profileError;
+    }
 
     // 3. Insert into role-specific tables
+    let roleError = null;
     if (role === 'customer') {
       const legacyId = 'c' + Math.floor(Math.random() * 10000);
-      await supabase.from('customer_profiles').insert({
+      const { error } = await supabase.from('customer_profiles').insert({
         id: userId,
         legacy_id: legacyId,
         address,
         area,
         status: 'Active'
       });
+      roleError = error;
     } else if (role === 'vendor') {
       const legacyId = 'v' + Math.floor(Math.random() * 10000);
-      await supabase.from('vendors').insert({
+      const { error } = await supabase.from('vendors').insert({
         id: userId,
         legacy_id: legacyId,
         shop_name: shopName || name,
         owner_name: name,
         address,
         area,
+        category: 'General',
         status: 'Active',
         is_open: true
       });
+      roleError = error;
+    } else if (role === 'delivery_partner') {
+      const legacyId = 'da' + Math.floor(Math.random() * 10000);
+      const { error } = await supabase.from('delivery_agents').insert({
+        id: userId,
+        legacy_id: legacyId,
+        current_area: area || 'Local',
+        capacity: 5,
+        rating: 5.0
+      });
+      roleError = error;
+    }
+
+    if (roleError) {
+      await supabase.auth.admin.deleteUser(userId);
+      await supabase.from('profiles').delete().eq('id', userId);
+      throw roleError;
     }
 
     return res.status(201).json({ success: true, message: 'User registered successfully', userId });

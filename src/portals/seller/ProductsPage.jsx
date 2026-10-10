@@ -61,13 +61,13 @@ const ProductsPage = () => {
     };
   }, [showDrawer]);
 
-  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : 'v1';
+  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
 
   // Filter products scoped to seller if in seller mode
   const scopedProducts = products.filter(p => {
     if (isCustomer) return true;
     if (currentUser?.role === 'admin') return true;
-    return p.vendorId === sellerId || p.vendorId === 'v1';
+    return p.vendorId === sellerId;
   });
 
   // Filtered list

@@ -22,7 +22,7 @@ const DashboardOverview = () => {
   const [orderFilter, setOrderFilter] = useState('ALL');
   const [copiedOrderId, setCopiedOrderId] = useState(null);
 
-  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : 'v1';
+  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
   const displayId = sellerId.length > 12 ? `${sellerId.slice(0, 8)}...${sellerId.slice(-4)}` : sellerId;
 
   // Filter orders for this seller

@@ -67,21 +67,6 @@ const LoginPage = () => {
     };
 
     try {
-      // Offline Demo Fallback
-      if (lowerSearchId === 'admin') {
-        loginSuccess({ id: 'admin1', name: 'System Admin', username: 'admin' }, 'admin');
-        return;
-      } else if (lowerSearchId === 'v1') {
-        loginSuccess({ id: 'v1', name: 'Kannan Dept Store', username: 'v1', shopName: 'Kannan Dept Store' }, 'vendor');
-        return;
-      } else if (lowerSearchId === 'priyarajan') {
-        loginSuccess({ id: 'c1', name: 'Priya Rajan', username: 'priyarajan' }, 'customer');
-        return;
-      } else if (lowerSearchId === 'da1') {
-        loginSuccess({ id: 'da1', name: 'Ramesh (Agent 1)', username: 'da1' }, 'delivery_partner');
-        return;
-      }
-
       let resolvedEmail = null;
 
       if (searchId.includes('@')) {
@@ -133,52 +118,19 @@ const LoginPage = () => {
           return;
         } else {
           // Graceful fallback for offline / demo mode
-          if (lowerSearchId === 'da1' || lowerSearchId.includes('delivery')) {
-            const demoUser = {
-              id: 'da1',
-              email: 'da1@micrologi.com',
-              name: 'David Anand (Da1)',
-              username: 'da1',
-              role: 'delivery_partner',
-              availability: 'Available'
-            };
-            loginSuccess(demoUser, 'delivery_partner');
-            return;
-          }
+          
 
           setErrorMsg("Incorrect credentials. Please try again.");
           return;
         }
       } else {
-        if (lowerSearchId === 'da1' || lowerSearchId.includes('delivery')) {
-          const demoUser = {
-            id: 'da1',
-            email: 'da1@micrologi.com',
-            name: 'David Anand (Da1)',
-            username: 'da1',
-            role: 'delivery_partner',
-            availability: 'Available'
-          };
-          loginSuccess(demoUser, 'delivery_partner');
-          return;
-        }
+        
         setErrorMsg("Account not found. Please check your User ID, Shop Name, or Agent ID.");
         return;
       }
     } catch (err) {
       console.error("Login failed:", err);
-      if (lowerSearchId === 'da1' || lowerSearchId.includes('delivery')) {
-        const demoUser = {
-          id: 'da1',
-          email: 'da1@micrologi.com',
-          name: 'David Anand (Da1)',
-          username: 'da1',
-          role: 'delivery_partner',
-          availability: 'Available'
-        };
-        loginSuccess(demoUser, 'delivery_partner');
-        return;
-      }
+      
       setErrorMsg("An error occurred during login.");
     }
   };
@@ -299,38 +251,10 @@ const LoginPage = () => {
           <div className="demo-accounts-section">
             <span className="demo-title">Quick Demo Login:</span>
             <div className="demo-pills">
-              <button 
-                type="button" 
-                className="demo-pill" 
-                onClick={() => fillDemoAccount('priyarajan', 'password123')}
-                title="Fill Customer Demo"
-              >
-                Customer
-              </button>
-              <button 
-                type="button" 
-                className="demo-pill" 
-                onClick={() => fillDemoAccount('v1', 'password123')}
-                title="Fill Vendor Demo"
-              >
-                Seller
-              </button>
-              <button 
-                type="button" 
-                className="demo-pill" 
-                onClick={() => fillDemoAccount('admin', 'password123')}
-                title="Fill Admin Demo"
-              >
-                Admin
-              </button>
-              <button 
-                type="button" 
-                className="demo-pill" 
-                onClick={() => fillDemoAccount('da1', 'password123')}
-                title="Fill Delivery Agent Demo"
-              >
-                Delivery
-              </button>
+              
+              
+              
+              
             </div>
           </div>
 

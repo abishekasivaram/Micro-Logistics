@@ -98,7 +98,7 @@ export const INITIAL_ACTIVE_BATCH = {
   hubs: [
     {
       id: 'hub-1',
-      vendorId: 'v1',
+      
       name: 'Chennai Organic Farm Hub',
       address: '14 Usman Road, T. Nagar, Chennai',
       contact: '+91 94441 12345',

@@ -14,7 +14,7 @@ const ProfilePage = () => {
       name: 'Fresh Apples (1kg)',
       price: 120.00,
       image: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=200',
-      vendorId: 'v1'
+      vendorId: p.vendor_id || p.vendorId
     },
     {
       id: 'w2',
@@ -28,7 +28,7 @@ const ProfilePage = () => {
       name: 'Organic Milk (1L)',
       price: 65.00,
       image: 'https://images.unsplash.com/photo-1587049352847-8d4e8941554a?auto=format&fit=crop&q=80&w=200',
-      vendorId: 'v1'
+      vendorId: p.vendor_id || p.vendorId
     }
   ]);
 

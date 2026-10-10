@@ -191,7 +191,7 @@ export const AppProvider = ({ children }) => {
 
     const itemsByVendor = {};
     cart.forEach(item => {
-      const vId = item.product.vendorId || 'v1';
+      const vId = item.product.vendorId;
       if (!itemsByVendor[vId]) itemsByVendor[vId] = [];
       itemsByVendor[vId].push(item);
     });
@@ -517,7 +517,7 @@ export const AppProvider = ({ children }) => {
         price: product.price,
         stock: product.stock,
         prepTime: product.prepTime || '5 mins',
-        vendorId: currentUser?.role === 'vendor' ? currentUser.id : (product.vendorId || 'v1')
+        vendorId: currentUser?.role === 'vendor' ? currentUser.id : product.vendorId
       };
       
       const res = await api.post('/products', payload);

@@ -4,8 +4,8 @@ exports.mapBatchToFrontend = exports.mapAgentToFrontend = exports.mapOrderToFron
 const mapProductToFrontend = (dbProduct, vendorName) => {
     return {
         uuid: dbProduct.id,
-        id: dbProduct.legacy_id || dbProduct.id,
-        vendorId: dbProduct.vendor?.legacy_id || dbProduct.vendor_id,
+        id: dbProduct.id,
+        vendorId: dbProduct.vendor_id,
         vendorName: vendorName || dbProduct.vendor?.shop_name || 'Local Seller',
         name: dbProduct.name,
         category: dbProduct.category,
@@ -21,7 +21,7 @@ exports.mapProductToFrontend = mapProductToFrontend;
 const mapVendorToFrontend = (dbVendor) => {
     return {
         uuid: dbVendor.id,
-        id: dbVendor.legacy_id || dbVendor.id,
+        id: dbVendor.id,
         name: dbVendor.shop_name,
         shopName: dbVendor.shop_name,
         ownerName: dbVendor.owner_name,
@@ -88,9 +88,9 @@ const mapOrderToFrontend = (dbOrder) => {
         uuid: dbOrder.id,
         id: dbOrder.order_code,
         orderId: dbOrder.order_code,
-        customerId: dbOrder.customer?.legacy_id || dbOrder.customer_id,
+        customerId: dbOrder.customer_id,
         customerName: dbOrder.customer?.profile?.username || 'Customer',
-        vendorId: dbOrder.vendor?.legacy_id || dbOrder.vendor_id,
+        vendorId: dbOrder.vendor_id,
         vendorName: dbOrder.vendor?.shop_name || 'Vendor',
         items: (dbOrder.order_items || []).map((item) => ({
             productId: item.product?.legacy_id || item.product_id,
@@ -118,7 +118,7 @@ exports.mapOrderToFrontend = mapOrderToFrontend;
 const mapAgentToFrontend = (dbAgent) => {
     return {
         uuid: dbAgent.id,
-        id: dbAgent.legacy_id || dbAgent.id,
+        id: dbAgent.id,
         name: dbAgent.profile?.username || 'Agent',
         phone: dbAgent.profile?.phone,
         currentArea: dbAgent.current_area,
@@ -134,7 +134,7 @@ exports.mapAgentToFrontend = mapAgentToFrontend;
 const mapBatchToFrontend = (dbBatch) => {
     const orders = dbBatch.orders || [];
     const orderCodes = orders.map((o) => o.order_code);
-    const sellerIds = Array.from(new Set(orders.map((o) => o.vendor?.legacy_id || o.vendor_id)));
+    const sellerIds = Array.from(new Set(orders.map((o) => o.vendor_id)));
     const sellerNames = Array.from(new Set(orders.map((o) => o.vendor?.shop_name || 'Vendor')));
     const pickupLocations = Array.from(new Set(orders.map((o) => o.pickup_location)));
     const deliveryLocations = Array.from(new Set(orders.map((o) => o.delivery_location)));
@@ -145,7 +145,7 @@ const mapBatchToFrontend = (dbBatch) => {
         orderIds: orderCodes,
         sellerIds,
         sellerNames,
-        agentId: dbBatch.agent?.legacy_id || dbBatch.agent_id,
+        agentId: dbBatch.agent_id,
         agentName: dbBatch.agent?.profile?.username || null,
         pickupLocations,
         deliveryLocations,
@@ -164,7 +164,7 @@ exports.mapBatchToFrontend = mapBatchToFrontend;
 const mapCustomerToFrontend = (dbCustomer) => {
     return {
         uuid: dbCustomer.id,
-        id: dbCustomer.legacy_id || dbCustomer.id,
+        id: dbCustomer.id,
         name: dbCustomer.profile?.username, // or full_name if available, using username
         username: dbCustomer.profile?.username,
         email: dbCustomer.profile?.email,

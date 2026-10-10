@@ -51,10 +51,7 @@ const DeliveriesPage = () => {
       ...group,
       personnel: agent || (group.driverName ? { name: group.driverName, phone: group.driverPhone || '+91 98765 43210', vehicle: 'Electric Cargo' } : null),
       orders: groupOrders,
-      customers: uniqueCustomers.length > 0 ? uniqueCustomers : [
-        { id: 'c1', name: 'Priyarajan M', address: '12/4 RS Puram East Zone' },
-        { id: 'c2', name: 'Sivakumar R', address: '45 Cross Cut Road, Gandhipuram' }
-      ]
+      customers: uniqueCustomers
     };
   });
 

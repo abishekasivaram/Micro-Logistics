@@ -13,11 +13,11 @@ const InventoryPage = () => {
 
   const lowStockThreshold = 10;
   const isVendor = currentUser?.role === 'vendor';
-  const sellerId = isVendor ? currentUser.id : 'v1';
+  const sellerId = isVendor ? currentUser.id : null;
 
   const scopedProducts = products.filter(p => {
     if (currentUser?.role === 'admin') return true;
-    return p.vendorId === sellerId || p.vendorId === 'v1';
+    return p.vendorId === sellerId;
   });
 
   const totalProducts = scopedProducts.length;

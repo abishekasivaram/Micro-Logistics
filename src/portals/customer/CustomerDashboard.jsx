@@ -12,7 +12,7 @@ const CustomerDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const customerId = currentUser?.id || 'c1';
+  const customerId = currentUser?.id || null;
   const customerOrders = orders.filter(o => o.customerId === customerId || o.customerName === currentUser?.name);
   
   // Dummy categories array
