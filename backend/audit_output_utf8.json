@@ -1,0 +1,442 @@
+﻿Γùç injected env (4) from .env // tip: Γùê secrets for agents [www.dotenvx.com]
+{
+  "authUsers": [
+    {
+      "id": "8b1fc0d1-06bc-43e8-9fcd-abf1a5dfe557",
+      "email": "testadminl2_1791622275964@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testadminL2_1791622275964",
+        "role": "admin"
+      }
+    },
+    {
+      "id": "bee1f977-a004-4e35-855f-233155774868",
+      "email": "testdpl2_1791622275137@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testdpL2_1791622275137",
+        "role": "delivery_partner"
+      }
+    },
+    {
+      "id": "f2eca577-884b-4907-8d7d-0827d5f49ebb",
+      "email": "testvendl2_1791622273821@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testvendL2_1791622273821",
+        "role": "vendor"
+      }
+    },
+    {
+      "id": "fa6d42d2-86a7-44d9-bb36-85d8674c44dd",
+      "email": "testcustl2_1791622270891@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testcustL2_1791622270891",
+        "role": "customer"
+      }
+    },
+    {
+      "id": "36e17135-4c8a-470f-8430-08a1de6fbf04",
+      "email": "testadminl1791622206110@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testadminL1791622206110",
+        "role": "admin"
+      }
+    },
+    {
+      "id": "584acb9d-e5da-4171-a06e-2cd97a0cfe9a",
+      "email": "testdpl1791622203448@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testdpL1791622203448",
+        "role": "delivery_partner"
+      }
+    },
+    {
+      "id": "b1fc7ac6-51e9-4cc7-897b-211fd88a3d0f",
+      "email": "testcustl1791622198371@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testcustL1791622198371",
+        "role": "customer"
+      }
+    },
+    {
+      "id": "8c724c85-8723-4cd7-81de-50ca9584f016",
+      "email": "testadmin1791621975670@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testadmin1791621975670",
+        "role": "admin"
+      }
+    },
+    {
+      "id": "2c65595a-37cd-4e0f-a06f-c80cadac6827",
+      "email": "testdp1791621973978@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testdp1791621973978",
+        "role": "delivery_partner"
+      }
+    },
+    {
+      "id": "e1b0a0ed-ca28-420d-a70a-e7bdfc347482",
+      "email": "testvend1791621970911@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testvend1791621970911",
+        "role": "vendor"
+      }
+    },
+    {
+      "id": "ba2b43e9-2373-4196-834c-2b4899ca0ed7",
+      "email": "testcust1791621966214@example.com",
+      "metadata": {
+        "email_verified": true,
+        "full_name": "testcust1791621966214",
+        "role": "customer"
+      }
+    },
+    {
+      "id": "5804937f-9d4a-4f97-91cd-71c1207bb77c",
+      "email": "agent1_auth@example.com",
+      "metadata": {
+        "email_verified": true,
+        "role": "delivery_partner"
+      }
+    },
+    {
+      "id": "4694794a-e6ed-4f99-bc80-ec9199fbd04c",
+      "email": "contact_auth@nammachennai.com",
+      "metadata": {
+        "email_verified": true,
+        "role": "vendor"
+      }
+    },
+    {
+      "id": "215a8bda-9592-45a6-a31e-c3e7f822244c",
+      "email": "priya_auth@example.com",
+      "metadata": {
+        "email_verified": true,
+        "role": "customer"
+      }
+    },
+    {
+      "id": "307cd87b-96b2-4889-9bb2-a21783a8adde",
+      "email": "test_unique@example.com",
+      "metadata": {}
+    },
+    {
+      "id": "56069678-5fbb-4a8d-aed1-7df6cbb81720",
+      "email": "priya_temp@example.com",
+      "metadata": {
+        "email_verified": true
+      }
+    },
+    {
+      "id": "88888888-8888-8888-8888-888888888888",
+      "email": "test_uuid@example.com",
+      "metadata": {
+        "email_verified": true
+      }
+    },
+    {
+      "id": "bb0cea83-6b19-4291-9db7-0dec0483916d",
+      "email": "test_vestauth@example.com",
+      "metadata": {
+        "email_verified": true
+      }
+    },
+    {
+      "id": "73e4cbcb-c702-4f3d-9784-bdc1b93eaa5a",
+      "email": "admin@example.com",
+      "metadata": {
+        "email_verified": true,
+        "role": "admin"
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "id": "99999999-9999-9999-9999-999999999999",
+      "username": "admin",
+      "email": "admin@example.com",
+      "phone": "9000000000",
+      "role": "admin",
+      "created_at": "2026-09-17T16:26:04.840252+00:00",
+      "updated_at": "2026-09-17T16:26:04.840252+00:00"
+    },
+    {
+      "id": "215a8bda-9592-45a6-a31e-c3e7f822244c",
+      "username": "priyarajan",
+      "email": "priya_auth@example.com",
+      "phone": "9876543210",
+      "role": "customer",
+      "created_at": "2026-09-18T01:32:07.322903+00:00",
+      "updated_at": "2026-09-18T01:32:07.322903+00:00"
+    },
+    {
+      "id": "5804937f-9d4a-4f97-91cd-71c1207bb77c",
+      "username": "da1",
+      "email": "agent1_auth@example.com",
+      "phone": "9988776655",
+      "role": "delivery_partner",
+      "created_at": "2026-09-13T17:36:53.547239+00:00",
+      "updated_at": "2026-09-13T17:36:53.547239+00:00"
+    },
+    {
+      "id": "4694794a-e6ed-4f99-bc80-ec9199fbd04c",
+      "username": "v1",
+      "email": "contact_auth@nammachennai.com",
+      "phone": null,
+      "role": "vendor",
+      "created_at": "2026-09-18T01:40:39.961761+00:00",
+      "updated_at": "2026-09-18T01:40:39.961761+00:00"
+    },
+    {
+      "id": "ba2b43e9-2373-4196-834c-2b4899ca0ed7",
+      "username": "testcust1791621966214",
+      "email": "testcust1791621966214@example.com",
+      "phone": "1234567890",
+      "role": "customer",
+      "created_at": "2026-10-10T08:46:08.690269+00:00",
+      "updated_at": "2026-10-10T08:46:08.690269+00:00"
+    },
+    {
+      "id": "e1b0a0ed-ca28-420d-a70a-e7bdfc347482",
+      "username": "testvend1791621970911",
+      "email": "testvend1791621970911@example.com",
+      "phone": "1234567890",
+      "role": "vendor",
+      "created_at": "2026-10-10T08:46:11.791427+00:00",
+      "updated_at": "2026-10-10T08:46:11.791427+00:00"
+    },
+    {
+      "id": "2c65595a-37cd-4e0f-a06f-c80cadac6827",
+      "username": "testdp1791621973978",
+      "email": "testdp1791621973978@example.com",
+      "phone": "1234567890",
+      "role": "delivery_partner",
+      "created_at": "2026-10-10T08:46:14.879123+00:00",
+      "updated_at": "2026-10-10T08:46:14.879123+00:00"
+    },
+    {
+      "id": "8c724c85-8723-4cd7-81de-50ca9584f016",
+      "username": "testadmin1791621975670",
+      "email": "testadmin1791621975670@example.com",
+      "phone": "1234567890",
+      "role": "admin",
+      "created_at": "2026-10-10T08:46:16.549405+00:00",
+      "updated_at": "2026-10-10T08:46:16.549405+00:00"
+    },
+    {
+      "id": "b1fc7ac6-51e9-4cc7-897b-211fd88a3d0f",
+      "username": "testcustL1791622198371",
+      "email": "testcustL1791622198371@example.com",
+      "phone": "1234567890",
+      "role": "customer",
+      "created_at": "2026-10-10T08:49:59.818021+00:00",
+      "updated_at": "2026-10-10T08:49:59.818021+00:00"
+    },
+    {
+      "id": "584acb9d-e5da-4171-a06e-2cd97a0cfe9a",
+      "username": "testdpL1791622203448",
+      "email": "testdpL1791622203448@example.com",
+      "phone": "1234567890",
+      "role": "delivery_partner",
+      "created_at": "2026-10-10T08:50:04.618531+00:00",
+      "updated_at": "2026-10-10T08:50:04.618531+00:00"
+    },
+    {
+      "id": "36e17135-4c8a-470f-8430-08a1de6fbf04",
+      "username": "testadminL1791622206110",
+      "email": "testadminL1791622206110@example.com",
+      "phone": "1234567890",
+      "role": "admin",
+      "created_at": "2026-10-10T08:50:06.561997+00:00",
+      "updated_at": "2026-10-10T08:50:06.561997+00:00"
+    },
+    {
+      "id": "fa6d42d2-86a7-44d9-bb36-85d8674c44dd",
+      "username": "testcustL2_1791622270891",
+      "email": "testcustL2_1791622270891@example.com",
+      "phone": "1234567890",
+      "role": "customer",
+      "created_at": "2026-10-10T08:51:12.504714+00:00",
+      "updated_at": "2026-10-10T08:51:12.504714+00:00"
+    },
+    {
+      "id": "f2eca577-884b-4907-8d7d-0827d5f49ebb",
+      "username": "testvendL2_1791622273821",
+      "email": "testvendL2_1791622273821@example.com",
+      "phone": "1234567890",
+      "role": "vendor",
+      "created_at": "2026-10-10T08:51:14.157129+00:00",
+      "updated_at": "2026-10-10T08:51:14.157129+00:00"
+    },
+    {
+      "id": "bee1f977-a004-4e35-855f-233155774868",
+      "username": "testdpL2_1791622275137",
+      "email": "testdpL2_1791622275137@example.com",
+      "phone": "1234567890",
+      "role": "delivery_partner",
+      "created_at": "2026-10-10T08:51:15.425925+00:00",
+      "updated_at": "2026-10-10T08:51:15.425925+00:00"
+    },
+    {
+      "id": "8b1fc0d1-06bc-43e8-9fcd-abf1a5dfe557",
+      "username": "testadminL2_1791622275964",
+      "email": "testadminL2_1791622275964@example.com",
+      "phone": "1234567890",
+      "role": "admin",
+      "created_at": "2026-10-10T08:51:16.241976+00:00",
+      "updated_at": "2026-10-10T08:51:16.241976+00:00"
+    }
+  ],
+  "customers": [
+    {
+      "id": "215a8bda-9592-45a6-a31e-c3e7f822244c",
+      "legacy_id": "c1",
+      "address": "101 Anna Nagar East, Chennai",
+      "area": "Anna Nagar",
+      "lat": 13.085,
+      "lng": 80.2101,
+      "avatar": null,
+      "status": "Active",
+      "total_orders": 12,
+      "active_orders": 1,
+      "created_at": "2026-09-18T01:32:07.566398+00:00",
+      "updated_at": "2026-09-18T01:32:07.566398+00:00"
+    },
+    {
+      "id": "ba2b43e9-2373-4196-834c-2b4899ca0ed7",
+      "legacy_id": "c1807",
+      "address": "Test Address",
+      "area": "Test Area",
+      "lat": null,
+      "lng": null,
+      "avatar": null,
+      "status": "Active",
+      "total_orders": 0,
+      "active_orders": 0,
+      "created_at": "2026-10-10T08:46:09.310319+00:00",
+      "updated_at": "2026-10-10T08:46:09.310319+00:00"
+    },
+    {
+      "id": "b1fc7ac6-51e9-4cc7-897b-211fd88a3d0f",
+      "legacy_id": "c7364",
+      "address": "Test Address",
+      "area": "Test Area",
+      "lat": null,
+      "lng": null,
+      "avatar": null,
+      "status": "Active",
+      "total_orders": 0,
+      "active_orders": 0,
+      "created_at": "2026-10-10T08:50:00.098119+00:00",
+      "updated_at": "2026-10-10T08:50:00.098119+00:00"
+    },
+    {
+      "id": "fa6d42d2-86a7-44d9-bb36-85d8674c44dd",
+      "legacy_id": "c2558",
+      "address": "Test Address",
+      "area": "Test Area",
+      "lat": null,
+      "lng": null,
+      "avatar": null,
+      "status": "Active",
+      "total_orders": 0,
+      "active_orders": 0,
+      "created_at": "2026-10-10T08:51:13.226711+00:00",
+      "updated_at": "2026-10-10T08:51:13.226711+00:00"
+    }
+  ],
+  "vendors": [
+    {
+      "id": "4694794a-e6ed-4f99-bc80-ec9199fbd04c",
+      "legacy_id": "v1",
+      "shop_name": "Namma Chennai Naturals",
+      "owner_name": "Contact",
+      "category": "GROCERIES",
+      "rating": 0,
+      "prep_time": null,
+      "is_open": true,
+      "status": "Active",
+      "operating_hours": null,
+      "address": "22 Velachery Main Rd, Chennai",
+      "area": null,
+      "lat": 12.98,
+      "lng": 80.22,
+      "logo": null,
+      "description": null,
+      "join_date": null,
+      "created_at": "2026-09-18T01:42:27.874488+00:00",
+      "updated_at": "2026-09-18T01:42:27.874488+00:00"
+    },
+    {
+      "id": "f2eca577-884b-4907-8d7d-0827d5f49ebb",
+      "legacy_id": "v5317",
+      "shop_name": "testvendL2_1791622273821 Shop",
+      "owner_name": "testvendL2_1791622273821",
+      "category": "General",
+      "rating": 0,
+      "prep_time": null,
+      "is_open": true,
+      "status": "Active",
+      "operating_hours": null,
+      "address": "Test Address",
+      "area": "Test Area",
+      "lat": null,
+      "lng": null,
+      "logo": null,
+      "description": null,
+      "join_date": null,
+      "created_at": "2026-10-10T08:51:14.355983+00:00",
+      "updated_at": "2026-10-10T08:51:14.355983+00:00"
+    }
+  ],
+  "agents": [
+    {
+      "id": "5804937f-9d4a-4f97-91cd-71c1207bb77c",
+      "legacy_id": "da1",
+      "current_area": "Adyar / Mylapore",
+      "capacity": 5,
+      "current_orders": 3,
+      "availability": "Available",
+      "status": "Available",
+      "vehicle": "TVS XL 100",
+      "rating": 4.9,
+      "created_at": "2026-09-13T17:36:53.547239+00:00",
+      "updated_at": "2026-09-13T17:36:53.547239+00:00"
+    },
+    {
+      "id": "584acb9d-e5da-4171-a06e-2cd97a0cfe9a",
+      "legacy_id": "da3866",
+      "current_area": "Test Area",
+      "capacity": 5,
+      "current_orders": 0,
+      "availability": "Available",
+      "status": "Available",
+      "vehicle": null,
+      "rating": 5,
+      "created_at": "2026-10-10T08:50:05.279937+00:00",
+      "updated_at": "2026-10-10T08:50:05.279937+00:00"
+    },
+    {
+      "id": "bee1f977-a004-4e35-855f-233155774868",
+      "legacy_id": "da3749",
+      "current_area": "Test Area",
+      "capacity": 5,
+      "current_orders": 0,
+      "availability": "Available",
+      "status": "Available",
+      "vehicle": null,
+      "rating": 5,
+      "created_at": "2026-10-10T08:51:15.617686+00:00",
+      "updated_at": "2026-10-10T08:51:15.617686+00:00"
+    }
+  ]
+}
