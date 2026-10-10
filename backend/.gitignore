@@ -1,3 +1,7 @@
 node_modules/
 dist/
 .env
+
+secure_credentials.txt
+*.cjs
+audit_output*.json
