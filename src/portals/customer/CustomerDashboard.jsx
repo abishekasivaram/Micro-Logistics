@@ -39,7 +39,12 @@ const CustomerDashboard = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') navigate('/products');
+              if (e.key === 'Enter') {
+                const trimmed = searchTerm.trim();
+                navigate(trimmed ? `/products?search=${encodeURIComponent(trimmed)}` : '/products', { 
+                  state: { search: trimmed } 
+                });
+              }
             }}
           />
         </div>
@@ -57,7 +62,13 @@ const CustomerDashboard = () => {
       </div>
       <div className="customer-categories-grid">
         {categories.map((cat, idx) => (
-          <div key={idx} className="customer-category-card" onClick={() => navigate('/products')}>
+          <div 
+            key={idx} 
+            className="customer-category-card" 
+            onClick={() => navigate(`/products?category=${encodeURIComponent(cat.name)}`, { 
+              state: { category: cat.name } 
+            })}
+          >
             <div className="category-icon-wrap">
               {cat.icon}
             </div>
@@ -107,7 +118,11 @@ const CustomerDashboard = () => {
       {/* Popular Products Near You */}
       <div className="section-title-row">
         <h3>Popular Near You</h3>
-        <button className="btn-link" style={{ color: '#4f46e5', fontWeight: '600' }} onClick={() => navigate('/products')}>
+        <button 
+          className="btn-link" 
+          style={{ color: '#4f46e5', fontWeight: '600' }} 
+          onClick={() => navigate('/products?category=All', { state: { category: 'All' } })}
+        >
           View All Products →
         </button>
       </div>

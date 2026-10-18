@@ -1,26 +1,171 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { 
   Search, Plus, Edit2, Trash2, ShoppingCart, Clock, Store, 
   Eye, Check, X, Filter, Image as ImageIcon, ChevronRight,
-  Package, LayoutGrid, List, AlertTriangle, ArrowUpDown, Sparkles
+  Package, LayoutGrid, List, AlertTriangle, ArrowUpDown, Sparkles,
+  Apple, Milk, Coffee, Monitor, Heart, RotateCcw
 } from 'lucide-react';
 import './ProductsPage.css';
+
+export const CUSTOMER_CATEGORIES = [
+  { id: 'All', name: 'All Products', icon: LayoutGrid },
+  { id: 'Grocery', name: 'Grocery', icon: Package },
+  { id: 'Fruits & Veg', name: 'Fruits & Veg', icon: Apple },
+  { id: 'Dairy', name: 'Dairy', icon: Milk },
+  { id: 'Bakery', name: 'Bakery', icon: Coffee },
+  { id: 'Electronics', name: 'Electronics', icon: Monitor },
+  { id: 'Pharmacy', name: 'Pharmacy', icon: Heart }
+];
+
+export const matchesCategoryFilter = (productCategory, filterCategory) => {
+  if (!filterCategory || filterCategory === 'All') return true;
+  if (!productCategory) return false;
+
+  const prod = productCategory.toLowerCase().trim();
+  const filter = filterCategory.toLowerCase().trim();
+
+  if (prod === filter) return true;
+
+  if (filter === 'grocery') {
+    return (
+      prod.includes('grocer') ||
+      prod.includes('grain') ||
+      prod.includes('oil') ||
+      prod.includes('ghee') ||
+      prod.includes('rice') ||
+      prod.includes('pulse') ||
+      prod.includes('dal') ||
+      prod.includes('flour') ||
+      prod.includes('spice') ||
+      prod.includes('staple') ||
+      prod.includes('snack')
+    );
+  }
+
+  if (filter === 'fruits & veg' || filter === 'fruits' || filter === 'vegetables' || filter === 'produce') {
+    return (
+      prod.includes('fruit') ||
+      prod.includes('veg') ||
+      prod.includes('produce') ||
+      prod.includes('tomato') ||
+      prod.includes('onion') ||
+      prod.includes('potato')
+    );
+  }
+
+  if (filter === 'dairy') {
+    return (
+      prod.includes('dairy') ||
+      prod.includes('milk') ||
+      prod.includes('cheese') ||
+      prod.includes('butter') ||
+      prod.includes('curd') ||
+      prod.includes('paneer') ||
+      prod.includes('yogurt')
+    );
+  }
+
+  if (filter === 'bakery') {
+    return (
+      prod.includes('baker') ||
+      prod.includes('bread') ||
+      prod.includes('croissant') ||
+      prod.includes('cake') ||
+      prod.includes('bun') ||
+      prod.includes('pastry') ||
+      prod.includes('cookie')
+    );
+  }
+
+  if (filter === 'electronics') {
+    return (
+      prod.includes('electr') ||
+      prod.includes('tech') ||
+      prod.includes('gadget') ||
+      prod.includes('mobile') ||
+      prod.includes('power') ||
+      prod.includes('phone') ||
+      prod.includes('device')
+    );
+  }
+
+  if (filter === 'pharmacy' || filter === 'healthcare') {
+    return (
+      prod.includes('pharm') ||
+      prod.includes('health') ||
+      prod.includes('med') ||
+      prod.includes('tablet') ||
+      prod.includes('wellness')
+    );
+  }
+
+  return prod.includes(filter) || filter.includes(prod);
+};
 
 const ProductsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { products = [], currentUser, addToCart, addProduct, updateProduct, deleteProduct } = useAppContext();
 
   const isCustomer = currentUser?.role === 'customer';
-  const initialVendorFilter = location.state?.vendorId || 'all';
+  const initialVendorFilter = searchParams.get('vendorId') || location.state?.vendorId || 'all';
+  const initialCategory = searchParams.get('category') || location.state?.category || 'All';
+  const initialSearch = searchParams.get('search') || location.state?.search || '';
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [vendorFilter, setVendorFilter] = useState(initialVendorFilter);
   const [selectedStockFilter, setSelectedStockFilter] = useState('All'); // 'All', 'Good', 'Low', 'Out'
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'grid'
+
+  // Sync state when location or search parameters change
+  useEffect(() => {
+    const cat = searchParams.get('category') || location.state?.category;
+    if (cat) {
+      setSelectedCategory(cat);
+    }
+    const q = searchParams.get('search') || location.state?.search;
+    if (q !== undefined && q !== null) {
+      setSearchTerm(q);
+    }
+    const v = searchParams.get('vendorId') || location.state?.vendorId;
+    if (v) {
+      setVendorFilter(v);
+    }
+  }, [location.search, location.state]);
+
+  const handleCategorySelect = (categoryId) => {
+    setSelectedCategory(categoryId);
+    const newParams = new URLSearchParams(searchParams);
+    if (categoryId && categoryId !== 'All') {
+      newParams.set('category', categoryId);
+    } else {
+      newParams.delete('category');
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleSearchChange = (val) => {
+    setSearchTerm(val);
+    const newParams = new URLSearchParams(searchParams);
+    if (val) {
+      newParams.set('search', val);
+    } else {
+      newParams.delete('search');
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategory('All');
+    setSearchTerm('');
+    setVendorFilter('all');
+    setSearchParams({});
+  };
   
   // Customer view quantities
   const [quantities, setQuantities] = useState({});
@@ -65,16 +210,24 @@ const ProductsPage = () => {
 
   // Filter products scoped to seller if in seller mode
   const scopedProducts = products.filter(p => {
-    if (isCustomer) return true;
+    if (isCustomer) {
+      if (vendorFilter && vendorFilter !== 'all') {
+        return p.vendorId === vendorFilter || p.vendor?.id === vendorFilter;
+      }
+      return true;
+    }
     if (currentUser?.role === 'admin') return true;
     return p.vendorId === sellerId;
   });
 
   // Filtered list
   const filteredProducts = scopedProducts.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    const matchesSearch = !searchTerm ||
+                          p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.description?.toLowerCase().includes(searchTerm.toLowerCase());
+                          
+    const matchesCategory = matchesCategoryFilter(p.category, selectedCategory);
     
     let matchesStock = true;
     if (selectedStockFilter === 'Good') matchesStock = p.stock > 10;
@@ -83,6 +236,20 @@ const ProductsPage = () => {
 
     return matchesSearch && matchesCategory && matchesStock;
   });
+
+  // Calculate counts for categories in customer explore view
+  const getCategoryCount = (categoryId) => {
+    if (categoryId === 'All') return scopedProducts.length;
+    return scopedProducts.filter(p => matchesCategoryFilter(p.category, categoryId)).length;
+  };
+
+  // Extra categories created dynamically by vendors
+  const extraCategories = Array.from(new Set(
+    scopedProducts
+      .map(p => p.category)
+      .filter(Boolean)
+      .filter(cat => !CUSTOMER_CATEGORIES.slice(1).some(c => matchesCategoryFilter(cat, c.id)))
+  ));
 
   // Metrics
   const totalCount = scopedProducts.length;
@@ -655,50 +822,170 @@ const ProductsPage = () => {
           </div>
 
           <div className="toolbar-card">
-            <div className="search-input-wrap">
+            <div className="search-input-wrap" style={{ position: 'relative', flex: 1 }}>
               <Search size={16} className="search-icon-left" />
               <input 
                 type="text" 
-                placeholder="Search products..." 
+                placeholder="Search products by name, category, or description..." 
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
+              {searchTerm && (
+                <button 
+                  onClick={() => handleSearchChange('')}
+                  title="Clear search"
+                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
+
+            {vendorFilter && vendorFilter !== 'all' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#e0e7ff', color: '#4338ca', padding: '6px 14px', borderRadius: '9999px', fontSize: '13px', fontWeight: '600' }}>
+                <Store size={14} />
+                <span>Seller: {scopedProducts[0]?.vendorName || 'Selected Seller'}</span>
+                <button 
+                  onClick={() => {
+                    setVendorFilter('all');
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.delete('vendorId');
+                    setSearchParams(newParams);
+                  }} 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4338ca', display: 'flex', alignItems: 'center', padding: '0 2px' }}
+                  title="Show all sellers"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="customer-catalog-grid">
-            {filteredProducts.map(product => {
-              const qty = quantities[product.id] || 1;
+          {/* Interactive Category Filter Pills */}
+          <div className="customer-categories-strip">
+            {CUSTOMER_CATEGORIES.map(cat => {
+              const count = getCategoryCount(cat.id);
+              const isActive = selectedCategory === cat.id || (cat.id === 'All' && (!selectedCategory || selectedCategory === 'All'));
+              const IconComponent = cat.icon;
               return (
-                <div key={product.id} className="customer-prod-card">
-                  <img 
-                    src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'} 
-                    alt={product.name} 
-                    className="customer-prod-img" 
-                  />
-                  <div className="customer-prod-info">
-                    <span className="category-badge" style={{ alignSelf: 'flex-start' }}>{product.category}</span>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0 }}>{product.name}</h3>
-                    <div style={{ fontSize: '17px', fontWeight: '800', color: 'var(--text)' }}>₹{product.price}</div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 'auto' }}>
-                      <div className="stock-stepper-wrap">
-                        <button className="stock-stepper-btn" onClick={() => handleCustomerQtyChange(product.id, -1)}>-</button>
-                        <span style={{ fontWeight: '700', fontSize: '13px' }}>{qty}</span>
-                        <button className="stock-stepper-btn" onClick={() => handleCustomerQtyChange(product.id, 1)}>+</button>
-                      </div>
-                      <button 
-                        className="customer-add-btn"
-                        onClick={() => addToCart(product, qty)}
-                      >
-                        <ShoppingCart size={15} /> Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <button
+                  key={cat.id}
+                  className={`customer-category-pill ${isActive ? 'active' : ''}`}
+                  onClick={() => handleCategorySelect(cat.id)}
+                >
+                  <IconComponent size={16} />
+                  <span>{cat.name}</span>
+                  <span className="pill-count">{count}</span>
+                </button>
+              );
+            })}
+            {extraCategories.map(catName => {
+              const count = getCategoryCount(catName);
+              const isActive = selectedCategory === catName;
+              return (
+                <button
+                  key={catName}
+                  className={`customer-category-pill ${isActive ? 'active' : ''}`}
+                  onClick={() => handleCategorySelect(catName)}
+                >
+                  <Package size={16} />
+                  <span>{catName}</span>
+                  <span className="pill-count">{count}</span>
+                </button>
               );
             })}
           </div>
+
+          {/* Active Filter Status Bar */}
+          {(selectedCategory !== 'All' || searchTerm) && (
+            <div className="customer-filter-banner">
+              <span>
+                Showing <strong>{filteredProducts.length}</strong> {filteredProducts.length === 1 ? 'product' : 'products'}
+                {selectedCategory !== 'All' && <> in <strong>{selectedCategory}</strong></>}
+                {searchTerm && <> matching "<strong>{searchTerm}</strong>"</>}
+              </span>
+              <button 
+                className="btn-link" 
+                onClick={handleClearFilters}
+                style={{ color: '#4f46e5', fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <RotateCcw size={13} /> Reset Filter
+              </button>
+            </div>
+          )}
+
+          {/* Products Catalog Grid or Empty State */}
+          {filteredProducts.length === 0 ? (
+            <div className="customer-empty-catalog">
+              <div className="empty-icon-circle">
+                <Package size={36} color="#6366f1" />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1e293b' }}>
+                No products found
+              </h3>
+              <p style={{ margin: 0, color: '#64748b', fontSize: '14px', maxWidth: '400px' }}>
+                {selectedCategory !== 'All' 
+                  ? `There are currently no items available in the "${selectedCategory}" category.`
+                  : `No products matched your search query "${searchTerm}".`}
+              </p>
+              <button 
+                className="btn btn-primary"
+                onClick={handleClearFilters}
+                style={{ marginTop: '8px' }}
+              >
+                View All Products
+              </button>
+            </div>
+          ) : (
+            <div className="customer-catalog-grid">
+              {filteredProducts.map(product => {
+                const qty = quantities[product.id] || 1;
+                return (
+                  <div key={product.id} className="customer-prod-card">
+                    <div style={{ position: 'relative' }}>
+                      <img 
+                        src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'} 
+                        alt={product.name} 
+                        className="customer-prod-img" 
+                      />
+                      <span className="customer-category-tag">
+                        {product.category}
+                      </span>
+                    </div>
+                    <div className="customer-prod-info">
+                      <div className="customer-prod-seller">
+                        <Store size={13} />
+                        <span>{product.vendorName || product.vendor?.shop_name || 'Local Seller'}</span>
+                      </div>
+                      <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: 'var(--text)' }}>{product.name}</h3>
+                      {product.description && (
+                        <p style={{ fontSize: '12px', color: '#64748b', margin: 0, lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {product.description}
+                        </p>
+                      )}
+                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginTop: 'auto', paddingTop: '4px' }}>
+                        ₹{Number(product.price).toFixed(2)}
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                        <div className="stock-stepper-wrap">
+                          <button className="stock-stepper-btn" onClick={() => handleCustomerQtyChange(product.id, -1)}>-</button>
+                          <span style={{ fontWeight: '700', fontSize: '13px' }}>{qty}</span>
+                          <button className="stock-stepper-btn" onClick={() => handleCustomerQtyChange(product.id, 1)}>+</button>
+                        </div>
+                        <button 
+                          className="customer-add-btn"
+                          onClick={() => addToCart(product, qty)}
+                        >
+                          <ShoppingCart size={15} /> Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

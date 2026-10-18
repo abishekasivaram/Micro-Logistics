@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import { initialProducts } from '../data/initialProducts';
 
 const AppContext = createContext();
 
@@ -22,7 +23,13 @@ export const AppProvider = ({ children }) => {
   const [customers, setCustomers] = useState(() => getStorageItem('customers', []));
   const [deliveryAgents, setDeliveryAgents] = useState(() => getStorageItem('deliveryAgents', []));
   const [deliveryBatches, setDeliveryBatches] = useState(() => getStorageItem('deliveryBatches', []));
-  const [products, setProducts] = useState(() => getStorageItem('products', []));
+  const [products, setProducts] = useState(() => {
+    const saved = getStorageItem('products', null);
+    if (!saved || !Array.isArray(saved) || saved.length < 50) {
+      return initialProducts;
+    }
+    return saved;
+  });
   const [notifications, setNotifications] = useState(() => getStorageItem('notifications', []));
   const [cart, setCart] = useState(() => getStorageItem('cart', []));
   const [currentUser, setCurrentUser] = useState(() => getStorageItem('currentUser', null));
@@ -97,10 +104,15 @@ export const AppProvider = ({ children }) => {
     loadData();
   }, [currentUser]);
 
-  // Persist states to localStorage (Only non-API entities)
+  // Persist states to localStorage
   useEffect(() => { localStorage.setItem('micrologi_cart', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('micrologi_currentUser', JSON.stringify(currentUser)); }, [currentUser]);
   useEffect(() => { localStorage.setItem('micrologi_adminSettings', JSON.stringify(adminSettings)); }, [adminSettings]);
+  useEffect(() => { 
+    if (products && products.length > 0) {
+      localStorage.setItem('micrologi_products', JSON.stringify(products)); 
+    }
+  }, [products]);
 
   // --- Cart Management ---
   const addToCart = (product, quantity = 1) => {

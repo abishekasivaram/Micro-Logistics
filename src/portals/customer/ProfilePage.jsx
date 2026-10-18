@@ -1,41 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { User, Mail, Phone, MapPin, Save, Lock, Camera, CheckCircle, Heart, Trash2, ShoppingCart } from 'lucide-react';
 import './ProfilePage.css';
 import './CustomerProfilePage.css';
 
+const DEFAULT_WISHLIST = [
+  {
+    id: 'p_fv4',
+    name: 'Crisp Shimla Royal Gala Apples (4 Pcs)',
+    category: 'Fruits & Veg',
+    price: 180.00,
+    image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=500&auto=format&fit=crop&q=80',
+    vendorId: 'v3',
+    vendorName: 'Kovai Fresh Mart'
+  },
+  {
+    id: 'p_b3',
+    name: '100% Whole Wheat Multi-Grain Bread (400g)',
+    category: 'Bakery',
+    price: 50.00,
+    image: 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?w=500&auto=format&fit=crop&q=80',
+    vendorId: 'v4',
+    vendorName: 'Royal Bakery & Sweets'
+  },
+  {
+    id: 'p_d6',
+    name: 'Nandini Pure Golden Cow Ghee (500ml Jar)',
+    category: 'Dairy',
+    price: 330.00,
+    image: 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=500&auto=format&fit=crop&q=80',
+    vendorId: 'v2',
+    vendorName: 'Sri Lakshmi Organics'
+  },
+  {
+    id: 'p_e2',
+    name: 'Active Noise Cancelling TWS Earbuds (BT 5.3)',
+    category: 'Electronics',
+    price: 1999.00,
+    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&auto=format&fit=crop&q=80',
+    vendorId: 'v6',
+    vendorName: 'City Tech & Electronics'
+  }
+];
+
 const ProfilePage = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser, updateUserProfile, addToCart, addNotification } = useAppContext();
 
-  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'password'
-  const [wishlistItems, setWishlistItems] = useState([
-    {
-      id: 'w1',
-      name: 'Fresh Apples (1kg)',
-      price: 120.00,
-      image: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=200',
-      vendorId: p.vendor_id || p.vendorId
-    },
-    {
-      id: 'w2',
-      name: 'Whole Wheat Bread',
-      price: 45.00,
-      image: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&q=80&w=200',
-      vendorId: 'v2'
-    },
-    {
-      id: 'w3',
-      name: 'Organic Milk (1L)',
-      price: 65.00,
-      image: 'https://images.unsplash.com/photo-1587049352847-8d4e8941554a?auto=format&fit=crop&q=80&w=200',
-      vendorId: p.vendor_id || p.vendorId
+  const tabParam = searchParams.get('tab') || 'details';
+  const [activeTab, setActiveTab] = useState(tabParam);
+
+  // Sync tab with URL query parameter
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    if (currentTab && currentTab !== activeTab) {
+      setActiveTab(currentTab);
+    } else if (!currentTab && activeTab !== 'details') {
+      setActiveTab('details');
     }
-  ]);
+  }, [searchParams]);
+
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    if (tabName === 'details') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab: tabName });
+    }
+  };
+
+  const [wishlistItems, setWishlistItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('micrologi_wishlist');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = parsed.filter(item => item && typeof item === 'object' && item.name);
+          if (valid.length > 0) return valid;
+        }
+      }
+      return DEFAULT_WISHLIST;
+    } catch {
+      return DEFAULT_WISHLIST;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('micrologi_wishlist', JSON.stringify(wishlistItems));
+    } catch (e) {
+      console.error('Failed to save wishlist', e);
+    }
+  }, [wishlistItems]);
 
   const handleRemoveWishlist = (itemId, itemName) => {
     setWishlistItems(prev => prev.filter(item => item.id !== itemId));
     if (addNotification) {
-      addNotification(`Removed "${itemName}" from wishlist.`, 'system');
+      addNotification(`Removed "${itemName || 'Item'}" from wishlist.`, 'system');
     }
   };
 
@@ -46,8 +109,12 @@ const ProfilePage = () => {
         name: item.name,
         price: item.price,
         image: item.image,
-        vendorId: item.vendorId
+        vendorId: item.vendorId || 'v1',
+        vendorName: item.vendorName || 'Local Seller'
       }, 1);
+      if (addNotification) {
+        addNotification(`Added "${item.name}" to cart.`, 'cart');
+      }
     }
   };
 
@@ -139,20 +206,20 @@ const ProfilePage = () => {
           <div className="profile-tabs-nav">
             <button 
               className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`}
-              onClick={() => setActiveTab('details')}
+              onClick={() => handleTabChange('details')}
             >
               <User size={16} /> Edit Profile Details
             </button>
             <button 
               className={`tab-btn ${activeTab === 'password' ? 'active' : ''}`}
-              onClick={() => setActiveTab('password')}
+              onClick={() => handleTabChange('password')}
             >
               <Lock size={16} /> Change Password
             </button>
-            {currentUser?.role === 'customer' && (
+            {(!currentUser || currentUser?.role !== 'vendor') && (
               <button 
                 className={`tab-btn ${activeTab === 'wishlist' ? 'active' : ''}`}
-                onClick={() => setActiveTab('wishlist')}
+                onClick={() => handleTabChange('wishlist')}
               >
                 <Heart size={16} /> My Wishlist
               </button>
@@ -314,22 +381,51 @@ const ProfilePage = () => {
 
           {activeTab === 'wishlist' && (
             <div className="customer-wishlist-view">
-              <h3 className="form-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Heart size={20} fill="#ef4444" color="#ef4444" /> My Wishlist ({wishlistItems.length})
-              </h3>
-              <p style={{ color: '#64748b', fontSize: '14px', margin: '-12px 0 16px 0' }}>Saved items from your favorite local sellers.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <h3 className="form-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Heart size={20} fill="#ef4444" color="#ef4444" /> My Wishlist ({wishlistItems.length})
+                </h3>
+                {wishlistItems.length > 0 && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setWishlistItems([]);
+                      if (addNotification) addNotification('Cleared your wishlist.', 'system');
+                    }}
+                    style={{ fontSize: '13px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+              <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 20px 0' }}>Saved items from your favorite local sellers.</p>
               
               {wishlistItems.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
-                  <Heart size={36} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
-                  <p>Your wishlist is currently empty.</p>
+                <div style={{ textAlign: 'center', padding: '50px 20px', color: '#64748b', background: '#f8fafc', borderRadius: '14px', border: '1.5px dashed #e2e8f0' }}>
+                  <Heart size={44} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
+                  <h4 style={{ margin: '0 0 6px 0', color: '#1e293b', fontWeight: '700' }}>Your wishlist is empty</h4>
+                  <p style={{ margin: '0 0 16px 0', fontSize: '14px' }}>Explore products and save your favorite items for later.</p>
+                  <button 
+                    type="button" 
+                    className="btn btn-primary"
+                    onClick={() => navigate('/products')}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', fontSize: '13.5px' }}
+                  >
+                    <ShoppingCart size={15} /> Explore Products
+                  </button>
                 </div>
               ) : (
                 <div className="customer-wishlist-grid">
-                  {wishlistItems.map((item) => (
-                    <div key={item.id} className="wishlist-mock-card">
+                  {wishlistItems.map((item, idx) => (
+                    <div key={item.id || `wish-${idx}`} className="wishlist-mock-card">
                       <div className="wishlist-img-box">
-                        <img src={item.image} alt={item.name} />
+                        <img 
+                          src={item.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'} 
+                          alt={item.name || 'Wishlist item'}
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500';
+                          }}
+                        />
                         <button 
                           type="button"
                           className="remove-wishlist-btn" 
@@ -338,10 +434,18 @@ const ProfilePage = () => {
                         >
                           <Trash2 size={16} />
                         </button>
+                        {item.category && (
+                          <span style={{ position: 'absolute', bottom: '8px', left: '8px', background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(6px)', color: '#4f46e5', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '99px', border: '1px solid rgba(79,70,229,0.1)' }}>
+                            {item.category}
+                          </span>
+                        )}
                       </div>
                       <div className="wishlist-info">
-                        <h4>{item.name}</h4>
-                        <span className="price">₹{item.price.toFixed(2)}</span>
+                        <h4>{item.name || 'Unnamed Product'}</h4>
+                        {item.vendorName && (
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{item.vendorName}</span>
+                        )}
+                        <span className="price">₹{Number(item.price || 0).toFixed(2)}</span>
                         <button 
                           type="button"
                           className="wishlist-action-btn"

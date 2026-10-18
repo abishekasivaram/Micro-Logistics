@@ -3,14 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateProduct = exports.createProduct = exports.getProductById = exports.getProducts = void 0;
 const supabase_1 = require("../config/supabase");
 const mappings_1 = require("../utils/mappings");
+const { initialProducts } = require("../data/initialProducts");
 const getProducts = async (req, res) => {
     try {
         const { vendorId } = req.query;
-        let query = supabase_1.supabase.from('products').select(`
+        let query = supabase_1.supabase ? supabase_1.supabase.from('products').select(`
       *,
       vendor:vendors(id, legacy_id, shop_name)
-    `);
-        if (vendorId) {
+    `) : null;
+        if (query && vendorId) {
             // Find UUID for legacy vendor ID
             const { data: vData } = await supabase_1.supabase.from('vendors').select('id').eq('legacy_id', vendorId).single();
             if (vData) {
@@ -21,14 +22,27 @@ const getProducts = async (req, res) => {
                 query = query.eq('vendor_id', vendorId);
             }
         }
-        const { data, error } = await query;
-        if (error)
-            throw error;
-        const products = data.map((p) => (0, mappings_1.mapProductToFrontend)(p));
+        let products = null;
+        if (query) {
+            const { data, error } = await query;
+            if (!error && data && data.length >= 50) {
+                products = data.map((p) => (0, mappings_1.mapProductToFrontend)(p));
+            }
+        }
+        if (!products || products.length === 0) {
+            products = initialProducts;
+            if (vendorId) {
+                products = products.filter(p => p.vendorId === vendorId);
+            }
+        }
         res.json({ success: true, data: products });
     }
     catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        let products = initialProducts;
+        if (req.query.vendorId) {
+            products = products.filter(p => p.vendorId === req.query.vendorId);
+        }
+        res.json({ success: true, data: products });
     }
 };
 exports.getProducts = getProducts;
