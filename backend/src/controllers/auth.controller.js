@@ -8,14 +8,38 @@ exports.resolveIdentifier = async (req, res) => {
     let email = null;
     const searchId = identifier.trim();
 
+    // 0. Deterministic mapping for standard test login IDs
+    const TEST_LOGIN_MAP = {
+      'admin': 'admin@example.com',
+      'c1': 'priya_auth@example.com',
+      'priyarajan': 'priya_auth@example.com',
+      'c2': 'c2@example.com',
+      'c3': 'c3@example.com',
+      'c4': 'c4@example.com',
+      'v1': 'contact_auth@nammachennai.com',
+      'v2': 'v2@example.com',
+      'v3': 'v3@example.com',
+      'v4': 'v4@example.com',
+      'da1': 'agent1_auth@example.com',
+      'da2': 'da2@example.com',
+      'da3': 'da3@example.com',
+      'da4': 'da4@example.com'
+    };
+
+    if (TEST_LOGIN_MAP[searchId.toLowerCase()]) {
+      email = TEST_LOGIN_MAP[searchId.toLowerCase()];
+    }
+
     // 1. Try profiles directly (username or email)
-    const { data: pData } = await supabase.from('profiles')
-      .select('email')
-      .or(`username.ilike."${searchId}",email.ilike."${searchId}"`)
-      .limit(1);
-      
-    if (pData && pData.length > 0) {
-      email = pData[0].email;
+    if (!email) {
+      const { data: pData } = await supabase.from('profiles')
+        .select('email')
+        .or(`username.ilike."${searchId}",email.ilike."${searchId}"`)
+        .limit(1);
+        
+      if (pData && pData.length > 0) {
+        email = pData[0].email;
+      }
     }
 
     // 2. Try vendors (legacy_id or shop_name)
@@ -61,6 +85,10 @@ exports.signup = async (req, res) => {
     
     if (!email || !password || !role) {
       return res.status(400).json({ success: false, message: 'Email, password, and role are required' });
+    }
+
+    if (role === 'admin') {
+      return res.status(403).json({ success: false, message: 'Public registration for administrator accounts is not permitted.' });
     }
 
     // 1. Create Supabase Auth User

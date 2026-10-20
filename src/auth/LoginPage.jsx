@@ -111,7 +111,10 @@ const LoginPage = () => {
             id: authData.user.id,
             email: resolvedEmail,
             name: authData.user.user_metadata?.full_name || searchId,
-            username: searchId
+            username: searchId,
+            legacy_id: authData.user.user_metadata?.legacy_id || searchId,
+            shop_name: authData.user.user_metadata?.shop_name || authData.user.user_metadata?.full_name,
+            shopName: authData.user.user_metadata?.shop_name || authData.user.user_metadata?.full_name
           };
 
           loginSuccess(baseUser, role);

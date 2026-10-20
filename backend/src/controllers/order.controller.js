@@ -135,8 +135,12 @@ const updateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        const { data: order, error: err1 } = await supabase_1.supabase.from('orders').select('*').eq('order_code', id).single();
-        if (err1 || !order)
+        let { data: order, error: err1 } = await supabase_1.supabase.from('orders').select('*').eq('order_code', id).single();
+        if (!order) {
+            const { data: orderById } = await supabase_1.supabase.from('orders').select('*').eq('id', id).single();
+            order = orderById;
+        }
+        if (!order)
             return res.status(404).json({ success: false, message: 'Order not found' });
         const userRole = req.user?.user_metadata?.role || req.user?.role;
         const userId = req.user?.id;

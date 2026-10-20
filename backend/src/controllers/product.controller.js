@@ -25,7 +25,7 @@ const getProducts = async (req, res) => {
         let products = null;
         if (query) {
             const { data, error } = await query;
-            if (!error && data && data.length >= 50) {
+            if (!error && data && data.length > 0) {
                 products = data.map((p) => (0, mappings_1.mapProductToFrontend)(p));
             }
         }
