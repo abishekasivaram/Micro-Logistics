@@ -23,10 +23,10 @@ const DashboardOverview = () => {
   const [copiedOrderId, setCopiedOrderId] = useState(null);
 
   const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
-  const displayId = sellerId.length > 12 ? `${sellerId.slice(0, 8)}...${sellerId.slice(-4)}` : sellerId;
+  const displayId = sellerId ? (sellerId.length > 12 ? `${sellerId.slice(0, 8)}...${sellerId.slice(-4)}` : sellerId) : 'N/A';
 
   // Filter orders for this seller
-  const sellerOrders = orders.filter(o => currentUser?.role === 'admin' || o.vendorId === sellerId);
+  const sellerOrders = orders.filter(o => currentUser?.role === 'admin' || (sellerId && (o.vendorId === sellerId || o.vendor_id === sellerId)));
   const totalOrders = sellerOrders.length;
   
   const getStatus = (o) => (o.orderStatus || o.status || 'PLACED').toUpperCase();
@@ -37,6 +37,7 @@ const DashboardOverview = () => {
   const todayRevenue = sellerOrders.reduce((sum, o) => sum + (o.total || 0), 0);
 
   const handleCopyId = () => {
+    if (!sellerId) return;
     navigator.clipboard.writeText(sellerId);
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);

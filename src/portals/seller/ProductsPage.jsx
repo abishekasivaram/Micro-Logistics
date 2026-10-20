@@ -207,6 +207,7 @@ const ProductsPage = () => {
   }, [showDrawer]);
 
   const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
+  const sellerLegacyId = currentUser?.legacy_id || null;
 
   // Filter products scoped to seller if in seller mode
   const scopedProducts = products.filter(p => {
@@ -217,15 +218,18 @@ const ProductsPage = () => {
       return true;
     }
     if (currentUser?.role === 'admin') return true;
-    return p.vendorId === sellerId;
+    if (!sellerId && !sellerLegacyId) return false;
+    return (sellerId && (p.vendorId === sellerId || p.vendor_id === sellerId)) ||
+           (sellerLegacyId && (p.vendorId === sellerLegacyId || p.vendor_id === sellerLegacyId));
   });
 
   // Filtered list
   const filteredProducts = scopedProducts.filter(p => {
-    const matchesSearch = !searchTerm ||
-                          p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = (searchTerm || '').trim().toLowerCase();
+    const matchesSearch = !searchLower ||
+                          (p.name || '').toLowerCase().includes(searchLower) ||
+                          (p.category || '').toLowerCase().includes(searchLower) ||
+                          (p.description || '').toLowerCase().includes(searchLower);
                           
     const matchesCategory = matchesCategoryFilter(p.category, selectedCategory);
     
@@ -285,10 +289,10 @@ const ProductsPage = () => {
   const openEditModal = (product) => {
     setEditingProduct(product);
     setProductForm({
-      name: product.name,
+      name: product.name || '',
       category: product.category || 'Dairy',
-      price: product.price || '',
-      stock: product.stock !== undefined ? product.stock : 20,
+      price: product.price !== undefined ? String(product.price) : '',
+      stock: product.stock !== undefined ? String(product.stock) : '20',
       prepTime: product.prepTime || '15 mins',
       description: product.description || '',
       image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
@@ -297,27 +301,46 @@ const ProductsPage = () => {
     setShowDrawer(true);
   };
 
-  const handleSaveProduct = (e) => {
+  const handleSaveProduct = async (e) => {
     e.preventDefault();
-    if (!productForm.name || !productForm.price) return;
+    if (!productForm.name || !productForm.name.trim()) {
+      alert('Product name is required.');
+      return;
+    }
+    const price = parseFloat(productForm.price);
+    if (isNaN(price) || price <= 0) {
+      alert('Please enter a valid price greater than zero.');
+      return;
+    }
+    const stock = parseInt(productForm.stock, 10);
+    if (isNaN(stock) || stock < 0) {
+      alert('Stock quantity cannot be negative.');
+      return;
+    }
 
     const payload = {
-      name: productForm.name,
+      name: productForm.name.trim(),
       category: productForm.category,
-      price: parseFloat(productForm.price),
-      stock: parseInt(productForm.stock) || 0,
-      prepTime: productForm.prepTime,
-      description: productForm.description,
-      image: productForm.image,
-      status: productForm.status
+      price: price,
+      stock: stock,
+      prepTime: productForm.prepTime || '15 mins',
+      description: productForm.description || '',
+      image: productForm.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500',
+      status: productForm.status || 'Active'
     };
 
+    let res;
     if (editingProduct) {
-      updateProduct(editingProduct.id, payload);
+      res = await updateProduct(editingProduct.id, payload);
     } else {
-      addProduct(payload);
+      res = await addProduct(payload);
     }
-    setShowDrawer(false);
+
+    if (res && res.success === false) {
+      alert(res.message || 'Operation failed');
+    } else {
+      setShowDrawer(false);
+    }
   };
 
   const toggleSelectAll = (e) => {

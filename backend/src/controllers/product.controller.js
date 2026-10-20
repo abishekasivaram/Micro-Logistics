@@ -69,27 +69,38 @@ const getProductById = async (req, res) => {
 };
 exports.getProductById = getProductById;
 const createProduct = async (req, res) => {
-    // Omitted complex validation for brevity, assuming Zod middleware handles it
     try {
         const productData = req.body;
-        // Auth logic - assume req.user is set
-        const userRole = req.user?.user_metadata?.role || 'vendor';
+        if (!productData.name || typeof productData.name !== 'string' || !productData.name.trim()) {
+            return res.status(400).json({ success: false, message: 'Product name is required' });
+        }
+        const price = Number(productData.price);
+        if (isNaN(price) || price <= 0) {
+            return res.status(400).json({ success: false, message: 'Price must be greater than zero' });
+        }
+        const stock = Number(productData.stock);
+        if (isNaN(stock) || stock < 0 || !Number.isInteger(stock)) {
+            return res.status(400).json({ success: false, message: 'Stock quantity cannot be negative and must be a whole number' });
+        }
+
+        // Auth logic
+        const userRole = req.user?.user_metadata?.role || req.user?.role || 'vendor';
         let vId = req.user?.id;
         if (userRole === 'admin' && productData.vendorId) {
             const { data: vData } = await supabase_1.supabase.from('vendors').select('id').eq('legacy_id', productData.vendorId).single();
             vId = vData ? vData.id : productData.vendorId;
         }
-        const status = (productData.stock > 10) ? 'In Stock' : (productData.stock > 0 ? 'Low Stock' : 'Out of Stock');
+        const status = (stock > 10) ? 'In Stock' : (stock > 0 ? 'Low Stock' : 'Out of Stock');
         const { data, error } = await supabase_1.supabase.from('products').insert({
             vendor_id: vId,
-            name: productData.name,
-            category: productData.category,
-            price: productData.price,
-            stock: productData.stock,
-            prep_time: productData.prepTime,
+            name: productData.name.trim(),
+            category: productData.category || 'General',
+            price: price,
+            stock: stock,
+            prep_time: productData.prepTime || '15 mins',
             status: status,
-            image: productData.image,
-            description: productData.description
+            image: productData.image || null,
+            description: productData.description || null
         }).select('*, vendor:vendors(id, legacy_id, shop_name)').single();
         if (error)
             throw error;
@@ -104,29 +115,54 @@ const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
-        let query = supabase_1.supabase.from('products').select('id, vendor_id').eq('legacy_id', id).single();
+        let query = supabase_1.supabase.from('products').select('id, vendor_id, stock, price').eq('legacy_id', id).single();
         let { data: existing, error: e1 } = await query;
         if (e1) {
-            existing = (await supabase_1.supabase.from('products').select('id, vendor_id').eq('id', id).single()).data;
+            existing = (await supabase_1.supabase.from('products').select('id, vendor_id, stock, price').eq('id', id).single()).data;
         }
         if (!existing)
             return res.status(404).json({ success: false, message: 'Product not found' });
-        if (req.user?.user_metadata?.role === 'vendor' && existing.vendor_id !== req.user.id) {
+            
+        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        if (userRole === 'vendor' && existing.vendor_id !== req.user.id) {
             return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
-        }
-        let status = updates.status;
-        if (updates.stock !== undefined) {
-            status = (updates.stock > 10) ? 'In Stock' : (updates.stock > 0 ? 'Low Stock' : 'Out of Stock');
         }
 
         const fieldsToUpdate = {};
-        if (updates.name !== undefined) fieldsToUpdate.name = updates.name;
+        if (updates.name !== undefined) {
+            if (typeof updates.name !== 'string' || !updates.name.trim()) {
+                return res.status(400).json({ success: false, message: 'Product name cannot be empty' });
+            }
+            fieldsToUpdate.name = updates.name.trim();
+        }
         if (updates.category !== undefined) fieldsToUpdate.category = updates.category;
-        if (updates.price !== undefined) fieldsToUpdate.price = updates.price;
-        if (updates.stock !== undefined) fieldsToUpdate.stock = updates.stock;
+
+        if (updates.price !== undefined) {
+            const price = Number(updates.price);
+            if (isNaN(price) || price <= 0) {
+                return res.status(400).json({ success: false, message: 'Price must be greater than zero' });
+            }
+            fieldsToUpdate.price = price;
+        }
+
+        let updatedStock = existing.stock;
+        if (updates.stock !== undefined) {
+            const stock = Number(updates.stock);
+            if (isNaN(stock) || stock < 0 || !Number.isInteger(stock)) {
+                return res.status(400).json({ success: false, message: 'Stock quantity cannot be negative and must be a whole number' });
+            }
+            fieldsToUpdate.stock = stock;
+            updatedStock = stock;
+        }
+
+        let status = updates.status;
+        if (updates.stock !== undefined || status === undefined) {
+            status = (updatedStock > 10) ? 'In Stock' : (updatedStock > 0 ? 'Low Stock' : 'Out of Stock');
+        }
+        fieldsToUpdate.status = status;
+
         if (updates.prepTime !== undefined) fieldsToUpdate.prep_time = updates.prepTime;
         if (updates.prep_time !== undefined) fieldsToUpdate.prep_time = updates.prep_time;
-        if (status !== undefined) fieldsToUpdate.status = status;
         if (updates.image !== undefined) fieldsToUpdate.image = updates.image;
         if (updates.description !== undefined) fieldsToUpdate.description = updates.description;
 
@@ -156,7 +192,8 @@ const deleteProduct = async (req, res) => {
         if (!existing)
             return res.status(404).json({ success: false, message: 'Product not found' });
             
-        if (req.user?.user_metadata?.role === 'vendor' && existing.vendor_id !== req.user.id) {
+        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        if (userRole === 'vendor' && existing.vendor_id !== req.user.id) {
             return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
         }
         

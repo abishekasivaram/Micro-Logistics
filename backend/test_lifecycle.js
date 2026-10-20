@@ -5,13 +5,41 @@ require('dotenv').config();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const API_URL = 'http://localhost:5000/api/v1';
 
+const fs = require('fs');
+
+function getProvisionedPassword(email) {
+  try {
+    if (!fs.existsSync('secure_credentials.txt')) return null;
+    const content = fs.readFileSync('secure_credentials.txt', 'utf8');
+    const blocks = content.split('-------------------------------------------------');
+    for (const b of blocks) {
+      if (b.includes(email)) {
+        const match = b.match(/Password:\s*([^\r\n]+)/);
+        if (match) return match[1].trim();
+      }
+    }
+  } catch {}
+  return null;
+}
+
 async function loginAs(identifier) {
   const resolveRes = await axios.post(`${API_URL}/auth/resolve`, { identifier });
-  const { data } = await supabase.auth.signInWithPassword({
-    email: resolveRes.data.email,
+  const email = resolveRes.data.email;
+  let res = await supabase.auth.signInWithPassword({
+    email,
     password: 'password123'
   });
-  return data.session.access_token;
+  if (res.error) {
+    const provPwd = getProvisionedPassword(email);
+    if (provPwd) {
+      res = await supabase.auth.signInWithPassword({
+        email,
+        password: provPwd
+      });
+    }
+  }
+  if (res.error) throw res.error;
+  return res.data.session.access_token;
 }
 
 async function runLifecycle() {

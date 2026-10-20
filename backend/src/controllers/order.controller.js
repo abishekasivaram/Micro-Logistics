@@ -115,6 +115,14 @@ const createOrder = async (req, res) => {
                 qty: item.qty,
                 price: item.price
             });
+
+            // Synchronize inventory: decrement stock and update status
+            const { data: currentProd } = await supabase_1.supabase.from('products').select('stock').eq('id', pId).single();
+            if (currentProd) {
+                const newStock = Math.max(0, (currentProd.stock || 0) - item.qty);
+                const newStatus = (newStock > 10) ? 'In Stock' : (newStock > 0 ? 'Low Stock' : 'Out of Stock');
+                await supabase_1.supabase.from('products').update({ stock: newStock, status: newStatus }).eq('id', pId);
+            }
         }
         res.status(201).json({ success: true, data: { orderId: orderCode } });
     }

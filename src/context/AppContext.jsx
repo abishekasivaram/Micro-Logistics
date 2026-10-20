@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
 import { initialProducts } from '../data/initialProducts';
+import { 
+  demoVendors, demoProducts, demoCustomers, demoAgents, 
+  demoOrders, demoBatches, demoNotifications 
+} from '../data/demoData';
 
 const AppContext = createContext();
 
@@ -53,7 +57,15 @@ export const AppProvider = ({ children }) => {
 
     if (currentUser.isDemo) {
       setOfflineMode(true);
-      return; // Fully isolated read-only demo mode
+      // Hydrate with isolated demo dataset for instant demo inspection
+      setVendors(demoVendors);
+      setProducts(demoProducts);
+      setCustomers(demoCustomers);
+      setDeliveryAgents(demoAgents);
+      setDeliveryBatches(demoBatches);
+      setOrders(demoOrders);
+      setNotifications(demoNotifications);
+      return; // Fully isolated demo mode, no live DB calls
     }
 
     const loadData = async () => {
@@ -61,32 +73,32 @@ export const AppProvider = ({ children }) => {
       try {
         const role = currentUser.role;
         const promises = [
-          api.get('/products').then(res => { if (res.data.success) setProducts(res.data.data) }),
-          api.get('/vendors').then(res => { if (res.data.success) setVendors(res.data.data) }),
-          api.get('/notifications').then(res => { if (res.data.success) setNotifications(res.data.data) })
+          api.get('/products').then(res => { if (res.data?.success) setProducts(res.data.data) }),
+          api.get('/vendors').then(res => { if (res.data?.success) setVendors(res.data.data) }),
+          api.get('/notifications').then(res => { if (res.data?.success) setNotifications(res.data.data) })
         ];
 
         if (role === 'admin') {
           promises.push(
-            api.get('/orders').then(res => { if (res.data.success) setOrders(res.data.data) }),
-            api.get('/delivery/batches').then(res => { if (res.data.success) setDeliveryBatches(res.data.data) }),
-            api.get('/delivery/agents').then(res => { if (res.data.success) setDeliveryAgents(res.data.data) }),
-            api.get('/customers').then(res => { if (res.data.success) setCustomers(res.data.data) }),
-            api.get('/settings').then(res => { if (res.data.success) setAdminSettings(res.data.data) })
+            api.get('/orders').then(res => { if (res.data?.success) setOrders(res.data.data) }),
+            api.get('/delivery/batches').then(res => { if (res.data?.success) setDeliveryBatches(res.data.data) }),
+            api.get('/delivery/agents').then(res => { if (res.data?.success) setDeliveryAgents(res.data.data) }),
+            api.get('/customers').then(res => { if (res.data?.success) setCustomers(res.data.data) }),
+            api.get('/settings').then(res => { if (res.data?.success) setAdminSettings(res.data.data) })
           );
         } else if (role === 'vendor') {
           promises.push(
-            api.get('/orders').then(res => { if (res.data.success) setOrders(res.data.data) })
+            api.get('/orders').then(res => { if (res.data?.success) setOrders(res.data.data) })
           );
         } else if (role === 'customer') {
           promises.push(
-            api.get('/orders').then(res => { if (res.data.success) setOrders(res.data.data) })
+            api.get('/orders').then(res => { if (res.data?.success) setOrders(res.data.data) })
           );
         } else if (role === 'delivery_partner') {
           promises.push(
-            api.get('/orders').then(res => { if (res.data.success) setOrders(res.data.data) }),
-            api.get('/delivery/batches').then(res => { if (res.data.success) setDeliveryBatches(res.data.data) }),
-            api.get('/delivery/agents').then(res => { if (res.data.success) setDeliveryAgents(res.data.data) })
+            api.get('/orders').then(res => { if (res.data?.success) setOrders(res.data.data) }),
+            api.get('/delivery/batches').then(res => { if (res.data?.success) setDeliveryBatches(res.data.data) }),
+            api.get('/delivery/agents').then(res => { if (res.data?.success) setDeliveryAgents(res.data.data) })
           );
         }
 
@@ -213,11 +225,67 @@ export const AppProvider = ({ children }) => {
       itemsByVendor[vId].push(item);
     });
 
+    // In Demo / Offline Mode, simulate local order creation and inventory deduction
+    if (currentUser?.isDemo || offlineMode) {
+      const createdOrders = [];
+      for (const vId of Object.keys(itemsByVendor)) {
+        const vendorItems = itemsByVendor[vId];
+        const vendorObj = (vendors || []).find(s => s.id === vId || s.legacy_id === vId);
+        const subtotal = vendorItems.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
+        const ordId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+        const newOrder = {
+          id: ordId,
+          orderId: ordId,
+          orderCode: ordId,
+          uuid: ordId,
+          customerId: currentUser?.id || 'demo-cust',
+          customerName: currentUser?.name || 'Priya Rajan',
+          customerPhone: contactPhone || currentUser?.phone || '9876543210',
+          vendorId: vId,
+          vendorName: vendorObj?.shop_name || vendorObj?.name || 'Local Seller',
+          pickupLocation: vendorObj?.address || 'Vendor Hub',
+          deliveryLocation: deliveryAddress || currentUser?.address || 'Local Delivery Address',
+          deliveryDate,
+          deliveryTimeSlot,
+          status: 'PLACED',
+          orderStatus: 'PLACED',
+          aggregationStatus: 'Waiting for Aggregation',
+          deliveryStatus: 'Pending Assignment',
+          total: subtotal,
+          items: vendorItems.map(i => ({
+            productId: i.product.id,
+            name: i.product.name,
+            qty: i.quantity,
+            price: i.product.price
+          })),
+          createdAt: new Date().toISOString()
+        };
+        createdOrders.push(newOrder);
+
+        // Deduct inventory stock locally
+        vendorItems.forEach(i => {
+          setProducts(prev => prev.map(p => {
+            if (p.id === i.product.id || p.uuid === i.product.id) {
+              const newStock = Math.max(0, (p.stock || 0) - i.quantity);
+              const newStatus = (newStock > 10) ? 'In Stock' : (newStock > 0 ? 'Low Stock' : 'Out of Stock');
+              return { ...p, stock: newStock, status: newStatus };
+            }
+            return p;
+          }));
+        });
+      }
+
+      setOrders(prev => [...createdOrders, ...prev]);
+      clearCart();
+      addNotification(`Success! ${createdOrders.length} order(s) placed for delivery.`, 'order');
+      return createdOrders;
+    }
+
     try {
       const createdOrders = [];
       for (const vId of Object.keys(itemsByVendor)) {
         const vendorItems = itemsByVendor[vId];
-        const vendorObj = sellers.find(s => s.id === vId || s.legacy_id === vId);
+        const vendorObj = (vendors || []).find(s => s.id === vId || s.legacy_id === vId);
         const subtotal = vendorItems.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
         const payload = {
           vendorId: vId,
@@ -250,9 +318,13 @@ export const AppProvider = ({ children }) => {
       clearCart();
       addNotification(`Success! ${createdOrders.length} order(s) placed for delivery.`, 'order');
       
-      // Refresh orders
-      const ordRes = await api.get('/orders');
-      if (ordRes.data.success) setOrders(ordRes.data.data);
+      // Refresh orders and products to reflect stock changes
+      const [ordRes, prodRes] = await Promise.all([
+        api.get('/orders'),
+        api.get('/products')
+      ]);
+      if (ordRes.data?.success) setOrders(ordRes.data.data);
+      if (prodRes.data?.success) setProducts(prodRes.data.data);
       
       return createdOrders;
     } catch (err) {
@@ -263,9 +335,14 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateOrderStatus = async (orderId, status) => {
+    if (currentUser?.isDemo || offlineMode) {
+      setOrders(prev => prev.map(o => (o.id === orderId || o.orderId === orderId) ? { ...o, status, orderStatus: status } : o));
+      addNotification(`Order ${orderId} updated to ${status}.`, 'order');
+      return true;
+    }
     try {
       const res = await api.patch(`/orders/${orderId}/status`, { status });
-      if (res.data.success) {
+      if (res.data?.success) {
         setOrders(prev => prev.map(o => o.id === orderId || o.orderId === orderId ? res.data.data : o));
         addNotification(`Order ${orderId} updated successfully.`, 'order');
       }
@@ -291,7 +368,7 @@ export const AppProvider = ({ children }) => {
   const updateSellerStatus = async (sellerId, newStatus) => {
     try {
       const res = await api.put(`/vendors/${sellerId}`, { status: newStatus });
-      if (res.data.success) {
+      if (res.data?.success) {
         setVendors(prev => prev.map(v => (v.id === sellerId || v.legacy_id === sellerId) ? { ...v, status: newStatus } : v));
         addNotification(`Seller status updated to ${newStatus}.`, 'system');
       }
@@ -305,7 +382,7 @@ export const AppProvider = ({ children }) => {
   const updateCustomerStatus = async (customerId, newStatus) => {
     try {
       const res = await api.put(`/customers/${customerId}`, { status: newStatus });
-      if (res.data.success) {
+      if (res.data?.success) {
         setCustomers(prev => prev.map(c => (c.id === customerId || c.legacy_id === customerId) ? { ...c, status: newStatus } : c));
         addNotification(`Customer status updated to ${newStatus}.`, 'system');
       }
@@ -319,26 +396,48 @@ export const AppProvider = ({ children }) => {
   // --- Admin Delivery Batches & Agent Assignment ---
   // Step 1 of Workflow: Batch Created BEFORE Agent is assigned
   const createDeliveryBatch = async (orderIds, batchData = {}) => {
+    if (currentUser?.isDemo || offlineMode) {
+      const newBatchId = `B-${Math.floor(1000 + Math.random() * 9000)}`;
+      const newBatch = {
+        id: newBatchId,
+        batchId: newBatchId,
+        batchCode: newBatchId,
+        orderCount: orderIds.length,
+        orderIds,
+        estimatedDistance: 3.8,
+        estimatedTime: 30,
+        status: 'Pending Assignment',
+        aggregationStatus: 'Batch Created',
+        deliveryDate: new Date().toISOString().split('T')[0],
+        deliverySlot: '9:00 AM – 1:00 PM',
+        orders: (orders || []).filter(o => orderIds.includes(o.id) || orderIds.includes(o.orderId))
+      };
+      setDeliveryBatches(prev => [newBatch, ...prev]);
+      setOrders(prev => prev.map(o => orderIds.includes(o.id) || orderIds.includes(o.orderId) ? { ...o, batchId: newBatchId, aggregationStatus: 'Batch Created' } : o));
+      addNotification(`Delivery Batch ${newBatchId} created.`, 'aggregation');
+      return newBatch;
+    }
+
     try {
       const res = await api.post('/delivery/batches', { orderIds });
-      if (res.data.success) {
+      if (res.data?.success) {
         // Refresh batches to get the fully hydrated batch model with orders and seller relations
         const [batchRes, ordRes] = await Promise.all([
           api.get('/delivery/batches'),
           api.get('/orders')
         ]);
         
-        if (batchRes.data.success) {
+        if (batchRes.data?.success) {
           setDeliveryBatches(batchRes.data.data);
-        } else if (res.data.data) {
+        } else if (res.data?.data) {
           setDeliveryBatches(prev => [res.data.data, ...prev]);
         }
         
-        if (ordRes.data.success) setOrders(ordRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
         
-        const createdBatchCode = res.data.data?.batchId || res.data.data?.batch_code || 'New';
+        const createdBatchCode = res.data?.data?.batchId || res.data?.data?.batch_code || 'New';
         addNotification(`Delivery Batch ${createdBatchCode} created.`, 'aggregation');
-        return res.data.data;
+        return res.data?.data;
       }
     } catch (err) {
       console.error(err);
@@ -349,9 +448,21 @@ export const AppProvider = ({ children }) => {
 
   // Step 2 of Workflow: Assign Agent to existing Delivery Batch
   const assignAgentToBatch = async (batchId, agentId) => {
+    if (currentUser?.isDemo || offlineMode) {
+      const agentObj = (deliveryAgents || []).find(a => a.id === agentId || a.legacy_id === agentId);
+      const agentName = agentObj?.name || 'Assigned Agent';
+      setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, agentId, agentName, status: 'Assigned', aggregationStatus: 'Assigned' } : b));
+      const targetBatch = deliveryBatches.find(b => b.id === batchId || b.batchId === batchId);
+      if (targetBatch && targetBatch.orderIds) {
+        setOrders(prev => prev.map(o => targetBatch.orderIds.includes(o.id) || targetBatch.orderIds.includes(o.orderId) ? { ...o, assignedAgent: agentName, assignedAgentId: agentId, status: 'ASSIGNED', orderStatus: 'ASSIGNED', deliveryStatus: 'Assigned', aggregationStatus: 'Assigned' } : o));
+      }
+      addNotification(`Agent ${agentName} assigned to Batch ${batchId}.`, 'delivery');
+      return true;
+    }
+
     try {
       const res = await api.post(`/delivery/batches/${batchId}/assign`, { agentId });
-      if (res.data.success) {
+      if (res.data?.success) {
         setDeliveryBatches(prev => prev.map(b => b.id === batchId || b.batchId === batchId ? res.data.data.batch : b));
         
         // Refresh orders and agents
@@ -359,8 +470,8 @@ export const AppProvider = ({ children }) => {
           api.get('/orders'),
           api.get('/delivery/agents')
         ]);
-        if (ordRes.data.success) setOrders(ordRes.data.data);
-        if (agentRes.data.success) setDeliveryAgents(agentRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
+        if (agentRes.data?.success) setDeliveryAgents(agentRes.data.data);
         
         addNotification(`Agent assigned to Batch ${batchId}.`, 'delivery');
         return true;
@@ -373,9 +484,38 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateBatchStatus = async (batchId, newStatus) => {
+    if (currentUser?.isDemo || offlineMode) {
+      setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, status: newStatus } : b));
+      const targetBatch = deliveryBatches.find(b => b.id === batchId || b.batchId === batchId);
+      if (targetBatch && targetBatch.orderIds) {
+        let mappedOrderStatus = 'ASSIGNED';
+        let mappedDelivStatus = 'Assigned';
+        let mappedAggStatus = 'Assigned';
+        if (newStatus === 'Pickup in Progress') {
+          mappedDelivStatus = 'Pickup in Progress';
+        } else if (newStatus === 'Picked Up') {
+          mappedDelivStatus = 'Picked Up';
+        } else if (newStatus === 'Out for Delivery') {
+          mappedOrderStatus = 'OUT_FOR_DELIVERY';
+          mappedDelivStatus = 'Out for Delivery';
+        } else if (newStatus === 'Completed' || newStatus === 'Delivered') {
+          mappedOrderStatus = 'DELIVERED';
+          mappedDelivStatus = 'Delivered to Customer';
+          mappedAggStatus = 'Delivered';
+        }
+        setOrders(prev => prev.map(o => targetBatch.orderIds.includes(o.id) || targetBatch.orderIds.includes(o.orderId) ? {
+          ...o,
+          status: mappedOrderStatus,
+          orderStatus: mappedOrderStatus,
+          deliveryStatus: mappedDelivStatus,
+          aggregationStatus: mappedAggStatus
+        } : o));
+      }
+      addNotification(`Batch ${batchId} status updated to: ${newStatus}`, 'delivery');
+      return true;
+    }
+
     try {
-      // The backend expects specific enum values for batch status.
-      // E.g. 'PICKUP_IN_PROGRESS', 'OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED'
       let mappedStatus = newStatus;
       if (newStatus === 'Pickup in Progress') mappedStatus = 'PICKUP_IN_PROGRESS';
       if (newStatus === 'Picked Up') mappedStatus = 'PICKED_UP';
@@ -383,7 +523,7 @@ export const AppProvider = ({ children }) => {
       if (newStatus === 'Completed' || newStatus === 'Delivered') mappedStatus = 'COMPLETED';
 
       const res = await api.patch(`/delivery/batches/${batchId}/status`, { status: mappedStatus });
-      if (res.data.success) {
+      if (res.data?.success) {
         if (res.data.data) {
           setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? res.data.data : b));
         } else {
@@ -395,8 +535,8 @@ export const AppProvider = ({ children }) => {
           api.get('/orders'),
           api.get('/delivery/agents')
         ]);
-        if (ordRes.data.success) setOrders(ordRes.data.data);
-        if (agentRes.data.success) setDeliveryAgents(agentRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
+        if (agentRes.data?.success) setDeliveryAgents(agentRes.data.data);
         
         addNotification(`Batch ${batchId} status updated to: ${newStatus}`, 'delivery');
       }
@@ -527,54 +667,111 @@ export const AppProvider = ({ children }) => {
 
   // --- Products CRUD ---
   const addProduct = async (product) => {
-    try {
-      const payload = {
-        name: product.name,
-        category: product.category,
-        price: product.price,
-        stock: product.stock,
-        prepTime: product.prepTime || '5 mins',
-        vendorId: currentUser?.role === 'vendor' ? currentUser.id : product.vendorId
+    const payload = {
+      name: product.name,
+      category: product.category,
+      price: parseFloat(product.price),
+      stock: parseInt(product.stock) || 0,
+      prepTime: product.prepTime || '15 mins',
+      description: product.description || '',
+      image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
+      vendorId: currentUser?.role === 'vendor' ? currentUser.id : product.vendorId
+    };
+
+    if (currentUser?.isDemo || offlineMode) {
+      const newProd = {
+        ...payload,
+        id: `demo-p${Date.now()}`,
+        uuid: `demo-p${Date.now()}`,
+        status: (payload.stock > 10) ? 'In Stock' : (payload.stock > 0 ? 'Low Stock' : 'Out of Stock'),
+        vendorName: currentUser?.shop_name || currentUser?.shopName || currentUser?.name || 'Local Seller'
       };
-      
+      setProducts(prev => [newProd, ...prev]);
+      addNotification(`New product added: ${product.name}`, 'system');
+      return { success: true, data: newProd };
+    }
+
+    try {
       const res = await api.post('/products', payload);
-      if (res.data.success) {
+      if (res.data?.success) {
         // Refresh products list
         const pRes = await api.get('/products');
-        if (pRes.data.success) setProducts(pRes.data.data);
+        if (pRes.data?.success) setProducts(pRes.data.data);
         addNotification(`New product added: ${product.name}`, 'system');
+        return { success: true, data: res.data.data };
       }
+      return { success: false, message: res.data?.message || 'Failed to add product' };
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Failed to add product.";
       console.error(err);
-      addNotification("Failed to add product.", "error");
+      addNotification(msg, "error");
+      return { success: false, message: msg };
     }
   };
   
   const updateProduct = async (id, updatedFields) => {
+    // Optimistic UI update
+    setProducts(prev => prev.map(p => {
+      if (p.id === id || p.uuid === id) {
+        const updated = { ...p, ...updatedFields };
+        if (updated.stock !== undefined) {
+          const numStock = Number(updated.stock);
+          updated.stock = isNaN(numStock) ? 0 : numStock;
+          updated.status = (updated.stock > 10) ? 'In Stock' : (updated.stock > 0 ? 'Low Stock' : 'Out of Stock');
+        }
+        return updated;
+      }
+      return p;
+    }));
+
+    if (currentUser?.isDemo || offlineMode) {
+      addNotification(`Product updated successfully.`, 'system');
+      return { success: true };
+    }
+
     try {
       const res = await api.put(`/products/${id}`, updatedFields);
-      if (res.data.success) {
-        // Refresh products list to get calculated status based on stock
+      if (res.data?.success) {
+        // Refresh products list to ensure consistency with backend calculated fields
         const pRes = await api.get('/products');
-        if (pRes.data.success) setProducts(pRes.data.data);
+        if (pRes.data?.success) setProducts(pRes.data.data);
         addNotification(`Product updated successfully.`, 'system');
+        return { success: true, data: res.data.data };
       }
+      return { success: false, message: res.data?.message || 'Failed to update product' };
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Failed to update product.";
       console.error(err);
-      addNotification("Failed to update product.", "error");
+      addNotification(msg, "error");
+      // Revert optimistic update by refreshing from server
+      api.get('/products').then(res => { if (res.data?.success) setProducts(res.data.data); }).catch(() => {});
+      return { success: false, message: msg };
     }
   };
   
   const deleteProduct = async (id) => {
+    // Optimistic delete
+    setProducts(prev => prev.filter(p => p.id !== id && p.uuid !== id));
+
+    if (currentUser?.isDemo || offlineMode) {
+      addNotification(`Product deleted successfully.`, 'system');
+      return { success: true };
+    }
+
     try {
       const res = await api.delete(`/products/${id}`);
       if (res.data?.success) {
-        setProducts(prev => prev.filter(p => p.id !== id && p.uuid !== id));
         addNotification(`Product deleted successfully.`, 'system');
+        return { success: true };
       }
+      return { success: false, message: res.data?.message || 'Failed to delete product' };
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Failed to delete product.";
       console.error("Error deleting product:", err);
-      addNotification("Failed to delete product.", "error");
+      addNotification(msg, "error");
+      // Revert optimistic delete by refreshing from server
+      api.get('/products').then(res => { if (res.data?.success) setProducts(res.data.data); }).catch(() => {});
+      return { success: false, message: msg };
     }
   };
 
