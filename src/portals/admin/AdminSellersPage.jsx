@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import { getVendorLogo, handleVendorLogoError, getProductImage, handleProductImageError } from '../../utils/imageUtils';
 import './AdminSellersPage.css';
 
 const AdminSellersPage = () => {
@@ -163,17 +164,12 @@ const AdminSellersPage = () => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {v.logo ? (
-                          <img 
-                            src={v.logo} 
-                            alt={v.name} 
-                            style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #E2E8F0' }} 
-                          />
-                        ) : (
-                          <div className="avatar-squircle">
-                            {getInitials(v.name)}
-                          </div>
-                        )}
+                        <img 
+                          src={getVendorLogo(v)} 
+                          alt={v.name} 
+                          style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #E2E8F0' }} 
+                          onError={(e) => handleVendorLogoError(e, v.name, v.category)}
+                        />
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontWeight: 600, color: '#0F172A' }}>{v.name}</span>
                           <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Owner: {v.ownerName || 'Verified Merchant'}</span>
@@ -294,17 +290,12 @@ const AdminSellersPage = () => {
                 </div>
 
                 <div className="seller-identity-row">
-                  {selectedSeller.logo ? (
-                    <img 
-                      src={selectedSeller.logo} 
-                      alt={selectedSeller.name} 
-                      className="seller-avatar-large" 
-                    />
-                  ) : (
-                    <div className="seller-avatar-fallback">
-                      {getInitials(selectedSeller.name)}
-                    </div>
-                  )}
+                  <img 
+                    src={getVendorLogo(selectedSeller)} 
+                    alt={selectedSeller.name} 
+                    className="seller-avatar-large" 
+                    onError={(e) => handleVendorLogoError(e, selectedSeller.name, selectedSeller.category)}
+                  />
 
                   <div className="seller-title-block">
                     <h2 id="seller-inspect-title">{selectedSeller.name}</h2>
@@ -498,9 +489,10 @@ const AdminSellersPage = () => {
                           <div key={p.id} className="seller-product-item">
                             <div className="seller-product-left">
                               <img 
-                                src={p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'} 
+                                src={getProductImage(p)} 
                                 alt={p.name} 
                                 className="seller-product-img" 
+                                onError={(e) => handleProductImageError(e, p.category, p.name)}
                               />
                               <div className="seller-product-info">
                                 <span className="seller-product-name">{p.name}</span>

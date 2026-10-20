@@ -4,6 +4,7 @@ import { useAppContext } from '../../context/AppContext';
 import { Search, ShoppingBag, Truck, CheckCircle, Clock, Package, Navigation, Store, Eye, Heart, MapPin, Star, Apple, Milk, Coffee, Monitor } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import OrderDetailsModal from '../../components/common/OrderDetailsModal';
+import { getVendorLogo, handleVendorLogoError, getProductImage, handleProductImageError } from '../../utils/imageUtils';
 import './CustomerDashboard.css';
 
 const CustomerDashboard = () => {
@@ -88,7 +89,11 @@ const CustomerDashboard = () => {
         {vendors.slice(0, 3).map(vendor => (
           <div key={vendor.id} className="customer-seller-card">
             <div className="seller-card-header">
-              <img src={vendor.logo} alt={vendor.name} />
+              <img 
+                src={getVendorLogo(vendor)} 
+                alt={vendor.name} 
+                onError={(e) => handleVendorLogoError(e, vendor.name, vendor.category)}
+              />
               <div>
                 <h4>{vendor.name}</h4>
                 <span className="category">{vendor.category}</span>
@@ -135,7 +140,11 @@ const CustomerDashboard = () => {
                 <Heart size={16} />
               </div>
               <div className="product-img-box">
-                <img src={product.image} alt={product.name} />
+                <img 
+                  src={getProductImage(product)} 
+                  alt={product.name} 
+                  onError={(e) => handleProductImageError(e, product.category, product.name)}
+                />
               </div>
               <div className="product-info-box">
                 <h4>{product.name}</h4>

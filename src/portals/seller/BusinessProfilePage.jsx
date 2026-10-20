@@ -7,6 +7,7 @@ import {
   Zap, Award, ChevronRight, RefreshCw, Eye, ArrowUpRight,
   Shield, DollarSign, Calendar, Pencil, Lock, Unlock, X
 } from 'lucide-react';
+import { getVendorLogo, handleVendorLogoError } from '../../utils/imageUtils';
 import './BusinessProfilePage.css';
 
 const BusinessProfilePage = () => {
@@ -124,10 +125,10 @@ const BusinessProfilePage = () => {
           <div className="hero-store-identity">
             <div className="hero-avatar-wrapper">
               <img 
-                src={formData.logo} 
+                src={getVendorLogo({ logo: formData.logo, name: formData.businessName, category: formData.category })} 
                 alt={formData.businessName}
                 className="hero-store-avatar"
-                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200'; }}
+                onError={(e) => handleVendorLogoError(e, formData.businessName, formData.category)}
               />
               <span className={`hero-online-status-dot ${isOpenForOrders ? 'online' : 'paused'}`} />
             </div>
@@ -605,7 +606,11 @@ const BusinessProfilePage = () => {
                     readOnly={!isEditing}
                   />
                   <div className="asset-avatar-preview">
-                    <img src={formData.logo} alt="Logo" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'; }} />
+                    <img 
+                      src={getVendorLogo({ logo: formData.logo, name: formData.businessName, category: formData.category })} 
+                      alt="Logo" 
+                      onError={(e) => handleVendorLogoError(e, formData.businessName, formData.category)} 
+                    />
                   </div>
                 </div>
                 <span className="field-hint-text">Square 1:1 image (PNG or JPG). Recommended min 200x200px.</span>
@@ -673,9 +678,9 @@ const BusinessProfilePage = () => {
                   </div>
                   <div className="preview-widget-logo-chip">
                     <img 
-                      src={formData.logo} 
+                      src={getVendorLogo({ logo: formData.logo, name: formData.businessName, category: formData.category })} 
                       alt="Logo" 
-                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'; }} 
+                      onError={(e) => handleVendorLogoError(e, formData.businessName, formData.category)} 
                     />
                   </div>
                 </div>

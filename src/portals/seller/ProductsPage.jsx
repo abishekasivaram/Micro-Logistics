@@ -8,6 +8,7 @@ import {
   Package, LayoutGrid, List, AlertTriangle, ArrowUpDown, Sparkles,
   Apple, Milk, Coffee, Monitor, Heart, RotateCcw
 } from 'lucide-react';
+import { getProductImage, getCategoryFallbackImage, handleProductImageError } from '../../utils/imageUtils';
 import './ProductsPage.css';
 
 export const CUSTOMER_CATEGORIES = [
@@ -295,7 +296,7 @@ const ProductsPage = () => {
       stock: product.stock !== undefined ? String(product.stock) : '20',
       prepTime: product.prepTime || '15 mins',
       description: product.description || '',
-      image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
+      image: product.image || getCategoryFallbackImage(product.category),
       status: product.status || 'Active'
     });
     setShowDrawer(true);
@@ -325,7 +326,7 @@ const ProductsPage = () => {
       stock: stock,
       prepTime: productForm.prepTime || '15 mins',
       description: productForm.description || '',
-      image: productForm.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500',
+      image: productForm.image || getCategoryFallbackImage(productForm.category),
       status: productForm.status || 'Active'
     };
 
@@ -512,10 +513,10 @@ const ProductsPage = () => {
                         <td>
                           <div className="product-cell">
                             <img 
-                              src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'} 
+                              src={getProductImage(product)} 
                               alt={product.name} 
                               className="product-thumb"
-                              onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'; }}
+                              onError={(e) => handleProductImageError(e, product.category, product.name)}
                             />
                             <div>
                               <div className="product-name">{product.name}</div>
@@ -600,10 +601,10 @@ const ProductsPage = () => {
                   <div key={product.id} className="catalog-card">
                     <div className="catalog-card-image-wrap">
                       <img 
-                        src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'} 
+                        src={getProductImage(product)} 
                         alt={product.name} 
                         className="catalog-card-img"
-                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'; }}
+                        onError={(e) => handleProductImageError(e, product.category, product.name)}
                       />
                       <div className="catalog-card-status-overlay">
                         <span className={`stock-badge-pill ${stockClass}`}>
@@ -786,7 +787,7 @@ const ProductsPage = () => {
                             src={productForm.image} 
                             alt="Live Preview" 
                             className="preview-img"
-                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'; }}
+                            onError={(e) => handleProductImageError(e, productForm.category, productForm.name)}
                           />
                           <span className="preview-badge">Live Image Preview</span>
                         </div>
@@ -967,9 +968,10 @@ const ProductsPage = () => {
                   <div key={product.id} className="customer-prod-card">
                     <div style={{ position: 'relative' }}>
                       <img 
-                        src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'} 
+                        src={getProductImage(product)} 
                         alt={product.name} 
                         className="customer-prod-img" 
+                        onError={(e) => handleProductImageError(e, product.category, product.name)}
                       />
                       <span className="customer-category-tag">
                         {product.category}

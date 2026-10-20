@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Store, Sparkles, MapPin, Truck, Home } from 'lucide-react';
+import { getProductImage, handleProductImageError } from '../../utils/imageUtils';
 import './CartPage.css';
 
 const CartPage = () => {
@@ -86,7 +87,12 @@ const CartPage = () => {
                     const itemSubtotal = item.product.price * item.quantity;
                     return (
                       <div key={item.product.id} className="cart-item-row">
-                        <img src={item.product.image} alt={item.product.name} className="cart-item-img" />
+                        <img 
+                          src={getProductImage(item.product)} 
+                          alt={item.product.name} 
+                          className="cart-item-img" 
+                          onError={(e) => handleProductImageError(e, item.product?.category, item.product?.name)}
+                        />
                         
                         <div className="cart-item-details">
                           <h4>{item.product.name}</h4>

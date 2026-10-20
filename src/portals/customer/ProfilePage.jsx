@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { User, Mail, Phone, MapPin, Save, Lock, Camera, CheckCircle, Heart, Trash2, ShoppingCart } from 'lucide-react';
+import { getProductImage, handleProductImageError } from '../../utils/imageUtils';
 import './ProfilePage.css';
 import './CustomerProfilePage.css';
 
@@ -194,7 +195,7 @@ const ProfilePage = () => {
         <div className="profile-card avatar-card">
           <div className="avatar-preview-wrap">
             {formData.avatar ? (
-              <img src={formData.avatar} alt="Avatar" />
+              <img src={formData.avatar} alt="Avatar" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
               <User size={48} />
             )}
@@ -420,11 +421,9 @@ const ProfilePage = () => {
                     <div key={item.id || `wish-${idx}`} className="wishlist-mock-card">
                       <div className="wishlist-img-box">
                         <img 
-                          src={item.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'} 
+                          src={getProductImage(item)} 
                           alt={item.name || 'Wishlist item'}
-                          onError={(e) => {
-                            e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500';
-                          }}
+                          onError={(e) => handleProductImageError(e, item.category, item.name)}
                         />
                         <button 
                           type="button"

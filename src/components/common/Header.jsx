@@ -190,6 +190,7 @@ const Header = ({ onMenuClick }) => {
                   src={currentUser?.avatar || currentUser?.logo} 
                   alt="Avatar" 
                   className="avatar-image"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               ) : (
                 <span>{getInitials(userGreetingName)}</span>

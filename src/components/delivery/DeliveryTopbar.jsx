@@ -204,7 +204,12 @@ const DeliveryTopbar = ({ onOpenMobileMenu }) => {
             >
               <div className="user-avatar-circle">
                 {agentProfile?.avatar ? (
-                  <img src={agentProfile.avatar} alt={agentProfile.name} className="avatar-img" />
+                  <img 
+                    src={agentProfile.avatar} 
+                    alt={agentProfile.name} 
+                    className="avatar-img" 
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
                 ) : (
                   <span>{(agentProfile?.name || 'Da1').charAt(0)}</span>
                 )}

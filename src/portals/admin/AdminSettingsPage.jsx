@@ -149,7 +149,7 @@ const ProfileSection = ({ onChange = () => {} }) => {
           <div className="stg-avatar-wrap">
             <div className="stg-avatar-circle">
               {avatar
-                ? <img src={avatar} alt="avatar" className="stg-avatar-img" />
+                ? <img src={avatar} alt="avatar" className="stg-avatar-img" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 : <span className="stg-avatar-initials">SC</span>
               }
               <div className="stg-avatar-overlay" onClick={() => fileRef.current.click()}>

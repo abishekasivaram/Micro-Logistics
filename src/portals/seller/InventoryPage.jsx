@@ -7,6 +7,7 @@ import {
   Package, Boxes, TrendingUp, RefreshCw, Sparkles, DollarSign, 
   Edit2, Trash2, X, SlidersHorizontal, ArrowUpDown
 } from 'lucide-react';
+import { getProductImage, getCategoryFallbackImage, handleProductImageError } from '../../utils/imageUtils';
 import './InventoryPage.css';
 
 const CATEGORIES = [
@@ -122,7 +123,7 @@ const InventoryPage = () => {
       stock: product.stock !== undefined ? String(product.stock) : '0',
       prepTime: product.prepTime || '15 mins',
       description: product.description || '',
-      image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500'
+      image: product.image || getCategoryFallbackImage(product.category)
     });
     setFormError('');
     setIsFormModalOpen(true);
@@ -159,7 +160,7 @@ const InventoryPage = () => {
       stock: stock,
       prepTime: formData.prepTime || '15 mins',
       description: formData.description.trim(),
-      image: formData.image.trim() || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500',
+      image: formData.image.trim() || getCategoryFallbackImage(formData.category),
       vendorId: sellerId || currentUser?.id
     };
 
@@ -389,10 +390,10 @@ const InventoryPage = () => {
                     <td>
                       <div className="product-cell">
                         <img 
-                          src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'} 
+                          src={getProductImage(product)} 
                           alt={product.name} 
                           className="product-thumb" 
-                          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'; }}
+                          onError={(e) => handleProductImageError(e, product.category, product.name)}
                         />
                         <div>
                           <div className="product-name">{product.name}</div>

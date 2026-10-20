@@ -154,6 +154,7 @@ const AdminCustomersPage = () => {
                             src={c.avatar} 
                             alt={c.name} 
                             style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #E2E8F0' }} 
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
                           />
                         ) : (
                           <div className="avatar-squircle">
@@ -264,6 +265,7 @@ const AdminCustomersPage = () => {
                       src={selectedCustomer.avatar} 
                       alt={selectedCustomer.name} 
                       className="customer-avatar-large" 
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   ) : (
                     <div className="customer-avatar-fallback">

@@ -5,6 +5,7 @@ import {
   demoVendors, demoProducts, demoCustomers, demoAgents, 
   demoOrders, demoBatches, demoNotifications 
 } from '../data/demoData';
+import { getCategoryFallbackImage } from '../utils/imageUtils';
 
 const AppContext = createContext();
 
@@ -674,7 +675,7 @@ export const AppProvider = ({ children }) => {
       stock: parseInt(product.stock) || 0,
       prepTime: product.prepTime || '15 mins',
       description: product.description || '',
-      image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
+      image: product.image || getCategoryFallbackImage(product.category),
       vendorId: currentUser?.role === 'vendor' ? currentUser.id : product.vendorId
     };
 

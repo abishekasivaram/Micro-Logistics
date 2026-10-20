@@ -59,7 +59,11 @@ const DeliveryDashboard = () => {
             <div className="pilot-avatar-wrap">
               <div className="pilot-avatar-img">
                 {agentProfile?.avatar ? (
-                  <img src={agentProfile.avatar} alt={agentDisplayName} />
+                  <img 
+                    src={agentProfile.avatar} 
+                    alt={agentDisplayName} 
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
                 ) : (
                   <span>{agentDisplayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
                 )}

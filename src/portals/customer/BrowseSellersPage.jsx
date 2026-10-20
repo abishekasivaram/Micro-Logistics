@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Search, Store, MapPin, Clock, Star, Filter, Package } from 'lucide-react';
+import { getVendorLogo, handleVendorLogoError } from '../../utils/imageUtils';
 import './BrowseSellersPage.css';
 
 const CATEGORIES = [
@@ -115,7 +116,11 @@ const BrowseSellersPage = () => {
             return (
               <div key={seller.id} className="customer-seller-card">
                 <div className="seller-card-header">
-                  <img src={seller.logo} alt={seller.name} />
+                  <img 
+                    src={getVendorLogo(seller)} 
+                    alt={seller.name} 
+                    onError={(e) => handleVendorLogoError(e, seller.name, seller.category)}
+                  />
                   <div>
                     <h3>{seller.name}</h3>
                     <span className="category">{seller.category}</span>

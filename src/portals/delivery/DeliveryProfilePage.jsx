@@ -86,7 +86,12 @@ const DeliveryProfilePage = () => {
           {/* Avatar with Upload Simulation */}
           <div className="profile-avatar-wrapper">
             {agentProfile?.avatar ? (
-              <img src={agentProfile.avatar} alt={agentProfile.name} className="profile-avatar-img" />
+              <img 
+                src={agentProfile.avatar} 
+                alt={agentProfile.name} 
+                className="profile-avatar-img" 
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             ) : (
               <div className="profile-avatar-fallback">{(agentProfile?.name || 'Da1').charAt(0)}</div>
             )}

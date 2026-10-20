@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { deliverySlots } from '../../utils/deliveryConstants';
 import { Truck, Calendar, Clock, MapPin, Phone, ShieldCheck, CheckCircle, Info, ArrowLeft, ArrowRight, Store, Sparkles } from 'lucide-react';
+import { getProductImage, handleProductImageError } from '../../utils/imageUtils';
 import './CheckoutPage.css';
 
 const CheckoutPage = () => {
@@ -169,7 +170,11 @@ const CheckoutPage = () => {
               <div className="checkout-items-list">
                 {cart.map(item => (
                   <div key={item.product.id} className="checkout-item">
-                    <img src={item.product.image} alt={item.product.name} />
+                    <img 
+                      src={getProductImage(item.product)} 
+                      alt={item.product.name} 
+                      onError={(e) => handleProductImageError(e, item.product?.category, item.product?.name)}
+                    />
                     <div className="item-info">
                       <span className="item-name">{item.product.name}</span>
                       <span className="item-seller"><Store size={12} style={{display:'inline', marginRight: '4px'}}/>{item.product.vendorName}</span>
