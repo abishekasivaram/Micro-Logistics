@@ -2,7 +2,7 @@ import axios from 'axios';
 import { supabase } from './supabaseClient';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://micro-logistics.onrender.com/api/v1' : 'http://localhost:5000/api/v1'),
   headers: {
     'Content-Type': 'application/json',
   },

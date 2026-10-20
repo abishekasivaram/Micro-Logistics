@@ -69,15 +69,34 @@ const LoginPage = () => {
     try {
       let resolvedEmail = null;
 
+      const TEST_ID_MAP = {
+        'admin': 'admin@example.com',
+        'c1': 'priya_auth@example.com',
+        'priyarajan': 'priya_auth@example.com',
+        'c2': 'c2@example.com',
+        'c3': 'c3@example.com',
+        'c4': 'c4@example.com',
+        'v1': 'contact_auth@nammachennai.com',
+        'v2': 'v2@example.com',
+        'v3': 'v3@example.com',
+        'v4': 'v4@example.com',
+        'da1': 'agent1_auth@example.com',
+        'da2': 'da2@example.com',
+        'da3': 'da3@example.com',
+        'da4': 'da4@example.com'
+      };
+
       if (searchId.includes('@')) {
         resolvedEmail = searchId;
+      } else if (TEST_ID_MAP[lowerSearchId]) {
+        resolvedEmail = TEST_ID_MAP[lowerSearchId];
       } else {
         // Try backend /auth/resolve endpoint
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1500);
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         try {
-          const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+          const apiBase = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://micro-logistics.onrender.com/api/v1' : 'http://localhost:5000/api/v1');
           const resolveRes = await fetch(`${apiBase}/auth/resolve`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
