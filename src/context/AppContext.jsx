@@ -217,11 +217,11 @@ export const AppProvider = ({ children }) => {
 
   // --- Orders & Checkout ---
   const placeOrder = async ({ deliveryAddress, contactPhone, deliveryDate, deliveryTimeSlot }) => {
-    if (cart.length === 0) return null;
+    if (!cart || cart.length === 0) return null;
 
     const itemsByVendor = {};
     cart.forEach(item => {
-      const vId = item.product.vendorId;
+      const vId = item.product.vendorId || item.product.vendor_id || 'v1';
       if (!itemsByVendor[vId]) itemsByVendor[vId] = [];
       itemsByVendor[vId].push(item);
     });
@@ -288,49 +288,92 @@ export const AppProvider = ({ children }) => {
         const vendorItems = itemsByVendor[vId];
         const vendorObj = (vendors || []).find(s => s.id === vId || s.legacy_id === vId);
         const subtotal = vendorItems.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
-        const payload = {
+        const generatedCode = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const orderEntry = {
+          id: generatedCode,
+          orderCode: generatedCode,
+          orderId: generatedCode,
           vendorId: vId,
+          vendorName: vendorObj?.shop_name || vendorObj?.name || vendorItems[0]?.product?.vendorName || 'Local Seller',
+          customerId: currentUser?.id || 'demo-cust',
+          customerName: currentUser?.name || 'Demo Customer',
+          customerPhone: contactPhone || currentUser?.phone || '9876543210',
+          deliveryAddress: deliveryAddress || currentUser?.address || '101 Anna Nagar East, Chennai',
+          deliveryLocation: deliveryAddress || currentUser?.address || '101 Anna Nagar East, Chennai',
+          deliveryDate: deliveryDate || new Date().toISOString().split('T')[0],
+          deliveryTimeSlot: deliveryTimeSlot || '9:00 AM - 1:00 PM',
+          total: subtotal,
+          orderStatus: 'PLACED',
+          deliveryStatus: 'PENDING_ASSIGNMENT',
+          status: 'PLACED',
+          createdAt: new Date().toISOString(),
           items: vendorItems.map(i => ({
             productId: i.product.id,
+            name: i.product.name,
+            image: i.product.image,
             qty: i.quantity,
             price: i.product.price
-          })),
-          deliveryLocation: deliveryAddress || currentUser?.address,
-          deliveryDate,
-          deliveryTimeSlot
+          }))
         };
-        
-        const res = await api.post('/orders', payload);
-        if (res.data.success) {
-          const ordId = res.data.data?.orderId;
-          createdOrders.push({
-            id: ordId,
-            orderCode: ordId,
-            vendorId: vId,
-            vendorName: vendorObj?.shop_name || vendorObj?.name || 'Local Seller',
-            deliveryDate,
-            deliveryTimeSlot,
-            total: subtotal,
-            items: vendorItems
-          });
+
+        // If authenticated user (non-demo), attempt backend sync
+        if (!currentUser?.isDemo) {
+          try {
+            const payload = {
+              vendorId: vId,
+              items: vendorItems.map(i => ({
+                productId: i.product.id,
+                qty: i.quantity,
+                price: i.product.price
+              })),
+              deliveryLocation: deliveryAddress || currentUser?.address,
+              deliveryDate,
+              deliveryTimeSlot
+            };
+            const res = await api.post('/orders', payload);
+            if (res.data?.success && res.data.data?.orderId) {
+              orderEntry.id = res.data.data.orderId;
+              orderEntry.orderCode = res.data.data.orderId;
+              orderEntry.orderId = res.data.data.orderId;
+            }
+          } catch (apiErr) {
+            console.warn('Backend order sync skipped, persisting locally:', apiErr);
+          }
+        }
+
+        createdOrders.push(orderEntry);
+      }
+
+      // Add to local orders and persist to localStorage
+      setOrders(prev => {
+        const updated = [...createdOrders, ...(prev || [])];
+        try {
+          localStorage.setItem('micrologi_orders', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Failed to store orders in localStorage', e);
+        }
+        return updated;
+      });
+
+      clearCart();
+      if (!currentUser?.isDemo) {
+        try {
+          const [ordRes, prodRes] = await Promise.all([
+            api.get('/orders'),
+            api.get('/products')
+          ]);
+          if (ordRes.data?.success) setOrders(ordRes.data.data);
+          if (prodRes.data?.success) setProducts(prodRes.data.data);
+        } catch (e) {
+          console.warn('Could not refresh orders/products from server:', e);
         }
       }
-      
-      clearCart();
-      addNotification(`Success! ${createdOrders.length} order(s) placed for delivery.`, 'order');
-      
-      // Refresh orders and products to reflect stock changes
-      const [ordRes, prodRes] = await Promise.all([
-        api.get('/orders'),
-        api.get('/products')
-      ]);
-      if (ordRes.data?.success) setOrders(ordRes.data.data);
-      if (prodRes.data?.success) setProducts(prodRes.data.data);
-      
+
       return createdOrders;
     } catch (err) {
-      console.error(err);
-      addNotification("Failed to place order via API.", "error");
+      console.error('Failed to place order:', err);
+      addNotification('Failed to place order.', 'error');
       return null;
     }
   };

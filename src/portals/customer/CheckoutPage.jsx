@@ -42,8 +42,9 @@ const CheckoutPage = () => {
         deliveryTimeSlot: selectedTimeSlot
       });
       setIsSubmitting(false);
-      if (created && Array.isArray(created) && created.length > 0) {
-        setPlacedOrders(created);
+      const ordersList = Array.isArray(created) ? created : created ? [created] : null;
+      if (ordersList && ordersList.length > 0) {
+        setPlacedOrders(ordersList);
       }
     } catch (err) {
       console.error('Error placing order:', err);
