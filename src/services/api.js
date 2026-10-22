@@ -8,11 +8,26 @@ const api = axios.create({
   },
 });
 
-// Interceptor to attach Supabase token
+// Interceptor to attach Supabase token and user identity
 api.interceptors.request.use(async (config) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    config.headers.Authorization = `Bearer ${session.access_token}`;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
+
+    const savedUserStr = localStorage.getItem('micrologi_currentUser');
+    if (savedUserStr) {
+      const savedUser = JSON.parse(savedUserStr);
+      if (savedUser?.id) {
+        config.headers['x-user-id'] = savedUser.id;
+      }
+      if (savedUser?.role) {
+        config.headers['x-user-role'] = savedUser.role;
+      }
+    }
+  } catch (e) {
+    // Graceful fallback
   }
   return config;
 }, (error) => {

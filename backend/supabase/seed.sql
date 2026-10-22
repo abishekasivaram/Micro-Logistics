@@ -34,10 +34,19 @@ INSERT INTO delivery_agents (id, legacy_id, current_area, capacity, current_orde
   ('33333333-3333-3333-3333-333333333333', 'da1', 'Adyar / Mylapore', 5, 3, 'TVS XL 100', 4.9)
 ON CONFLICT (id) DO NOTHING;
 
--- 5. Products
+-- 5. Products (Mapped to respective stores: Dairy, Groceries, Fruits & Veg, General)
 INSERT INTO products (id, legacy_id, vendor_id, name, category, price, stock, prep_time, status) VALUES
-  ('55555555-5555-5555-5555-555555555551', 'p1', '22222222-2222-2222-2222-222222222222', 'Aavin Green Milk 500ml', 'Dairy', 22.0, 150, '5 mins', 'In Stock'),
-  ('55555555-5555-5555-5555-555555555552', 'p2', '22222222-2222-2222-2222-222222222222', 'Modern White Bread 400g', 'Bakery', 40.0, 25, '5 mins', 'In Stock')
+  ('55555555-5555-5555-5555-555555555551', 'p1', '22222222-2222-2222-2222-222222222222', 'Aavin Green Milk 500ml', 'Dairy', 22.0, 145, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555553', 'p3', '22222222-2222-2222-2222-222222222222', 'Amul Fresh Malai Paneer 200g', 'Dairy', 85.0, 45, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555552', 'p2', '22222222-2222-2222-2222-222222222222', 'Modern White Bread 400g', 'Bakery', 40.0, 25, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555554', 'p4', '22222222-2222-2222-2222-222222222222', 'India Gate Basmati Rice 1kg', 'Grocery', 135.0, 60, '10 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555555', 'p5', '22222222-2222-2222-2222-222222222222', 'Tata Salt Vacuum Evaporated 1kg', 'Grocery', 28.0, 120, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555557', 'p7', '22222222-2222-2222-2222-222222222222', 'Farm Fresh Red Tomatoes 1kg', 'Fruits & Veg', 38.0, 80, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555558', 'p8', '22222222-2222-2222-2222-222222222222', 'Fresh Shimla Apples (4 pcs / 500g)', 'Fruits & Veg', 120.0, 50, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555559', 'p9', '22222222-2222-2222-2222-222222222222', 'Aashirvaad Shudh Chakki Atta 1kg', 'Grocery', 55.0, 70, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555560', 'p10', '22222222-2222-2222-2222-222222222222', 'Fortune Sunlite Sunflower Oil 1L', 'Grocery', 145.0, 40, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555556', 'p6', '22222222-2222-2222-2222-222222222222', 'Dettol Antiseptic Liquid 250ml', 'Pharmacy', 145.0, 35, '5 mins', 'In Stock'),
+  ('55555555-5555-5555-5555-555555555561', 'p11', '22222222-2222-2222-2222-222222222222', 'Wipro Garnet 9W Cool Day LED Bulb', 'General', 110.0, 30, '5 mins', 'In Stock')
 ON CONFLICT (id) DO NOTHING;
 
 -- 6. Orders

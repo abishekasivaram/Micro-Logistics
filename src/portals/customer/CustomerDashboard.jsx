@@ -8,7 +8,7 @@ import { getVendorLogo, handleVendorLogoError, getProductImage, handleProductIma
 import './CustomerDashboard.css';
 
 const CustomerDashboard = () => {
-  const { orders, vendors, products, currentUser } = useAppContext();
+  const { orders, vendors, products, currentUser, addToCart } = useAppContext();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -16,13 +16,12 @@ const CustomerDashboard = () => {
   const customerId = currentUser?.id || null;
   const customerOrders = orders.filter(o => o.customerId === customerId || o.customerName === currentUser?.name);
   
-  // Dummy categories array
+  // Real active categories matching the vendor stores
   const categories = [
     { name: 'Grocery', icon: <Package size={24} /> },
     { name: 'Fruits & Veg', icon: <Apple size={24} /> },
     { name: 'Dairy', icon: <Milk size={24} /> },
-    { name: 'Bakery', icon: <Coffee size={24} /> },
-    { name: 'Electronics', icon: <Monitor size={24} /> }
+    { name: 'Bakery', icon: <Coffee size={24} /> }
   ];
 
   return (
@@ -86,7 +85,7 @@ const CustomerDashboard = () => {
         </button>
       </div>
       <div className="customer-sellers-grid">
-        {vendors.slice(0, 3).map(vendor => (
+        {vendors.map(vendor => (
           <div key={vendor.id} className="customer-seller-card">
             <div className="seller-card-header">
               <img 
@@ -102,7 +101,7 @@ const CustomerDashboard = () => {
             <div className="seller-card-stats">
               <div className="stat-item">
                 <Star size={14} color="#f59e0b" fill="#f59e0b" />
-                <span>{vendor.rating}</span>
+                <span>{vendor.rating || 4.8}</span>
               </div>
               <div className="stat-item">
                 <MapPin size={14} />
@@ -110,11 +109,11 @@ const CustomerDashboard = () => {
               </div>
               <div className="stat-item">
                 <Truck size={14} />
-                <span>{vendor.prepTime || '30-45 min'}</span>
+                <span>{vendor.prepTime || '15-25 min'}</span>
               </div>
             </div>
             <button className="btn btn-primary w-full" onClick={() => navigate('/products', { state: { vendorId: vendor.id } })}>
-              View Store
+              View Store Products
             </button>
           </div>
         ))}
@@ -122,7 +121,7 @@ const CustomerDashboard = () => {
 
       {/* Popular Products Near You */}
       <div className="section-title-row">
-        <h3>Popular Near You</h3>
+        <h3>Store Products Near You</h3>
         <button 
           className="btn-link" 
           style={{ color: '#4f46e5', fontWeight: '600' }} 
@@ -132,8 +131,8 @@ const CustomerDashboard = () => {
         </button>
       </div>
       <div className="customer-product-grid">
-        {products.slice(0, 4).map((product, idx) => {
-          const seller = vendors.find(v => v.id === product.vendorId) || { name: 'Local Store' };
+        {products.map((product, idx) => {
+          const seller = vendors.find(v => v.id === product.vendorId || v.legacy_id === product.vendorId) || { name: product.vendorName || 'Local Store' };
           return (
             <div key={product.id || idx} className="customer-product-card">
               <div className="wishlist-btn-overlay">
@@ -150,11 +149,15 @@ const CustomerDashboard = () => {
                 <h4>{product.name}</h4>
                 <div className="product-seller-text">
                   <Store size={14} />
-                  <span>{seller.name} • {seller.distance || (((seller.id?.toString().charCodeAt(0) || 7) * 3 % 25) / 10 + 1.2).toFixed(1)} km</span>
+                  <span>{seller.name || product.vendorName || 'Local Store'} • {seller.distance || (((seller.id?.toString().charCodeAt(0) || 7) * 3 % 25) / 10 + 1.2).toFixed(1)} km</span>
                 </div>
                 <div className="product-price-row">
-                  <span className="price">₹{product.price.toFixed(2)}</span>
-                  <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={() => navigate('/products')}>
+                  <span className="price">₹{Number(product.price || 0).toFixed(2)}</span>
+                  <button 
+                    className="btn btn-outline" 
+                    style={{ padding: '6px 14px', fontSize: '13px', fontWeight: '600' }} 
+                    onClick={() => addToCart(product, 1)}
+                  >
                     Add
                   </button>
                 </div>

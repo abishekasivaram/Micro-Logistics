@@ -24,16 +24,23 @@ const getStorageItem = (key, defaultValue) => {
 
 export const AppProvider = ({ children }) => {
   const [orders, setOrders] = useState(() => getStorageItem('orders', []));
-  const [vendors, setVendors] = useState(() => getStorageItem('vendors', []));
+  const [vendors, setVendors] = useState(() => {
+    const saved = getStorageItem('vendors', []);
+    return (saved || []).filter(v => v.id !== 'f2eca577-884b-4907-8d7d-0827d5f49ebb');
+  });
   const [customers, setCustomers] = useState(() => getStorageItem('customers', []));
   const [deliveryAgents, setDeliveryAgents] = useState(() => getStorageItem('deliveryAgents', []));
   const [deliveryBatches, setDeliveryBatches] = useState(() => getStorageItem('deliveryBatches', []));
   const [products, setProducts] = useState(() => {
     const saved = getStorageItem('products', null);
-    if (!saved || !Array.isArray(saved) || saved.length < 50) {
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
       return initialProducts;
     }
-    return saved;
+    const sanitized = saved.filter(p => 
+      p.vendorId !== 'f2eca577-884b-4907-8d7d-0827d5f49ebb' && 
+      p.vendor_id !== 'f2eca577-884b-4907-8d7d-0827d5f49ebb'
+    );
+    return sanitized.length > 0 ? sanitized : initialProducts;
   });
   const [notifications, setNotifications] = useState(() => getStorageItem('notifications', []));
   const [cart, setCart] = useState(() => getStorageItem('cart', []));

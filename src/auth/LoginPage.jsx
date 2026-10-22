@@ -117,6 +117,10 @@ const LoginPage = () => {
       }
 
       if (resolvedEmail) {
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {}
+
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: resolvedEmail,
           password

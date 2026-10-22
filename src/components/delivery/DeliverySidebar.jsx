@@ -6,6 +6,7 @@ import {
   Boxes, ShieldCheck, Check
 } from 'lucide-react';
 import { useDelivery } from '../../context/DeliveryContext';
+import { supabase } from '../../services/supabaseClient';
 import ConfirmationModal from '../common/ConfirmationModal';
 import './DeliverySidebar.css';
 
@@ -21,7 +22,12 @@ const DeliverySidebar = ({ isCollapsed, toggleCollapse, isOpenMobile, setIsOpenM
     if (setIsOpenMobile) setIsOpenMobile(false);
   };
 
-  const handleConfirmLogout = () => {
+  const handleConfirmLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error(e);
+    }
     setShowLogoutModal(false);
     navigate('/login');
   };

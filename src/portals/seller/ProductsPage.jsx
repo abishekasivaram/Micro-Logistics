@@ -16,9 +16,7 @@ export const CUSTOMER_CATEGORIES = [
   { id: 'Grocery', name: 'Grocery', icon: Package },
   { id: 'Fruits & Veg', name: 'Fruits & Veg', icon: Apple },
   { id: 'Dairy', name: 'Dairy', icon: Milk },
-  { id: 'Bakery', name: 'Bakery', icon: Coffee },
-  { id: 'Electronics', name: 'Electronics', icon: Monitor },
-  { id: 'Pharmacy', name: 'Pharmacy', icon: Heart }
+  { id: 'Bakery', name: 'Bakery', icon: Coffee }
 ];
 
 export const matchesCategoryFilter = (productCategory, filterCategory) => {
@@ -93,7 +91,7 @@ export const matchesCategoryFilter = (productCategory, filterCategory) => {
     );
   }
 
-  if (filter === 'pharmacy' || filter === 'healthcare') {
+  if (filter === 'pharmacy' || filter === 'healthcare' || filter === 'medicals' || filter === 'medical') {
     return (
       prod.includes('pharm') ||
       prod.includes('health') ||
@@ -211,18 +209,26 @@ const ProductsPage = () => {
   const sellerLegacyId = currentUser?.legacy_id || null;
 
   // Filter products scoped to seller if in seller mode
-  const scopedProducts = products.filter(p => {
+  const baseScopedProducts = products.filter(p => {
     if (isCustomer) {
       if (vendorFilter && vendorFilter !== 'all') {
-        return p.vendorId === vendorFilter || p.vendor?.id === vendorFilter;
+        return p.vendorId === vendorFilter || 
+               p.vendor?.id === vendorFilter || 
+               p.vendor_id === vendorFilter || 
+               p.vendor?.legacy_id === vendorFilter || 
+               p.vendorName === vendorFilter;
       }
       return true;
     }
     if (currentUser?.role === 'admin') return true;
-    if (!sellerId && !sellerLegacyId) return false;
+    if (!sellerId && !sellerLegacyId) return true;
     return (sellerId && (p.vendorId === sellerId || p.vendor_id === sellerId)) ||
            (sellerLegacyId && (p.vendorId === sellerLegacyId || p.vendor_id === sellerLegacyId));
   });
+
+  const scopedProducts = (baseScopedProducts.length > 0 || isCustomer || currentUser?.role === 'admin')
+    ? baseScopedProducts
+    : products;
 
   // Filtered list
   const filteredProducts = scopedProducts.filter(p => {

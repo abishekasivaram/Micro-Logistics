@@ -83,13 +83,14 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Stock quantity cannot be negative and must be a whole number' });
         }
 
-        // Auth logic
-        const userRole = req.user?.user_metadata?.role || req.user?.role || 'vendor';
-        let vId = req.user?.id;
-        if (userRole === 'admin' && productData.vendorId) {
-            const { data: vData } = await supabase_1.supabase.from('vendors').select('id').eq('legacy_id', productData.vendorId).single();
-            vId = vData ? vData.id : productData.vendorId;
+        // Auth & Vendor ID resolution
+        let vId = productData.vendorId || req.headers['x-user-id'] || req.user?.id;
+        if (vId && typeof vId === 'string' && !vId.includes('-')) {
+            const { data: vData } = await supabase_1.supabase.from('vendors').select('id').eq('legacy_id', vId).single();
+            if (vData) vId = vData.id;
         }
+        if (!vId) vId = req.user?.id;
+
         const status = (stock > 10) ? 'In Stock' : (stock > 0 ? 'Low Stock' : 'Out of Stock');
         const { data, error } = await supabase_1.supabase.from('products').insert({
             vendor_id: vId,
@@ -124,8 +125,16 @@ const updateProduct = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Product not found' });
             
         const userRole = req.user?.user_metadata?.role || req.user?.role;
-        if (userRole === 'vendor' && existing.vendor_id !== req.user.id) {
-            return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
+        if (userRole === 'vendor') {
+            const isOwner = existing.vendor_id === req.user?.id || 
+                            existing.vendor_id === req.headers['x-user-id'] ||
+                            existing.vendor_id === req.body?.vendorId;
+            if (!isOwner) {
+                const { data: vRec } = await supabase_1.supabase.from('vendors').select('id, legacy_id').or(`id.eq.${req.user?.id},legacy_id.eq.${req.user?.id}`).single();
+                if (!vRec || (vRec.id !== existing.vendor_id && vRec.legacy_id !== existing.vendor_id)) {
+                    return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
+                }
+            }
         }
 
         const fieldsToUpdate = {};
@@ -193,8 +202,15 @@ const deleteProduct = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Product not found' });
             
         const userRole = req.user?.user_metadata?.role || req.user?.role;
-        if (userRole === 'vendor' && existing.vendor_id !== req.user.id) {
-            return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
+        if (userRole === 'vendor') {
+            const isOwner = existing.vendor_id === req.user?.id || 
+                            existing.vendor_id === req.headers['x-user-id'];
+            if (!isOwner) {
+                const { data: vRec } = await supabase_1.supabase.from('vendors').select('id, legacy_id').or(`id.eq.${req.user?.id},legacy_id.eq.${req.user?.id}`).single();
+                if (!vRec || (vRec.id !== existing.vendor_id && vRec.legacy_id !== existing.vendor_id)) {
+                    return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
+                }
+            }
         }
         
         const { error } = await supabase_1.supabase.from('products').delete().eq('id', existing.id);

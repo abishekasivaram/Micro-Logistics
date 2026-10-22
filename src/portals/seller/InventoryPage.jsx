@@ -65,12 +65,16 @@ const InventoryPage = () => {
   const sellerId = currentVendor?.id || (isVendor ? currentUser.id : null);
   const sellerLegacyId = currentVendor?.legacy_id || (currentUser?.legacy_id || null);
 
-  const scopedProducts = products.filter(p => {
+  const baseScopedProducts = products.filter(p => {
     if (currentUser?.role === 'admin') return true;
-    if (!sellerId && !sellerLegacyId) return false;
+    if (!sellerId && !sellerLegacyId) return true;
     return (sellerId && (p.vendorId === sellerId || p.vendor_id === sellerId)) ||
            (sellerLegacyId && (p.vendorId === sellerLegacyId || p.vendor_id === sellerLegacyId));
   });
+
+  const scopedProducts = (baseScopedProducts.length > 0 || currentUser?.role === 'admin')
+    ? baseScopedProducts
+    : products;
 
   const totalProducts = scopedProducts.length;
   const lowStockProducts = scopedProducts.filter(p => p.stock > 0 && p.stock <= lowStockThreshold).length;
