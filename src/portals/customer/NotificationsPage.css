@@ -93,7 +93,8 @@
 .notif-icon-circle.system { background: var(--bg); color: var(--text); }
 .notif-icon-circle.order { background: var(--success-soft); color: var(--success); }
 .notif-icon-circle.delivery { background: var(--info-soft); color: var(--info); }
-.notif-icon-circle.alert { background: var(--warning-soft); color: var(--warning); }
+.notif-icon-circle.alert { background: #eff6ff; color: #2563eb; }
+.notif-icon-circle.deal { background: #fef3c7; color: #d97706; }
 
 .notif-content {
   flex: 1;

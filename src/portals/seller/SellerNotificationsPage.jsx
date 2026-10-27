@@ -41,9 +41,18 @@ const SellerNotificationsPage = () => {
   // Enhanced default feed if empty
   const defaultSellerNotifications = useMemo(() => [
     {
+      id: 'sn-0',
+      title: 'Low Stock Alert: Aashirvaad Atta',
+      message: 'You have 2 units of Aashirvaad Atta left in inventory. Restock soon to avoid fulfillment delays.',
+      type: 'alert',
+      date: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+      isRead: false,
+      priority: 'warning'
+    },
+    {
       id: 'sn-1',
-      title: 'New Customer Order #ORD-6158',
-      message: 'priyarajan placed an order for 2x Aavin Green Milk 500ml (₹44.00). Packing SLA target is 15 minutes.',
+      title: 'New Customer Order #ORD-1092',
+      message: 'Order ORD-1092 was just placed by Rahul (2x Items, ₹340.00). Packing SLA target is 15 minutes.',
       type: 'order',
       date: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
       isRead: false,
@@ -60,12 +69,12 @@ const SellerNotificationsPage = () => {
     },
     {
       id: 'sn-3',
-      title: 'Low Stock Threshold Warning',
-      message: 'SKU "Organic Whole Wheat Atta 5kg" has reached 4 remaining units (Reorder threshold: 10 units).',
-      type: 'alert',
-      date: new Date(Date.now() - 1000 * 60 * 65).toISOString(),
+      title: 'New Customer Order #ORD-6158',
+      message: 'Priya Rajan placed an order for 2x Aavin Green Milk 500ml (₹44.00). Packing SLA target is 15 minutes.',
+      type: 'order',
+      date: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
       isRead: true,
-      priority: 'warning'
+      priority: 'normal'
     },
     {
       id: 'sn-4',
@@ -79,7 +88,7 @@ const SellerNotificationsPage = () => {
     {
       id: 'sn-5',
       title: 'Store Schedule Synchronized',
-      message: 'Operating hours updated to 08:00 AM - 10:00 PM with 4.5 km delivery radius across RS Puram hub.',
+      message: 'Operating hours updated to 08:00 AM - 10:00 PM with 4.5 km delivery radius across your hub.',
       type: 'system',
       date: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
       isRead: true,

@@ -19,7 +19,57 @@ const Header = ({ onMenuClick }) => {
   const notifRef = useRef(null);
   const profileRef = useRef(null);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const getNotificationsPath = () => {
+    if (currentUser?.role === 'vendor') return '/seller/notifications';
+    if (currentUser?.role === 'customer') return '/notifications';
+    if (currentUser?.role === 'delivery_partner') return '/delivery/notifications';
+    return '/admin/notifications';
+  };
+
+  const getProfilePath = () => {
+    if (currentUser?.role === 'vendor') return '/seller/business-profile';
+    if (currentUser?.role === 'delivery_partner') return '/delivery/profile';
+    return '/profile';
+  };
+
+  const getSettingsPath = () => {
+    if (currentUser?.role === 'vendor') return '/settings';
+    if (currentUser?.role === 'customer') return '/profile';
+    if (currentUser?.role === 'delivery_partner') return '/delivery/profile';
+    return '/admin/settings';
+  };
+
+  // Role-filtered notifications for header dropdown
+  const roleFilteredNotifications = React.useMemo(() => {
+    const role = currentUser?.role || 'admin';
+    if (role === 'customer') {
+      const filtered = (notifications || []).filter(n => {
+        const msg = (n.message || '').toLowerCase();
+        return !msg.includes('units left') && !msg.includes('units of') && !msg.includes('placed by') && !msg.includes('reorder threshold');
+      });
+      if (filtered.length > 0) return filtered;
+      return [
+        { id: 'hn-c1', message: 'Order #ORD-1092 from Amudham Daily has been confirmed.', date: new Date(Date.now() - 1000 * 60 * 15).toISOString(), isRead: false },
+        { id: 'hn-c2', message: 'Agent DA014 is on the way with your delivery. ETA: 18 mins.', date: new Date(Date.now() - 1000 * 60 * 45).toISOString(), isRead: false },
+        { id: 'hn-c3', message: 'Smart Aggregation saved you ₹25 on delivery fees!', date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), isRead: true }
+      ];
+    }
+    if (role === 'vendor') {
+      const filtered = (notifications || []).filter(n => {
+        const msg = (n.message || '').toLowerCase();
+        return msg.includes('order') || msg.includes('stock') || msg.includes('payout') || msg.includes('batch');
+      });
+      if (filtered.length > 0) return filtered;
+      return [
+        { id: 'hn-v1', message: 'Low Stock Alert: Aashirvaad Atta is down to 2 units.', date: new Date(Date.now() - 1000 * 60 * 5).toISOString(), isRead: false },
+        { id: 'hn-v2', message: 'New Customer Order #ORD-1092 was placed by Rahul (₹340.00).', date: new Date(Date.now() - 1000 * 60 * 25).toISOString(), isRead: false },
+        { id: 'hn-v3', message: 'Batch #B-8841 assigned to driver Rajesh Kumar for pickup.', date: new Date(Date.now() - 1000 * 60 * 60).toISOString(), isRead: true }
+      ];
+    }
+    return notifications;
+  }, [notifications, currentUser?.role]);
+
+  const unreadCount = roleFilteredNotifications.filter(n => !n.isRead).length;
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   useEffect(() => {
@@ -143,13 +193,13 @@ const Header = ({ onMenuClick }) => {
               </div>
 
               <div className="notif-scroll-list">
-                {notifications.length === 0 ? (
+                {roleFilteredNotifications.length === 0 ? (
                   <div className="notif-empty-state">
                     <Check size={24} className="empty-check-icon" />
                     <p>All caught up! No new notifications.</p>
                   </div>
                 ) : (
-                  notifications.slice(0, 5).map(n => (
+                  roleFilteredNotifications.slice(0, 5).map(n => (
                     <div 
                       key={n.id} 
                       className={`notif-item-row ${!n.isRead ? 'is-unread' : ''}`}
@@ -168,7 +218,7 @@ const Header = ({ onMenuClick }) => {
               </div>
 
               <div className="command-dropdown-footer">
-                <Link to="/admin/notifications" onClick={() => setShowNotifMenu(false)} className="view-all-link">
+                <Link to={getNotificationsPath()} onClick={() => setShowNotifMenu(false)} className="view-all-link">
                   View Notification Center <ExternalLink size={12} />
                 </Link>
               </div>
@@ -217,7 +267,7 @@ const Header = ({ onMenuClick }) => {
                   className="profile-menu-item"
                   onClick={() => {
                     setShowProfileMenu(false);
-                    navigate(currentUser?.role === 'vendor' ? '/seller/business-profile' : '/profile');
+                    navigate(getProfilePath());
                   }}
                 >
                   <User size={16} strokeWidth={1.75} />
@@ -227,7 +277,7 @@ const Header = ({ onMenuClick }) => {
                   className="profile-menu-item"
                   onClick={() => {
                     setShowProfileMenu(false);
-                    navigate(currentUser?.role === 'vendor' ? '/settings' : '/admin/settings');
+                    navigate(getSettingsPath());
                   }}
                 >
                   <Settings size={16} strokeWidth={1.75} />

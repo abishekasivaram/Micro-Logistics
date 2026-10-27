@@ -1,34 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Bell, Truck, Package, Info, AlertTriangle, X } from 'lucide-react';
+import { Bell, Truck, Package, Info, AlertTriangle, X, Sparkles, CheckCircle2 } from 'lucide-react';
 import './NotificationsPage.css';
 
 const NotificationsPage = () => {
-  const { notifications: rawNotifications } = useAppContext();
+  const { notifications: rawNotifications = [] } = useAppContext();
   
-  // Use local state to allow dismissals
-  const [notifications, setNotifications] = useState(
-    rawNotifications.length > 0 ? rawNotifications : [
-      { id: '1', type: 'alert', title: 'Low stock alert', message: 'You have 2 units of Aashirvaad Atta left.', date: new Date(), unread: true },
-      { id: '2', type: 'order', title: 'New order placed', message: 'Order ORD-1092 was just placed by Rahul.', date: new Date(Date.now() - 3600000), unread: true },
-      { id: '3', type: 'delivery', title: 'Batch created', message: '4 orders combined for RS Puram delivery.', date: new Date(Date.now() - 86400000), unread: false },
-      { id: '4', type: 'system', title: 'Platform update', message: 'We have updated our terms of service.', date: new Date(Date.now() - 172800000), unread: false }
-    ]
-  );
+  // Customer-centric default notifications
+  const defaultCustomerNotifications = useMemo(() => [
+    { 
+      id: 'cn-1', 
+      type: 'order', 
+      title: 'Order Confirmed', 
+      message: 'Your order #ORD-1092 from Amudham Daily has been confirmed and is being packed.', 
+      date: new Date(Date.now() - 1000 * 60 * 18).toISOString(), 
+      unread: true 
+    },
+    { 
+      id: 'cn-2', 
+      type: 'delivery', 
+      title: 'Out for Delivery', 
+      message: 'Agent DA014 has picked up your package and is on the way. Estimated arrival in 18 mins.', 
+      date: new Date(Date.now() - 1000 * 60 * 50).toISOString(), 
+      unread: true 
+    },
+    { 
+      id: 'cn-3', 
+      type: 'deal', 
+      title: 'Smart Aggregation Discount', 
+      message: 'Your order was grouped with 2 neighborhood deliveries in Adyar — you saved ₹25 on delivery fees!', 
+      date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), 
+      unread: false 
+    },
+    { 
+      id: 'cn-4', 
+      type: 'alert', 
+      title: 'Favorite Item Restocked', 
+      message: 'Good news! Aashirvaad Whole Wheat Atta 5kg is back in stock at Amudham Daily.', 
+      date: new Date(Date.now() - 1000 * 60 * 60 * 28).toISOString(), 
+      unread: false 
+    },
+    { 
+      id: 'cn-5', 
+      type: 'order', 
+      title: 'Order Delivered', 
+      message: 'Order #ORD-1088 has been safely delivered to your doorstep. Rate your experience!', 
+      date: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), 
+      unread: false 
+    },
+    { 
+      id: 'cn-6', 
+      type: 'system', 
+      title: 'Platform Update', 
+      message: 'Live interactive GPS delivery route tracking is now active for all your hyper-local neighborhood deliveries.', 
+      date: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), 
+      unread: false 
+    }
+  ], []);
+
+  // Filter rawNotifications to exclude vendor-internal stock or courier operational telemetry
+  const initialNotifications = useMemo(() => {
+    const valid = (rawNotifications || []).filter(n => {
+      const msg = (n.message || '').toLowerCase();
+      const title = (n.title || '').toLowerCase();
+      // Exclude seller inventory counts or other customers' placement notifications
+      if (
+        msg.includes('units left') || 
+        msg.includes('units of') || 
+        msg.includes('placed by') || 
+        msg.includes('reorder threshold') ||
+        title.includes('low stock alert')
+      ) {
+        return false;
+      }
+      return true;
+    });
+    return valid.length > 0 ? valid : defaultCustomerNotifications;
+  }, [rawNotifications, defaultCustomerNotifications]);
+
+  // Use local state to allow dismissals and marking as read
+  const [notifications, setNotifications] = useState(initialNotifications);
 
   const handleDismiss = (id) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const markAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
   };
 
   const getIcon = (type) => {
     switch(type) {
       case 'delivery': return <Truck size={18} />;
       case 'order': return <Package size={18} />;
-      case 'alert': return <AlertTriangle size={18} />;
+      case 'deal': return <Sparkles size={18} />;
+      case 'alert': return <Bell size={18} />;
       default: return <Info size={18} />;
     }
   };

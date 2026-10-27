@@ -1,6 +1,21 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Package, Truck, Layers, MapPin, ArrowRight, Store, Shield, User, ShoppingBag, Compass } from 'lucide-react';
+import { 
+  Package, 
+  Truck, 
+  Layers, 
+  MapPin, 
+  ArrowRight, 
+  Store, 
+  Shield, 
+  User, 
+  ShoppingBag, 
+  Compass,
+  Zap,
+  Check,
+  BarChart2,
+  Users
+} from 'lucide-react';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -49,26 +64,130 @@ const LandingPage = () => {
           </div>
 
           <div className="hero-visual">
-            <div className="hero-image-placeholder">
-              <div className="floating-card card-1">
-                <Store size={22} color="var(--color-primary)" />
-                <div>
-                  <strong>Local Sellers</strong>
-                  <span style={{ fontSize: '11px', color: '#666' }}>T. Nagar & Adyar</span>
+            <div className="hero-network-canvas">
+              {/* Soft ambient glow behind central hub */}
+              <div className="network-ambient-glow" />
+
+              {/* Concentric Radar Rings & Stepped Connector Lines */}
+              <svg 
+                className="hero-network-svg" 
+                viewBox="0 0 540 460" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                {/* Radar Orbit Rings */}
+                <circle cx="270" cy="230" r="205" stroke="#CBD5E1" strokeWidth="1" strokeOpacity="0.45" fill="none" />
+                <circle cx="270" cy="230" r="140" stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="5 5" strokeOpacity="0.55" fill="none" />
+                <circle cx="270" cy="230" r="76" stroke="#E2E8F0" strokeWidth="1.2" fill="none" />
+
+                {/* Orbit Accent Dot with Pulse Glow on Middle Ring (Angle ~225°) */}
+                <circle cx="171" cy="329" r="9" stroke="#2563EB" strokeWidth="1.5" strokeOpacity="0.3" fill="#2563EB" fillOpacity="0.1" className="radar-ping" />
+                <circle cx="171" cy="329" r="4" fill="#2563EB" />
+
+                {/* Connector Line 1: Central Logo -> Top-Left Card */}
+                <path 
+                  d="M 270 188 V 82 H 210" 
+                  stroke="#94A3B8" 
+                  strokeWidth="1.5" 
+                  strokeDasharray="4 4" 
+                  fill="none" 
+                  className="connector-path" 
+                />
+
+                {/* Connector Line 2: Center Stem -> Top-Right Card */}
+                <path 
+                  d="M 270 126 H 395 V 104" 
+                  stroke="#94A3B8" 
+                  strokeWidth="1.5" 
+                  strokeDasharray="4 4" 
+                  fill="none" 
+                  className="connector-path" 
+                />
+
+                {/* Connector Line 3: Central Logo -> Bottom-Right Card */}
+                <path 
+                  d="M 270 272 V 356 H 318" 
+                  stroke="#94A3B8" 
+                  strokeWidth="1.5" 
+                  strokeDasharray="4 4" 
+                  fill="none" 
+                  className="connector-path" 
+                />
+              </svg>
+
+              {/* Central Logo Squircle Badge */}
+              <div className="central-hub-wrapper">
+                <div className="central-logo-box" title="Smart Micro-Logistics Engine">
+                  <Truck size={38} color="#FFFFFF" strokeWidth={2.2} />
                 </div>
               </div>
-              <div className="floating-card card-2">
-                <Layers size={22} color="var(--color-warning)" />
-                <div>
-                  <strong>Smart Aggregation</strong>
-                  <span style={{ fontSize: '11px', color: '#666' }}>3 Orders Grouped</span>
+
+              {/* Floating Card 1 (Top-Left): Local Sellers */}
+              <div className="network-card card-local-sellers">
+                <div className="card-header-row">
+                  <div className="card-icon-badge slate-badge">
+                    <Users size={18} strokeWidth={2.2} />
+                  </div>
+                  <div className="card-titles">
+                    <span className="card-main-title">Local Sellers</span>
+                    <span className="card-subtitle">T. Nagar & Adyar</span>
+                  </div>
+                </div>
+                <div className="card-body-row">
+                  <div className="avatar-stack">
+                    <span className="avatar-dot dot-slate" title="Organic Store" />
+                    <span className="avatar-dot dot-blue" title="Daily Fresh Grocers" />
+                    <span className="avatar-dot dot-navy" title="City Pharmacy" />
+                  </div>
+                  <span className="live-status-pill">
+                    <span className="pulse-indicator" /> 18 Active
+                  </span>
                 </div>
               </div>
-              <div className="floating-card card-3">
-                <Truck size={22} color="var(--color-success)" />
-                <div>
-                  <strong>Out for Delivery</strong>
-                  <span style={{ fontSize: '11px', color: '#666' }}>Agent DA014 Assigned</span>
+
+              {/* Floating Card 2 (Top-Right): Smart Aggregation */}
+              <div className="network-card card-smart-aggregation">
+                <div className="card-header-row">
+                  <div className="card-icon-badge dark-badge">
+                    <Zap size={18} strokeWidth={2.2} />
+                  </div>
+                  <div className="card-titles">
+                    <span className="card-main-title">Smart Aggregation</span>
+                    <span className="card-subtitle">3 Orders Grouped</span>
+                  </div>
+                  <div className="card-check-badge" title="Batch Confirmed">
+                    <Check size={16} strokeWidth={3} className="check-icon" />
+                  </div>
+                </div>
+                <div className="card-footer-tag">
+                  <span className="metric-pill">✓ Clustered Run · -35% Fuel</span>
+                </div>
+              </div>
+
+              {/* Floating Card 3 (Bottom-Right): Out for Delivery */}
+              <div className="network-card card-out-for-delivery">
+                <div className="card-header-row">
+                  <div className="card-icon-badge slate-badge">
+                    <BarChart2 size={18} strokeWidth={2.2} />
+                  </div>
+                  <div className="card-titles">
+                    <span className="card-main-title">Out for Delivery</span>
+                    <span className="card-subtitle">Agent DA014 Assigned</span>
+                  </div>
+                </div>
+                <div className="card-chart-row">
+                  <div className="mini-bars-chart" title="Live batch dispatch progress">
+                    <div className="mini-bar bar-1" />
+                    <div className="mini-bar bar-2" />
+                    <div className="mini-bar bar-3" />
+                    <div className="mini-bar bar-4" />
+                    <div className="mini-bar bar-5 active" />
+                  </div>
+                  <div className="eta-badge">
+                    <span className="eta-time">ETA 18m</span>
+                    <span className="eta-rate">98% On-time</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -77,7 +196,7 @@ const LandingPage = () => {
 
         {/* Feature Sections */}
         <section id="features" className="features-section">
-          <div className="section-header">
+          <div className="landing-section-header">
             <h2>Core Platform Features</h2>
             <p>Optimizing hyper-local commerce through localized order grouping and real-time tracking.</p>
           </div>
@@ -108,7 +227,7 @@ const LandingPage = () => {
 
         {/* Portals / Entry Points */}
         <section id="roles" className="roles-section">
-          <div className="section-header">
+          <div className="landing-section-header">
             <h2>Role-Based Access Portals</h2>
             <p>Tailored dashboards optimized for every stakeholder in the micro-logistics ecosystem.</p>
           </div>
@@ -146,7 +265,7 @@ const LandingPage = () => {
         </section>
 
         <section id="how-it-works" className="how-it-works-section">
-          <div className="section-header">
+          <div className="landing-section-header">
             <h2>How Micro-Logistics Works</h2>
             <p>5 simple steps powering efficient hyper-local delivery.</p>
           </div>

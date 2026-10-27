@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AppProvider } from './context/AppContext';
+import { AppProvider, useAppContext } from './context/AppContext';
 import DashboardLayout from './layouts/DashboardLayout';
 import DeliveryAppShell from './components/delivery/DeliveryAppShell';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -28,6 +28,23 @@ const SellerOrdersPage = lazy(() => import('./portals/seller/OrdersPage'));
 const NotificationsPage = lazy(() => import('./portals/customer/NotificationsPage'));
 const SettingsPage = lazy(() => import('./portals/customer/SettingsPage'));
 const HelpPage = lazy(() => import('./portals/customer/HelpPage'));
+
+// Role Dispatchers for shared URL aliases (/orders, /notifications)
+const RoleOrdersDispatcher = () => {
+  const { currentUser } = useAppContext();
+  if (currentUser?.role === 'vendor') return <Navigate to="/seller/orders" replace />;
+  if (currentUser?.role === 'admin') return <Navigate to="/admin/orders" replace />;
+  if (currentUser?.role === 'delivery_partner') return <Navigate to="/delivery/deliveries" replace />;
+  return <DashboardLayout><OrdersPage /></DashboardLayout>;
+};
+
+const RoleNotificationsDispatcher = () => {
+  const { currentUser } = useAppContext();
+  if (currentUser?.role === 'vendor') return <Navigate to="/seller/notifications" replace />;
+  if (currentUser?.role === 'admin') return <Navigate to="/admin/notifications" replace />;
+  if (currentUser?.role === 'delivery_partner') return <Navigate to="/delivery/notifications" replace />;
+  return <DashboardLayout><NotificationsPage /></DashboardLayout>;
+};
 
 // Seller / Vendor Pages (Lazy loaded chunks)
 const DashboardOverview = lazy(() => import('./portals/seller/DashboardOverview'));
@@ -118,8 +135,8 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/orders" element={
-                  <ProtectedRoute allowedRoles={['customer', 'vendor']}>
-                    <DashboardLayout><OrdersPage /></DashboardLayout>
+                  <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin', 'delivery_partner']}>
+                    <RoleOrdersDispatcher />
                   </ProtectedRoute>
                 } />
                 <Route path="/inventory" element={
@@ -139,7 +156,7 @@ function App() {
                 } />
                 <Route path="/notifications" element={
                   <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin', 'delivery_partner']}>
-                    <DashboardLayout><NotificationsPage /></DashboardLayout>
+                    <RoleNotificationsDispatcher />
                   </ProtectedRoute>
                 } />
                 <Route path="/profile" element={
