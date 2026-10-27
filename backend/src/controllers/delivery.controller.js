@@ -43,7 +43,7 @@ const getBatches = async (req, res) => {
         let query = supabase_1.supabase.from('delivery_batches').select(`
       *,
       agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-      orders(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
     `);
         const userRole = req.user?.user_metadata?.role || req.user?.role;
         const userId = req.user?.id;
@@ -67,7 +67,7 @@ const getBatchById = async (req, res) => {
         const { data, error } = await supabase_1.supabase.from('delivery_batches').select(`
       *,
       agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-      orders(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
     `).eq('batch_code', id).single();
         if (error || !data)
             return res.status(404).json({ success: false, message: 'Batch not found' });
@@ -113,7 +113,7 @@ const createBatch = async (req, res) => {
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
             agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-            orders(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
         `).eq('id', batch.id).single();
 
         res.status(201).json({ success: true, data: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) });
@@ -151,7 +151,7 @@ const assignBatch = async (req, res) => {
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
             agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-            orders(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
         `).eq('id', batch.id).single();
 
         res.json({ success: true, message: `Batch ${id} assigned to agent`, data: { batch: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) } });
@@ -207,7 +207,7 @@ const updateBatchStatus = async (req, res) => {
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
             agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-            orders(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
         `).eq('id', batch.id).single();
 
         res.json({ success: true, message: `Batch ${id} updated to ${status}`, data: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) });
