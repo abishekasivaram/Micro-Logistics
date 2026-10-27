@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAppContext } from '../../context/AppContext';
 import { 
   HelpCircle, Search, PhoneCall, Phone, Mail, MessageSquare, 
@@ -61,6 +62,21 @@ const HelpPage = () => {
     subject: '',
     description: ''
   });
+
+  // Escape key and body scroll lock for modal
+  useEffect(() => {
+    if (!isTicketModalOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsTicketModalOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isTicketModalOpen]);
 
   // Feedback upvote/downvote tracker
   const [feedbackState, setFeedbackState] = useState({
@@ -814,8 +830,13 @@ const HelpPage = () => {
       </div>
 
       {/* ─── Interactive Priority Ticket Modal ──────────────────────── */}
-      {isTicketModalOpen && (
-        <div className="ticket-modal-backdrop" onClick={() => setIsTicketModalOpen(false)}>
+      {isTicketModalOpen && createPortal(
+        <div 
+          className="ticket-modal-backdrop" 
+          onClick={() => setIsTicketModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="ticket-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="ticket-modal-header">
               <h3 className="ticket-header-title">
@@ -826,6 +847,7 @@ const HelpPage = () => {
                 type="button" 
                 className="ticket-close-btn"
                 onClick={() => setIsTicketModalOpen(false)}
+                title="Close modal (Esc)"
               >
                 <X size={18} />
               </button>
@@ -925,7 +947,8 @@ const HelpPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

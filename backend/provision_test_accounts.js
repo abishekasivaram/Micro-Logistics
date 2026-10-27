@@ -19,8 +19,8 @@ const TEST_ACCOUNTS = [
     role: 'customer',
     name: 'Priya Rajan',
     phone: '9876543210',
-    area: 'Anna Nagar',
-    address: '22 Besant Nagar'
+    area: 'Anna Nagar East',
+    address: '101, 2nd Avenue, Anna Nagar East, Chennai - 600102'
   },
   {
     loginId: 'c2',
@@ -29,7 +29,7 @@ const TEST_ACCOUNTS = [
     name: 'Ramesh Kumar',
     phone: '9876543202',
     area: 'Mylapore',
-    address: '15 Gandhi Road'
+    address: '15 Gandhi Road, Mylapore, Chennai - 600004'
   },
   {
     loginId: 'c3',
@@ -38,7 +38,7 @@ const TEST_ACCOUNTS = [
     name: 'Ananya Sharma',
     phone: '9876543203',
     area: 'Adyar',
-    address: '42 Besant Avenue'
+    address: '42 Besant Avenue, Adyar, Chennai - 600020'
   },
   {
     loginId: 'c4',
@@ -47,7 +47,7 @@ const TEST_ACCOUNTS = [
     name: 'Karthik V',
     phone: '9876543204',
     area: 'Thoraipakkam',
-    address: '88 OMR IT Highway'
+    address: '88 OMR IT Highway, Thoraipakkam, Chennai - 600097'
   },
   // Vendors / Sellers (v1 - v4)
   {

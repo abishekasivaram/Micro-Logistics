@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Layers, MapPin, Truck, Navigation, Clock, CheckCircle, Info, ChevronRight, User, Compass, Route } from 'lucide-react';
 import MapPlaceholder from '../../components/common/MapPlaceholder';
@@ -6,9 +7,18 @@ import StatusBadge from '../../components/common/StatusBadge';
 import './AdminRoutesPage.css';
 
 const AdminRoutesPage = () => {
+  const location = useLocation();
   const { deliveryBatches, orders, deliveryAgents } = useAppContext();
   
-  const [selectedBatchId, setSelectedBatchId] = useState(deliveryBatches[0]?.id || null);
+  const [selectedBatchId, setSelectedBatchId] = useState(
+    location?.state?.batchId || deliveryBatches[0]?.id || null
+  );
+
+  useEffect(() => {
+    if (location?.state?.batchId) {
+      setSelectedBatchId(location.state.batchId);
+    }
+  }, [location?.state?.batchId]);
 
   const activeBatch = deliveryBatches.find(b => b.id === selectedBatchId || b.batchId === selectedBatchId) || deliveryBatches[0];
   const batchOrders = activeBatch ? orders.filter(o => activeBatch.orderIds?.includes(o.id)) : [];

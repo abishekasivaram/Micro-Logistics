@@ -205,29 +205,15 @@ const ProductsPage = () => {
     };
   }, [showDrawer]);
 
-  const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
-  const sellerLegacyId = currentUser?.legacy_id || null;
-
-  // Filter products scoped to seller if in seller mode
-  const baseScopedProducts = products.filter(p => {
-    if (isCustomer) {
-      if (vendorFilter && vendorFilter !== 'all') {
-        return p.vendorId === vendorFilter || 
-               p.vendor?.id === vendorFilter || 
-               p.vendor_id === vendorFilter || 
-               p.vendor?.legacy_id === vendorFilter || 
-               p.vendorName === vendorFilter;
-      }
-      return true;
-    }
-    if (currentUser?.role === 'admin') return true;
-    if (!sellerId && !sellerLegacyId) return true;
-    return (sellerId && (p.vendorId === sellerId || p.vendor_id === sellerId)) ||
-           (sellerLegacyId && (p.vendorId === sellerLegacyId || p.vendor_id === sellerLegacyId));
-  });
-
-  const scopedProducts = (baseScopedProducts.length > 0 || isCustomer || currentUser?.role === 'admin')
-    ? baseScopedProducts
+  // Synchronized catalog: seller dashboard and customer dashboard share the exact same product catalog
+  const scopedProducts = (isCustomer && vendorFilter && vendorFilter !== 'all')
+    ? products.filter(p => 
+        p.vendorId === vendorFilter || 
+        p.vendor?.id === vendorFilter || 
+        p.vendor_id === vendorFilter || 
+        p.vendor?.legacy_id === vendorFilter || 
+        p.vendorName === vendorFilter
+      )
     : products;
 
   // Filtered list
@@ -438,11 +424,10 @@ const ProductsPage = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="All">All Categories</option>
+                <option value="Grocery">Grocery</option>
+                <option value="Fruits & Veg">Fruits & Veg</option>
                 <option value="Dairy">Dairy</option>
                 <option value="Bakery">Bakery</option>
-                <option value="Grains">Grains & Pulses</option>
-                <option value="Vegetables">Vegetables & Fruits</option>
-                <option value="Snacks">Snacks & Beverages</option>
               </select>
 
               <div className="view-mode-toggle">
@@ -721,11 +706,11 @@ const ProductsPage = () => {
                           value={productForm.category}
                           onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                         >
+                          <option value="Grocery">Grocery</option>
+                          <option value="Fruits & Veg">Fruits & Veg</option>
                           <option value="Dairy">Dairy</option>
                           <option value="Bakery">Bakery</option>
-                          <option value="Grains">Grains & Pulses</option>
-                          <option value="Vegetables">Vegetables & Fruits</option>
-                          <option value="Snacks">Snacks & Beverages</option>
+                          <option value="General">General</option>
                         </select>
                       </div>
 

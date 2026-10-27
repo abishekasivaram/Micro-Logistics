@@ -21,7 +21,10 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 2. Customer Profiles
 INSERT INTO customer_profiles (id, legacy_id, address, area, lat, lng, total_orders, active_orders) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'c1', '101 Anna Nagar East, Chennai', 'Anna Nagar', 13.0850, 80.2101, 12, 1)
+  ('11111111-1111-1111-1111-111111111111', 'c1', '101, 2nd Avenue, Anna Nagar East, Chennai - 600102', 'Anna Nagar East', 13.0850, 80.2101, 12, 1),
+  ('11111111-1111-1111-1111-111111111112', 'c2', '15 Gandhi Road, Mylapore, Chennai - 600004', 'Mylapore', 13.0336, 80.2676, 5, 0),
+  ('11111111-1111-1111-1111-111111111113', 'c3', '42 Besant Avenue, Adyar, Chennai - 600020', 'Adyar', 13.0012, 80.2565, 8, 1),
+  ('11111111-1111-1111-1111-111111111114', 'c4', '88 OMR IT Highway, Thoraipakkam, Chennai - 600097', 'Thoraipakkam', 12.9348, 80.2312, 3, 0)
 ON CONFLICT (id) DO NOTHING;
 
 -- 3. Vendors

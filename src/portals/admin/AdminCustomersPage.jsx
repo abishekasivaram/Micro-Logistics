@@ -178,7 +178,7 @@ const AdminCustomersPage = () => {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8125rem' }}>
                         <MapPin size={12} className="text-indigo" />
-                        <span>{c.area || 'Anna Nagar Sector'}</span>
+                        <span>{c.area || (c.address ? c.address.split(',')[1]?.trim() : 'Central Chennai')}</span>
                       </div>
                     </td>
                     <td>
@@ -319,7 +319,7 @@ const AdminCustomersPage = () => {
                       </div>
                       <div className="customer-kpi-card">
                         <span className="customer-kpi-label">Delivery Zone</span>
-                        <span className="customer-kpi-val" style={{ fontSize: '1.1rem' }}>{selectedCustomer.area || 'Anna Nagar'}</span>
+                        <span className="customer-kpi-val" style={{ fontSize: '1.1rem' }}>{selectedCustomer.area || (selectedCustomer.address ? selectedCustomer.address.split(',')[1]?.trim() : 'Central Chennai')}</span>
                         <span className="customer-kpi-sub">Priority local zone</span>
                       </div>
                     </div>

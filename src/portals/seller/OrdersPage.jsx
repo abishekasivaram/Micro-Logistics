@@ -274,7 +274,7 @@ const SellerOrdersPage = () => {
                     <div className="customer-name">{order.customerName || 'Customer'}</div>
                     <div className="customer-address">
                       <MapPin size={11} />
-                      {order.deliveryAddress || order.deliveryLocation || 'RS Puram, Coimbatore'}
+                      {order.deliveryLocation || order.deliveryAddress || '101, 2nd Avenue, Anna Nagar East, Chennai - 600102'}
                     </div>
                   </div>
                 </div>

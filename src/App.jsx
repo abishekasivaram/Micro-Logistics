@@ -125,7 +125,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/track-delivery" element={
-                  <ProtectedRoute allowedRoles={['customer']}>
+                  <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin', 'delivery_partner']}>
                     <DashboardLayout><TrackDeliveryPage /></DashboardLayout>
                   </ProtectedRoute>
                 } />
@@ -263,6 +263,11 @@ function App() {
                     <DashboardLayout><DeliveriesPage /></DashboardLayout>
                   </ProtectedRoute>
                 } />
+                <Route path="/seller/routes" element={
+                  <ProtectedRoute allowedRoles={['vendor', 'admin']}>
+                    <DashboardLayout><AdminRoutesPage /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
                 <Route path="/seller/analytics" element={
                   <ProtectedRoute allowedRoles={['vendor']}>
                     <DashboardLayout><SellerAnalyticsPage /></DashboardLayout>
@@ -317,7 +322,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/routes" element={
-                  <ProtectedRoute allowedRoles={['admin']}>
+                  <ProtectedRoute allowedRoles={['admin', 'vendor']}>
                     <DashboardLayout><AdminRoutesPage /></DashboardLayout>
                   </ProtectedRoute>
                 } />

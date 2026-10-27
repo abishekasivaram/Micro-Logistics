@@ -11,7 +11,7 @@ import { getProductImage, getCategoryFallbackImage, handleProductImageError } fr
 import './InventoryPage.css';
 
 const CATEGORIES = [
-  'Dairy', 'Bakery', 'Grains', 'Produce', 'Snacks', 'Groceries', 'Beverages', 'General'
+  'Grocery', 'Fruits & Veg', 'Dairy', 'Bakery', 'General'
 ];
 
 const InventoryPage = () => {
@@ -65,16 +65,8 @@ const InventoryPage = () => {
   const sellerId = currentVendor?.id || (isVendor ? currentUser.id : null);
   const sellerLegacyId = currentVendor?.legacy_id || (currentUser?.legacy_id || null);
 
-  const baseScopedProducts = products.filter(p => {
-    if (currentUser?.role === 'admin') return true;
-    if (!sellerId && !sellerLegacyId) return true;
-    return (sellerId && (p.vendorId === sellerId || p.vendor_id === sellerId)) ||
-           (sellerLegacyId && (p.vendorId === sellerLegacyId || p.vendor_id === sellerLegacyId));
-  });
-
-  const scopedProducts = (baseScopedProducts.length > 0 || currentUser?.role === 'admin')
-    ? baseScopedProducts
-    : products;
+  // Synchronized catalog: seller inventory displays the exact same products as customer dashboard
+  const scopedProducts = products;
 
   const totalProducts = scopedProducts.length;
   const lowStockProducts = scopedProducts.filter(p => p.stock > 0 && p.stock <= lowStockThreshold).length;
@@ -397,6 +389,10 @@ const InventoryPage = () => {
                           src={getProductImage(product)} 
                           alt={product.name} 
                           className="product-thumb" 
+                          width={44}
+                          height={44}
+                          loading="lazy"
+                          style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '10px' }}
                           onError={(e) => handleProductImageError(e, product.category, product.name)}
                         />
                         <div>

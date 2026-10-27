@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import api from '../../services/api';
 import MapPlaceholder from '../../components/common/MapPlaceholder';
@@ -8,14 +8,30 @@ import { Navigation, Clock, MapPin, User, Phone, CheckCircle, Package, Calendar,
 import './TrackDeliveryPage.css';
 
 const TrackDeliveryPage = () => {
+  const location = useLocation();
   const { orders, currentUser } = useAppContext();
 
   // Find customer's active or recent orders
   const customerOrders = orders.filter(o => o.customerId === currentUser?.id || o.customerName === currentUser?.name || currentUser?.role === 'admin' || currentUser?.role === 'vendor');
   
+  const targetId = location?.state?.orderId || location?.state?.batchId;
+  const initialOrder = targetId 
+    ? (orders.find(o => o.id === targetId || o.batchId === targetId || o.orderId === targetId || (o.batchId && targetId.includes(o.batchId))) || customerOrders[0])
+    : customerOrders[0];
+
   const [selectedOrderId, setSelectedOrderId] = useState(
-    customerOrders[0]?.id || customerOrders[0]?.orderId || ''
+    initialOrder?.id || initialOrder?.orderId || customerOrders[0]?.id || customerOrders[0]?.orderId || ''
   );
+
+  useEffect(() => {
+    if (location?.state?.batchId || location?.state?.orderId) {
+      const tid = location.state.orderId || location.state.batchId;
+      const match = orders.find(o => o.id === tid || o.batchId === tid || o.orderId === tid || (o.batchId && tid.includes(o.batchId)));
+      if (match) {
+        setSelectedOrderId(match.id || match.orderId);
+      }
+    }
+  }, [location?.state?.batchId, location?.state?.orderId, orders]);
 
   const activeOrder = customerOrders.find(o => (o.id === selectedOrderId || o.orderId === selectedOrderId)) || customerOrders[0];
 
