@@ -236,7 +236,7 @@ const SellerOrdersPage = () => {
         </div>
       ) : (
         <div className="orders-grid">
-          {filteredOrders.map(order => {
+          {filteredOrders.map((order, orderIdx) => {
             const status = getOrderStatus(order);
             const elapsed = getElapsedMinutes(order);
             const isUrgent = ['PLACED', 'PENDING', 'NEW'].includes(status) && elapsed > 10;
@@ -300,7 +300,7 @@ const SellerOrdersPage = () => {
                     <div className="customer-name">{order.customerName || 'Customer'}</div>
                     <div className="customer-address">
                       <MapPin size={11} />
-                      {resolveOrderAddress(order, idx, customers)}
+                      {resolveOrderAddress(order, orderIdx, customers)}
                     </div>
                   </div>
                 </div>
@@ -310,11 +310,11 @@ const SellerOrdersPage = () => {
                   {items.length === 0 ? (
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>1x Standard Grocery Pack</div>
                   ) : (
-                    items.map((item, idx) => (
-                      <div key={idx} className="order-item-row">
+                    items.map((item, itemIdx) => (
+                      <div key={itemIdx} className="order-item-row">
                         <div className="order-item-desc">
                           <span className="order-item-qty">{item.qty || item.quantity || 1}x</span>
-                          <span>{item.name || item.product?.name || `Item #${idx+1}`}</span>
+                          <span>{item.name || item.product?.name || `Item #${itemIdx+1}`}</span>
                         </div>
                         <div className="order-item-price">
                           ₹{(item.price || item.product?.price || 0) * (item.qty || item.quantity || 1)}
@@ -349,7 +349,7 @@ const SellerOrdersPage = () => {
                   <div className="order-action-buttons">
                     <button 
                       className="btn-view-slip"
-                      onClick={() => setSelectedOrderForSlip({ ...order, deliveryLocation: resolveOrderAddress(order, idx, customers), deliveryAddress: resolveOrderAddress(order, idx, customers) })}
+                      onClick={() => setSelectedOrderForSlip({ ...order, deliveryLocation: resolveOrderAddress(order, orderIdx, customers), deliveryAddress: resolveOrderAddress(order, orderIdx, customers) })}
                       title="View Kitchen Order Ticket / Packing Slip"
                     >
                       <Printer size={15} />
