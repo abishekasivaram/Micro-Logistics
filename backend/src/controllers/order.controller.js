@@ -267,11 +267,9 @@ const updateOrderStatus = async (req, res) => {
         }
         if (status === 'PICKED_UP') {
             deliveryStatus = 'PICKED_UP';
-            aggregationStatus = 'OUT_FOR_DELIVERY';
         }
         if (status === 'OUT_FOR_DELIVERY') {
             deliveryStatus = 'OUT_FOR_DELIVERY';
-            aggregationStatus = 'OUT_FOR_DELIVERY';
         }
         if (status === 'DELIVERED') {
             deliveryStatus = 'DELIVERED';
