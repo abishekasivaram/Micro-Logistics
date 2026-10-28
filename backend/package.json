@@ -8,7 +8,7 @@
     "build": "echo 'No build step required'",
     "start": "node src/server.js",
     "test": "vitest run",
-    "fix": "node fix_seed.js"
+    "fix": "node scripts/seeds/fix_seed.js"
   },
   "keywords": [],
   "author": "",

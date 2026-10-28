@@ -3,24 +3,27 @@ import request from 'supertest';
 import app from '../src/app';
 
 // Mock Supabase client
-vi.mock('../src/config/supabase', () => {
-  const mockQuery = {
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    order: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue({ data: { id: 'uuid-1', legacy_id: 'l1', name: 'Test' }, error: null }),
-    then: vi.fn((resolve) => resolve({ data: [{ id: 'uuid-1', legacy_id: 'l1', name: 'Test' }], error: null }))
-  };
+const mockQuery = vi.hoisted(() => ({
+  select: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  order: vi.fn().mockReturnThis(),
+  single: vi.fn().mockResolvedValue({ data: { id: 'uuid-1', legacy_id: 'l1', name: 'Test' }, error: null }),
+  then: vi.fn((resolve) => resolve({ data: [{ id: 'uuid-1', legacy_id: 'l1', name: 'Test' }], error: null }))
+}));
 
-  return {
-    supabase: {
-      from: vi.fn().mockReturnValue(mockQuery),
-      auth: {
-        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'u1', role: 'admin' } }, error: null })
-      }
-    }
-  };
-});
+const mockSupabase = vi.hoisted(() => ({
+  from: vi.fn().mockReturnValue(mockQuery),
+  auth: {
+    getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'u1', role: 'admin' } }, error: null })
+  }
+}));
+
+vi.mock('../src/config/supabase', () => ({
+  supabase: mockSupabase
+}));
+
+const supabaseModule = require('../src/config/supabase');
+supabaseModule.supabase = mockSupabase;
 
 describe('Phase 2 APIs', { timeout: 15000 }, () => {
   it('GET /api/v1/products should return products', async () => {
