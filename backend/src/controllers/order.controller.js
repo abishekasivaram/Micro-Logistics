@@ -235,9 +235,19 @@ const updateOrderStatus = async (req, res) => {
             if (!isOwner) {
                 return res.status(403).json({ success: false, message: 'Forbidden: You do not own this order' });
             }
-            const allowedVendorStatuses = ['CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'CANCELLED'];
+            const allowedVendorStatuses = ['CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY', 'READY', 'HANDED_OVER', 'PICKED_UP', 'CANCELLED'];
             if (status && !allowedVendorStatuses.includes(status)) {
                 return res.status(403).json({ success: false, message: 'Forbidden: Vendors cannot transition orders to this status' });
+            }
+
+            // Vendor Handover rule: Only allowed when a delivery person is assigned to the order or batch
+            if (status === 'HANDED_OVER' || status === 'PICKED_UP') {
+                if (!order.assigned_agent_id && !order.batch_id) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Cannot confirm handover: A delivery person has not yet been assigned by Admin' 
+                    });
+                }
             }
         }
 
@@ -257,26 +267,33 @@ const updateOrderStatus = async (req, res) => {
 
         let deliveryStatus = order.delivery_status;
         let aggregationStatus = order.aggregation_status;
+        let dbOrderStatus = status;
+
         if (status === 'CONFIRMED' || status === 'PREPARING') {
+            dbOrderStatus = 'PREPARING';
             deliveryStatus = 'PENDING_ASSIGNMENT';
             if (!aggregationStatus) aggregationStatus = 'WAITING_FOR_AGGREGATION';
         }
         if (status === 'READY_FOR_DELIVERY' || status === 'READY') {
+            dbOrderStatus = 'READY_FOR_DELIVERY';
             deliveryStatus = 'PENDING_ASSIGNMENT';
             aggregationStatus = 'WAITING_FOR_AGGREGATION';
         }
-        if (status === 'PICKED_UP') {
+        if (status === 'HANDED_OVER' || status === 'PICKED_UP') {
+            dbOrderStatus = (order.order_status === 'READY_FOR_DELIVERY' || order.order_status === 'PREPARING') ? 'ASSIGNED' : order.order_status;
             deliveryStatus = 'PICKED_UP';
         }
         if (status === 'OUT_FOR_DELIVERY') {
+            dbOrderStatus = 'OUT_FOR_DELIVERY';
             deliveryStatus = 'OUT_FOR_DELIVERY';
         }
         if (status === 'DELIVERED') {
+            dbOrderStatus = 'DELIVERED';
             deliveryStatus = 'DELIVERED';
             aggregationStatus = 'COMPLETED';
         }
         const { data, error } = await supabase_1.supabase.from('orders').update({
-            order_status: status,
+            order_status: dbOrderStatus,
             delivery_status: deliveryStatus,
             aggregation_status: aggregationStatus
         }).eq('id', order.id).select(`

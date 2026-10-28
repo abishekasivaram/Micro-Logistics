@@ -101,7 +101,10 @@ const mapOrderToFrontend = (dbOrder) => {
         total: Number(dbOrder.total),
         orderStatus: dbOrder.order_status,
         status: dbOrder.order_status,
-        deliveryStatus: (0, exports.getHumanReadableDeliveryStatus)(dbOrder.order_status),
+        rawDeliveryStatus: dbOrder.delivery_status,
+        deliveryStatus: dbOrder.delivery_status === 'PICKED_UP'
+            ? 'Handed Over to Courier'
+            : (0, exports.getHumanReadableDeliveryStatus)(dbOrder.order_status),
         aggregationStatus: (0, exports.getHumanReadableAggregationStatus)(dbOrder.aggregation_status),
         pickupLocation: dbOrder.pickup_location,
         deliveryLocation: dbOrder.delivery_location,
@@ -110,7 +113,7 @@ const mapOrderToFrontend = (dbOrder) => {
         date: dbOrder.created_at,
         batchId: dbOrder.batch?.batch_code || null,
         deliveryGroupId: dbOrder.batch?.batch_code || null,
-        groupedWith: [], // Could be populated if needed
+        assignedAgentId: dbOrder.assigned_agent_id || dbOrder.assigned_agent?.id || null,
         assignedAgent: dbOrder.assigned_agent ? `${dbOrder.assigned_agent.profile?.username} (${dbOrder.assigned_agent.profile?.phone})` : null
     };
 };

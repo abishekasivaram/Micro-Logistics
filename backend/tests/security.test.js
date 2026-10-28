@@ -368,6 +368,26 @@ describe('Security Hardening Test Suite', () => {
       expect(res.body.message).toContain('Vendors cannot transition orders to this status');
     });
 
+    it('should forbid vendor from directly marking order OUT_FOR_DELIVERY before collection (403)', async () => {
+      const res = await request(app)
+        .patch('/api/v1/orders/ORD-1001/status')
+        .set('Authorization', 'Bearer valid-vendor-token')
+        .send({ status: 'OUT_FOR_DELIVERY' });
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('Vendors cannot transition orders to this status');
+    });
+
+    it('should allow vendor to confirm handover (PICKED_UP) when delivery agent is assigned (200)', async () => {
+      const res = await request(app)
+        .patch('/api/v1/orders/ORD-1001/status')
+        .set('Authorization', 'Bearer valid-vendor-token')
+        .send({ status: 'PICKED_UP' });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.deliveryStatus).toBe('Handed Over to Courier');
+    });
+
     it('should forbid vendor from updating another vendor product (403)', async () => {
       // Vendor 1 attempting to update Product 2 (owned by Vendor 2)
       const res = await request(app)

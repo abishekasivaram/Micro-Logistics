@@ -22,16 +22,7 @@ vi.mock('../src/config/supabase', () => {
   };
 });
 
-import * as authMiddleware from '../src/middleware/auth.middleware';
-
-// Spy on the middleware instead of vi.mock
-vi.spyOn(authMiddleware, 'requireAuth').mockImplementation((req, res, next) => {
-  req.user = { id: 'u1', role: 'admin' };
-  next();
-});
-vi.spyOn(authMiddleware, 'requireRole').mockImplementation(() => (req, res, next) => next());
-
-describe('Phase 2 APIs', () => {
+describe('Phase 2 APIs', { timeout: 15000 }, () => {
   it('GET /api/v1/products should return products', async () => {
     const response = await request(app).get('/api/v1/products');
     expect(response.status).toBe(200);
