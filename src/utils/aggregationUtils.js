@@ -67,24 +67,31 @@ export const extractArea = (locationString) => {
   return parts[0].trim();
 };
 
+export const MIN_BATCH_SIZE = 4;
+export const MAX_BATCH_SIZE = 6;
+
 /**
  * Smart Order Aggregation Function
  * Evaluates orders ready or pending aggregation and groups compatible ones.
- * Isolated utility so it can be easily replaced by a real backend optimization model later.
+ * Isolated utility aligned with backend AI/optimization engine.
+ * Requires minimum 4 ready orders to form a valid batch!
  */
 export const findSuitableOrderGroups = (orders = [], agents = [], config = {}) => {
-  const maxOrdersPerBatch = config.maxOrdersPerBatch || 4;
+  const minBatchSize = config.minBatchSize || MIN_BATCH_SIZE;
+  const maxOrdersPerBatch = config.maxOrdersPerBatch || MAX_BATCH_SIZE;
 
   // Filter orders eligible for aggregation:
-  // Status: READY_FOR_DELIVERY, PREPARING, or PLACED
-  // Not already grouped or batched
+  // ONLY orders marked Ready for Handover (READY_FOR_DELIVERY / READY)
+  // Orders still being prepared (PREPARING, PLACED) are strictly excluded!
   const eligibleOrders = orders.filter(o => {
-    const isStatusEligible = ['READY_FOR_DELIVERY', 'PREPARING', 'PLACED', 'CONFIRMED'].includes(o.status || o.orderStatus);
+    const st = (o.status || o.orderStatus || '').toUpperCase();
+    const isReady = ['READY_FOR_DELIVERY', 'READY'].includes(st);
     const isNotBatched = !o.batchId && (o.aggregationStatus === 'Waiting for Aggregation' || o.aggregationStatus === 'Suitable for Grouping' || !o.aggregationStatus);
-    return isStatusEligible && isNotBatched;
+    const isNotTerminal = !['CANCELLED', 'DELIVERED', 'COMPLETED', 'OUT_FOR_DELIVERY'].includes(st);
+    return isReady && isNotBatched && isNotTerminal;
   });
 
-  if (eligibleOrders.length === 0) return [];
+  if (eligibleOrders.length < minBatchSize) return [];
 
   // Group by delivery date and compatible time slots
   const candidatesByDate = {};
@@ -186,27 +193,30 @@ export const findSuitableOrderGroups = (orders = [], agents = [], config = {}) =
       // Cap score between 60% and 98%
       const finalScore = Math.min(98, Math.max(60, score));
 
-      // Estimated metrics
-      const estimatedDistance = parseFloat((2.5 + groupOrders.length * 1.2).toFixed(1)); // km
-      const estimatedTime = Math.round(15 + estimatedDistance * 6); // mins
+      // CRITICAL: Minimum 4 orders required to confirm a batch!
+      if (groupOrders.length >= minBatchSize) {
+        // Estimated metrics
+        const estimatedDistance = parseFloat((2.5 + groupOrders.length * 1.2).toFixed(1)); // km
+        const estimatedTime = Math.round(15 + estimatedDistance * 6); // mins
 
-      suggestedGroups.push({
-        id: `SUG-B${String(groupCounter++).padStart(3, '0')}`,
-        recommendationLabel: 'Mock Aggregation Recommendation',
-        orderIds: groupOrders.map(o => o.id),
-        orders: groupOrders,
-        sellerIds: Array.from(new Set(groupOrders.map(o => o.vendorId || o.sellerId))),
-        sellerNames: sellerNames,
-        pickupArea: pickupAreas.join(', '),
-        deliveryArea: dropAreas.join(', '),
-        deliveryDate: primary.deliveryDate || dateKey,
-        deliveryTimeSlot: primary.deliveryTimeSlot,
-        orderCount: groupOrders.length,
-        compatibilityScore: finalScore,
-        estimatedDistance: estimatedDistance,
-        estimatedTime: estimatedTime,
-        reasons: reasons
-      });
+        suggestedGroups.push({
+          id: `SUG-B${String(groupCounter++).padStart(3, '0')}`,
+          recommendationLabel: 'Automated Delivery Cluster',
+          orderIds: groupOrders.map(o => o.id),
+          orders: groupOrders,
+          sellerIds: Array.from(new Set(groupOrders.map(o => o.vendorId || o.sellerId))),
+          sellerNames: sellerNames,
+          pickupArea: pickupAreas.join(', '),
+          deliveryArea: dropAreas.join(', '),
+          deliveryDate: primary.deliveryDate || dateKey,
+          deliveryTimeSlot: primary.deliveryTimeSlot,
+          orderCount: groupOrders.length,
+          compatibilityScore: finalScore,
+          estimatedDistance: estimatedDistance,
+          estimatedTime: estimatedTime,
+          reasons: reasons
+        });
+      }
     }
   });
 

@@ -641,6 +641,95 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Automatic AI-Powered Aggregation & Fleet Assignment Engine
+  const runAutomaticAggregation = async () => {
+    if (currentUser?.isDemo || offlineMode) {
+      const readyOrders = (orders || []).filter(o => 
+        ['READY_FOR_DELIVERY', 'READY'].includes((o.status || o.orderStatus || '').toUpperCase()) &&
+        !o.batchId &&
+        !['CANCELLED', 'DELIVERED', 'COMPLETED', 'OUT_FOR_DELIVERY'].includes((o.status || o.orderStatus || '').toUpperCase())
+      );
+
+      if (readyOrders.length < 4) {
+        addNotification(`Automatic Aggregation: ${readyOrders.length} ready order(s) queued. Minimum 4 required to form a batch.`, 'system');
+        return { success: true, queuedCount: readyOrders.length, formedBatchesCount: 0 };
+      }
+
+      const clusters = [];
+      for (let i = 0; i < readyOrders.length; i += 4) {
+        const slice = readyOrders.slice(i, i + 4);
+        if (slice.length >= 4) clusters.push(slice);
+      }
+
+      if (clusters.length === 0) return { success: true, queuedCount: readyOrders.length, formedBatchesCount: 0 };
+
+      const availableAgents = (deliveryAgents || []).filter(a => (a.status || '').toLowerCase() === 'available' || (a.availability || '').toLowerCase() === 'available');
+
+      for (let idx = 0; idx < clusters.length; idx++) {
+        const cluster = clusters[idx];
+        const assignedAgent = availableAgents[idx % availableAgents.length] || null;
+        const newBatchId = `B-${Math.floor(1000 + Math.random() * 9000)}`;
+        const orderIds = cluster.map(o => o.id || o.orderId);
+
+        const newBatch = {
+          id: newBatchId,
+          batchId: newBatchId,
+          batchCode: newBatchId,
+          orderCount: cluster.length,
+          orderIds: orderIds,
+          agentId: assignedAgent ? assignedAgent.id : null,
+          agentName: assignedAgent ? (assignedAgent.name || assignedAgent.username || 'Agent') : null,
+          estimatedDistance: parseFloat((2.5 + cluster.length * 1.3).toFixed(1)),
+          estimatedTime: Math.round(15 + cluster.length * 7),
+          status: assignedAgent ? 'Assigned' : 'Pending Assignment',
+          aggregationStatus: assignedAgent ? 'Assigned' : 'Batch Created',
+          deliveryDate: cluster[0].deliveryDate || new Date().toISOString().split('T')[0],
+          deliverySlot: cluster[0].deliveryTimeSlot || '9:00 AM – 1:00 PM',
+          orders: cluster
+        };
+
+        setDeliveryBatches(prev => [newBatch, ...prev]);
+        setOrders(prev => prev.map(o => orderIds.includes(o.id) || orderIds.includes(o.orderId) ? {
+          ...o,
+          batchId: newBatchId,
+          assignedAgent: assignedAgent ? (assignedAgent.name || assignedAgent.username) : null,
+          assignedAgentId: assignedAgent ? assignedAgent.id : null,
+          orderStatus: assignedAgent ? 'ASSIGNED' : 'READY_FOR_DELIVERY',
+          status: assignedAgent ? 'ASSIGNED' : 'READY_FOR_DELIVERY',
+          aggregationStatus: assignedAgent ? 'Assigned' : 'Batch Created',
+          deliveryStatus: assignedAgent ? 'Assigned' : 'Pending Assignment'
+        } : o));
+      }
+
+      addNotification(`Automatic Aggregation: Formed ${clusters.length} batch(es) of 4 orders and assigned to fleet!`, 'system');
+      return { success: true, queuedCount: readyOrders.length - clusters.length * 4, formedBatchesCount: clusters.length };
+    }
+
+    try {
+      const res = await api.post('/delivery/aggregate');
+      if (res.data?.success) {
+        const [batchRes, ordRes] = await Promise.all([
+          api.get('/delivery/batches'),
+          api.get('/orders')
+        ]);
+        if (batchRes.data?.success) setDeliveryBatches(batchRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
+        
+        const count = res.data?.data?.formedBatchesCount || 0;
+        if (count > 0) {
+          addNotification(`Automatic Aggregation: Created ${count} automated batch(es) and assigned to couriers!`, 'aggregation');
+        } else {
+          const msg = res.data?.data?.message || 'Aggregation sweep completed.';
+          addNotification(msg, 'system');
+        }
+        return res.data;
+      }
+    } catch (err) {
+      console.error('Failed to run automatic aggregation:', err);
+      return null;
+    }
+  };
+
   // Step 2 of Workflow: Assign Agent to existing Delivery Batch
   const assignAgentToBatch = async (batchId, agentId) => {
     if (currentUser?.isDemo || offlineMode) {
@@ -1029,6 +1118,7 @@ export const AppProvider = ({ children }) => {
       customers, setCustomers, updateCustomerStatus,
       deliveryAgents, setDeliveryAgents, addDeliveryAgent, updateDeliveryAgent,
       deliveryBatches, setDeliveryBatches, createDeliveryBatch, assignAgentToBatch, updateBatchStatus,
+      runAutomaticAggregation,
       deliveryGroups,
       products, addProduct, updateProduct, deleteProduct,
       notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,

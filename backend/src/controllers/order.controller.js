@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateOrderStatus = exports.createOrder = exports.getOrderById = exports.getOrders = void 0;
 const supabase_1 = require("../config/supabase");
 const mappings_1 = require("../utils/mappings");
+const aggregation_service_1 = require("../services/aggregation.service");
 const getOrders = async (req, res) => {
     try {
         let query = supabase_1.supabase.from('orders').select(`
@@ -313,6 +314,14 @@ const updateOrderStatus = async (req, res) => {
     `).single();
         if (error)
             throw error;
+
+        // Automatically trigger AI aggregation & courier assignment if order transitioned to READY_FOR_DELIVERY
+        if (dbOrderStatus === 'READY_FOR_DELIVERY') {
+            (0, aggregation_service_1.runAutomaticAggregation)().catch(err => {
+                console.error('Background auto-aggregation error:', err.message);
+            });
+        }
+
         res.json({ success: true, data: (0, mappings_1.mapOrderToFrontend)(data) });
     }
     catch (err) {

@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyDeliveryOtp = exports.getOrderOtp = exports.updateAgent = exports.createAgent = exports.updateBatchStatus = exports.assignBatch = exports.createBatch = exports.getBatchById = exports.getBatches = exports.getAgentById = exports.getAgents = void 0;
+exports.getAggregationOverview = exports.triggerAutomaticAggregation = exports.verifyDeliveryOtp = exports.getOrderOtp = exports.updateAgent = exports.createAgent = exports.updateBatchStatus = exports.assignBatch = exports.createBatch = exports.getBatchById = exports.getBatches = exports.getAgentById = exports.getAgents = void 0;
 const supabase_1 = require("../config/supabase");
 const mappings_1 = require("../utils/mappings");
+const aggregation_service_1 = require("../services/aggregation.service");
 const getAgents = async (req, res) => {
     try {
         const { data, error } = await supabase_1.supabase.from('delivery_agents').select(`*, profile:profiles(username, phone)`);
@@ -479,3 +480,66 @@ const verifyDeliveryOtp = async (req, res) => {
     }
 };
 exports.verifyDeliveryOtp = verifyDeliveryOtp;
+
+const triggerAutomaticAggregation = async (req, res) => {
+    try {
+        const result = await (0, aggregation_service_1.runAutomaticAggregation)();
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+exports.triggerAutomaticAggregation = triggerAutomaticAggregation;
+
+const getAggregationOverview = async (req, res) => {
+    try {
+        // 1. Eligible ready orders waiting for aggregation
+        const { data: eligibleOrders } = await supabase_1.supabase
+            .from('orders')
+            .select(`
+                id, order_code, customer_id, vendor_id, batch_id, assigned_agent_id,
+                order_status, delivery_status, aggregation_status,
+                pickup_location, delivery_location, delivery_date, delivery_time_slot, created_at,
+                vendor:vendors(id, legacy_id, shop_name, address),
+                customer:customer_profiles(id, legacy_id, profile:profiles(username, phone))
+            `)
+            .eq('order_status', 'READY_FOR_DELIVERY')
+            .is('batch_id', null)
+            .order('created_at', { ascending: true });
+
+        // 2. All batches
+        const { data: allBatches } = await supabase_1.supabase
+            .from('delivery_batches')
+            .select(`
+                *,
+                agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
+                orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+            `)
+            .order('created_at', { ascending: false });
+
+        const mappedBatches = (allBatches || []).map(b => (0, mappings_1.mapBatchToFrontend)(b));
+        const awaitingAgentBatches = mappedBatches.filter(b => b.status === 'Pending Assignment' || !b.agentId);
+        const assignedBatches = mappedBatches.filter(b => b.status !== 'Pending Assignment' && b.agentId);
+
+        res.json({
+            success: true,
+            data: {
+                minBatchSize: aggregation_service_1.MIN_BATCH_SIZE,
+                eligibleOrders: (eligibleOrders || []).map(o => (0, mappings_1.mapOrderToFrontend)(o)),
+                queuedCount: eligibleOrders ? eligibleOrders.length : 0,
+                confirmedBatchesCount: mappedBatches.length,
+                awaitingAgentCount: awaitingAgentBatches.length,
+                assignedBatchesCount: assignedBatches.length,
+                batches: mappedBatches,
+                awaitingAgentBatches,
+                assignedBatches
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+exports.getAggregationOverview = getAggregationOverview;
