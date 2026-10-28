@@ -67,14 +67,14 @@ export const extractArea = (locationString) => {
   return parts[0].trim();
 };
 
-export const MIN_BATCH_SIZE = 4;
-export const MAX_BATCH_SIZE = 6;
+export const MIN_BATCH_SIZE = 1;
+export const MAX_BATCH_SIZE = 4;
 
 /**
  * Smart Order Aggregation Function
  * Evaluates orders ready or pending aggregation and groups compatible ones.
  * Isolated utility aligned with backend AI/optimization engine.
- * Requires minimum 4 ready orders to form a valid batch!
+ * Supports batches of 1 to 4 orders (maximum 4 orders per batch).
  */
 export const findSuitableOrderGroups = (orders = [], agents = [], config = {}) => {
   const minBatchSize = config.minBatchSize || MIN_BATCH_SIZE;
@@ -91,7 +91,7 @@ export const findSuitableOrderGroups = (orders = [], agents = [], config = {}) =
     return isReady && isNotBatched && isNotTerminal;
   });
 
-  if (eligibleOrders.length < minBatchSize) return [];
+  if (eligibleOrders.length === 0) return [];
 
   // Group by delivery date and compatible time slots
   const candidatesByDate = {};
@@ -193,8 +193,8 @@ export const findSuitableOrderGroups = (orders = [], agents = [], config = {}) =
       // Cap score between 60% and 98%
       const finalScore = Math.min(98, Math.max(60, score));
 
-      // CRITICAL: Minimum 4 orders required to confirm a batch!
-      if (groupOrders.length >= minBatchSize) {
+      // Enforce batch size: maximum 4 orders (1 to 4 orders per batch)
+      if (groupOrders.length >= minBatchSize && groupOrders.length <= maxOrdersPerBatch) {
         // Estimated metrics
         const estimatedDistance = parseFloat((2.5 + groupOrders.length * 1.2).toFixed(1)); // km
         const estimatedTime = Math.round(15 + estimatedDistance * 6); // mins

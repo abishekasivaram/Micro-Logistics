@@ -320,7 +320,7 @@ export const AppProvider = ({ children }) => {
         name: data.fullName,
         username: data.username,
         email: data.email,
-        password: data.password || 'password123',
+        password: data.password,
         phone: data.phone,
         address: data.address,
         area: data.cityArea || 'Local',
@@ -346,7 +346,7 @@ export const AppProvider = ({ children }) => {
         shopName: data.businessName,
         username: data.username,
         email: data.email,
-        password: data.password || 'password123',
+        password: data.password,
         phone: data.phone,
         address: data.businessAddress,
         area: data.cityArea || 'Local Area',
@@ -650,15 +650,15 @@ export const AppProvider = ({ children }) => {
         !['CANCELLED', 'DELIVERED', 'COMPLETED', 'OUT_FOR_DELIVERY'].includes((o.status || o.orderStatus || '').toUpperCase())
       );
 
-      if (readyOrders.length < 4) {
-        addNotification(`Automatic Aggregation: ${readyOrders.length} ready order(s) queued. Minimum 4 required to form a batch.`, 'system');
-        return { success: true, queuedCount: readyOrders.length, formedBatchesCount: 0 };
+      if (readyOrders.length === 0) {
+        addNotification(`Automatic Aggregation: No ready orders waiting for aggregation.`, 'system');
+        return { success: true, queuedCount: 0, formedBatchesCount: 0 };
       }
 
       const clusters = [];
       for (let i = 0; i < readyOrders.length; i += 4) {
         const slice = readyOrders.slice(i, i + 4);
-        if (slice.length >= 4) clusters.push(slice);
+        if (slice.length > 0 && slice.length <= 4) clusters.push(slice);
       }
 
       if (clusters.length === 0) return { success: true, queuedCount: readyOrders.length, formedBatchesCount: 0 };
@@ -827,6 +827,72 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       console.error(err);
       addNotification(`Failed to update batch status.`, 'error');
+    }
+  };
+
+  const respondToBatchAssignment = async (batchId, action) => {
+    if (currentUser?.isDemo || offlineMode) {
+      if (action === 'ACCEPT') {
+        setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, status: 'Pickup in Progress' } : b));
+        addNotification(`Batch ${batchId} accepted. You may start pickups.`, 'delivery');
+        return { success: true };
+      } else {
+        setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, agentId: null, agentName: null, status: 'Pending Assignment' } : b));
+        addNotification(`Assignment declined. Reassigning batch...`, 'delivery');
+        return { success: true };
+      }
+    }
+
+    try {
+      const res = await api.post(`/delivery/batches/${batchId}/respond`, { action });
+      if (res.data?.success) {
+        const [batchRes, ordRes] = await Promise.all([
+          api.get('/delivery/batches'),
+          api.get('/orders')
+        ]);
+        if (batchRes.data?.success) setDeliveryBatches(batchRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
+        addNotification(res.data.message || `Batch assignment response recorded.`, 'delivery');
+        return res.data;
+      }
+      return { success: false, message: res.data?.message };
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || 'Failed to process batch response.';
+      addNotification(msg, 'error');
+      return { success: false, message: msg };
+    }
+  };
+
+  const verifyDeliveryOtp = async (orderId, otp) => {
+    if (currentUser?.isDemo || offlineMode) {
+      setOrders(prev => prev.map(o => (o.id === orderId || o.orderId === orderId) ? {
+        ...o,
+        status: 'DELIVERED',
+        orderStatus: 'DELIVERED',
+        deliveryStatus: 'Delivered to Customer'
+      } : o));
+      addNotification(`Order ${orderId} OTP verified and delivered!`, 'delivery');
+      return { success: true };
+    }
+
+    try {
+      const res = await api.post('/delivery/verify-otp', { orderId, otp });
+      if (res.data?.success) {
+        const [batchRes, ordRes] = await Promise.all([
+          api.get('/delivery/batches'),
+          api.get('/orders')
+        ]);
+        if (batchRes.data?.success) setDeliveryBatches(batchRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
+        addNotification(res.data.message || `Order ${orderId} successfully delivered!`, 'success');
+        return { success: true, data: res.data.data };
+      }
+      return { success: false, message: res.data?.message || 'Verification failed' };
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid OTP code.';
+      addNotification(msg, 'error');
+      return { success: false, message: msg };
     }
   };
 
@@ -1118,6 +1184,7 @@ export const AppProvider = ({ children }) => {
       customers, setCustomers, updateCustomerStatus,
       deliveryAgents, setDeliveryAgents, addDeliveryAgent, updateDeliveryAgent,
       deliveryBatches, setDeliveryBatches, createDeliveryBatch, assignAgentToBatch, updateBatchStatus,
+      respondToBatchAssignment, verifyDeliveryOtp,
       runAutomaticAggregation,
       deliveryGroups,
       products, addProduct, updateProduct, deleteProduct,

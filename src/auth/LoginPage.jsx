@@ -6,6 +6,15 @@ import { supabase } from '../services/supabaseClient';
 import { rectifyCustomerUser } from '../utils/customerDirectory';
 import './LoginPage.css';
 
+const getRole = (metadata, email = '') => {
+  if (metadata?.role) return metadata.role;
+  const lower = (email || '').toLowerCase();
+  if (lower.includes('admin')) return 'admin';
+  if (lower.includes('agent') || lower.includes('da')) return 'delivery_partner';
+  if (lower.includes('vendor') || lower.includes('seller') || lower.includes('nammachennai')) return 'vendor';
+  return 'customer';
+};
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const { setCurrentUser, customers, vendors, deliveryAgents } = useAppContext();
@@ -81,6 +90,7 @@ const LoginPage = () => {
         'v2': 'v2@example.com',
         'v3': 'v3@example.com',
         'v4': 'v4@example.com',
+        'da': 'da2@example.com',
         'da1': 'agent1_auth@example.com',
         'da2': 'da2@example.com',
         'da3': 'da3@example.com',
@@ -199,19 +209,14 @@ const LoginPage = () => {
   };
 
   const handleDemoLogin = (role) => {
-    const demoUsers = {
-      customer: { id: 'demo-cust', email: 'demo@customer.local', name: 'Demo Customer', username: 'demo_customer', isDemo: true },
-      vendor: { id: 'demo-vend', email: 'demo@vendor.local', name: 'Demo Vendor', username: 'demo_vendor', isDemo: true, shop_name: 'Demo Vendor' },
-      admin: { id: 'demo-admin', email: 'demo@admin.local', name: 'Demo Admin', username: 'demo_admin', isDemo: true },
-      delivery_partner: { id: 'demo-dp', email: 'demo@delivery.local', name: 'Demo Agent', username: 'demo_dp', isDemo: true },
+    const demoRoleMap = {
+      customer: 'c1',
+      vendor: 'v1',
+      admin: 'admin',
+      delivery_partner: 'da1'
     };
-    const userObj = demoUsers[role];
-    setCurrentUser({ ...userObj, role });
-    
-    if (role === 'customer') navigate('/customer-dashboard');
-    else if (role === 'vendor') navigate('/vendor-dashboard');
-    else if (role === 'admin') navigate('/admin-dashboard');
-    else if (role === 'delivery_partner') navigate('/delivery');
+    setUsernameOrEmail(demoRoleMap[role] || '');
+    setErrorMsg('');
   };
 
   return (
@@ -355,7 +360,7 @@ const LoginPage = () => {
                   <Lock size={24} className="text-warning" />
                   <h3 id="recovery-title">Password Recovery</h3>
                 </div>
-                <p>For demonstration purposes, default passwords are set to <strong>password123</strong>.</p>
+                <p>Please contact your system administrator or store coordinator to reset your account password.</p>
                 <p className="text-sm text-secondary mt-2">Press <kbd>Esc</kbd> or click Close to dismiss.</p>
                 <button className="btn btn-primary w-full mt-4" onClick={() => setShowForgotModal(false)}>
                   Close

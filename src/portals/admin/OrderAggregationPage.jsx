@@ -35,7 +35,7 @@ const OrderAggregationPage = () => {
       !['CANCELLED', 'DELIVERED', 'COMPLETED', 'OUT_FOR_DELIVERY'].includes((o.status || o.orderStatus || '').toUpperCase())
     ).length;
 
-    if (readyCount >= 4 && typeof runAutomaticAggregation === 'function') {
+    if (readyCount >= 1 && typeof runAutomaticAggregation === 'function') {
       runAutomaticAggregation().catch(() => {});
     }
   }, []);
@@ -623,23 +623,23 @@ const OrderAggregationPage = () => {
         </div>
 
         <div className="lifecycle-pipeline-grid">
-          {/* Stage 1: Waiting for enough compatible orders */}
-          <div className={`pipeline-stage-card ${queuedReadyCount < 4 ? 'is-active' : 'is-passed'}`}>
+          {/* Stage 1: Waiting for compatible orders */}
+          <div className={`pipeline-stage-card ${queuedReadyCount === 0 ? 'is-active' : 'is-passed'}`}>
             <div className="stage-card-number">01</div>
             <div className="stage-card-header">
               <Clock size={16} />
-              <h4>Waiting for Compatible Orders</h4>
+              <h4>Order Readiness</h4>
             </div>
             <p className="stage-card-desc">
-              Minimum 4 ready orders required per batch. Currently <strong>{queuedReadyCount}</strong> order(s) awaiting volume threshold.
+              Maximum 4 orders per batch. Currently <strong>{queuedReadyCount}</strong> ready order(s) eligible for automated clustering.
             </p>
             <div className="stage-card-status">
-              {queuedReadyCount < 4 ? 'Awaiting Volume' : 'Threshold Satisfied'}
+              {queuedReadyCount === 0 ? 'Queue Empty' : `${queuedReadyCount} Ready Order(s)`}
             </div>
           </div>
 
           {/* Stage 2: Ready for Automatic Assignment */}
-          <div className={`pipeline-stage-card ${queuedReadyCount >= 4 ? 'is-active' : ''}`}>
+          <div className={`pipeline-stage-card ${queuedReadyCount > 0 ? 'is-active' : ''}`}>
             <div className="stage-card-number">02</div>
             <div className="stage-card-header">
               <Sparkles size={16} />

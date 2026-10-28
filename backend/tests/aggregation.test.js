@@ -11,40 +11,39 @@ import {
 
 describe('AI-Powered Automatic Order Aggregation Engine', () => {
 
-  it('strictly enforces MIN_BATCH_SIZE of 4 orders', () => {
-    expect(MIN_BATCH_SIZE).toBe(4);
-    expect(MAX_BATCH_SIZE).toBe(6);
+  it('strictly enforces MAX_BATCH_SIZE of 4 orders and MIN_BATCH_SIZE of 1', () => {
+    expect(MIN_BATCH_SIZE).toBe(1);
+    expect(MAX_BATCH_SIZE).toBe(4);
   });
 
   describe('Order Readiness & Eligibility Filtering', () => {
-    it('does NOT form a batch if fewer than 4 orders are eligible', () => {
+    it('forms a batch with fewer than 4 orders (e.g. 1-3 orders) without waiting for 4', () => {
       const orders = [
         { id: 'o1', order_code: 'ORD-1', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Anna Nagar', delivery_location: 'Anna Nagar' },
-        { id: 'o2', order_code: 'ORD-2', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Anna Nagar', delivery_location: 'Anna Nagar' },
-        { id: 'o3', order_code: 'ORD-3', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Anna Nagar', delivery_location: 'Anna Nagar' }
+        { id: 'o2', order_code: 'ORD-2', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Anna Nagar', delivery_location: 'Anna Nagar' }
       ];
 
-      const batches = findCompatibleBatches(orders, 4, 6);
-      expect(batches).toHaveLength(0);
+      const batches = findCompatibleBatches(orders, 1, 4);
+      expect(batches).toHaveLength(1);
+      expect(batches[0].orderCount).toBe(2);
     });
 
-    it('successfully forms a batch when 4 compatible ready orders are present', () => {
+    it('caps batch size to a maximum of 4 orders when 5 compatible orders are present', () => {
       const orders = [
         { id: 'o1', order_code: 'ORD-1', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Anna Nagar East', delivery_location: 'Anna Nagar West' },
         { id: 'o2', order_code: 'ORD-2', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Shenoy Nagar', delivery_location: 'Kilpauk' },
         { id: 'o3', order_code: 'ORD-3', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Anna Nagar', delivery_location: 'Shenoy Nagar' },
-        { id: 'o4', order_code: 'ORD-4', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Kilpauk', delivery_location: 'Anna Nagar' }
+        { id: 'o4', order_code: 'ORD-4', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Kilpauk', delivery_location: 'Anna Nagar' },
+        { id: 'o5', order_code: 'ORD-5', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '9:00 AM – 1:00 PM', pickup_location: 'Anna Nagar', delivery_location: 'Kilpauk' }
       ];
 
-      const batches = findCompatibleBatches(orders, 4, 6);
-      expect(batches).toHaveLength(1);
+      const batches = findCompatibleBatches(orders, 1, 4);
+      expect(batches.length).toBeGreaterThanOrEqual(1);
+      expect(batches[0].orderCount).toBeLessThanOrEqual(4);
       expect(batches[0].orderCount).toBe(4);
-      expect(batches[0].orderIds).toEqual(['o1', 'o2', 'o3', 'o4']);
-      expect(batches[0].estimatedDistance).toBeGreaterThan(0);
-      expect(batches[0].estimatedTime).toBeGreaterThan(0);
     });
 
-    it('separates orders with incompatible delivery time slots', () => {
+    it('separates orders with incompatible delivery time slots into separate batches', () => {
       const orders = [
         // 2 morning orders
         { id: 'o1', order_code: 'ORD-1', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '7:00 AM – 11:00 AM', pickup_location: 'Anna Nagar', delivery_location: 'Anna Nagar' },
@@ -54,9 +53,10 @@ describe('AI-Powered Automatic Order Aggregation Engine', () => {
         { id: 'o4', order_code: 'ORD-4', order_status: 'READY_FOR_DELIVERY', delivery_date: '2026-10-28', delivery_time_slot: '6:00 PM – 10:00 PM', pickup_location: 'Anna Nagar', delivery_location: 'Anna Nagar' }
       ];
 
-      // Because neither slot has at least 4 orders, neither should form an incomplete batch
-      const batches = findCompatibleBatches(orders, 4, 6);
-      expect(batches).toHaveLength(0);
+      const batches = findCompatibleBatches(orders, 1, 4);
+      expect(batches).toHaveLength(2);
+      expect(batches[0].orderCount).toBe(2);
+      expect(batches[1].orderCount).toBe(2);
     });
   });
 

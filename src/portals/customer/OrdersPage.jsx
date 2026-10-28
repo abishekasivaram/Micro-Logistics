@@ -150,8 +150,17 @@ const OrdersPage = () => {
                     ) : (
                       <div style={{ padding: '16px', background: '#fef2f2', color: '#b91c1c', borderRadius: '12px', fontSize: '14px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}><X size={18} /> Order Cancelled</div>
                     )}
-                    <div className="customer-order-actions">
-                      <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setViewingOrder(order)}>View Details</button>
+                    <div className="customer-order-actions" style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                      <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setViewingOrder(order)}>View Details & PIN</button>
+                      {currentSt !== 'CANCELLED' && (
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} 
+                          onClick={() => navigate('/track-delivery', { state: { orderId: order.id || order.orderId } })}
+                        >
+                          <Navigation size={14} /> Track Delivery
+                        </button>
+                      )}
                     </div>
                    </div>
                 </div>

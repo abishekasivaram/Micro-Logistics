@@ -248,9 +248,9 @@ const updateOrderStatus = async (req, res) => {
                 return res.status(403).json({ success: false, message: 'Forbidden: Vendors cannot transition orders to this status' });
             }
 
-            // Vendor Handover rule: Only allowed when a delivery person is assigned to the order or batch
+            // Vendor Handover rule: Only allowed when a delivery person is confirmed assigned by backend
             if (status === 'HANDED_OVER' || status === 'PICKED_UP') {
-                if (!order.assigned_agent_id && !order.batch_id) {
+                if (!order.assigned_agent_id) {
                     return res.status(400).json({ 
                         success: false, 
                         message: 'Cannot confirm handover: A delivery person has not yet been assigned by Admin' 
@@ -292,6 +292,13 @@ const updateOrderStatus = async (req, res) => {
             deliveryStatus = 'PICKED_UP';
         }
         if (status === 'OUT_FOR_DELIVERY') {
+            // Requirement 6: An order must not become in transit before the required confirmations (vendor handover and delivery person collection) are complete.
+            if (order.delivery_status !== 'PICKED_UP' && userRole !== 'admin') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot start transit: Vendor handover must be confirmed before the order can be marked out for delivery'
+                });
+            }
             dbOrderStatus = 'OUT_FOR_DELIVERY';
             deliveryStatus = 'OUT_FOR_DELIVERY';
         }

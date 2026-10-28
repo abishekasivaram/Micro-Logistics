@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runAutomaticAggregation = exports.retryUnassignedBatches = exports.findCompatibleBatches = exports.findBestAvailableAgent = exports.areTimeSlotsCompatible = exports.extractArea = exports.getZoneCoordinates = exports.MIN_BATCH_SIZE = exports.MAX_BATCH_SIZE = void 0;
+exports.runAutomaticAggregation = exports.retryUnassignedBatches = exports.reassignBatch = exports.findCompatibleBatches = exports.findBestAvailableAgent = exports.areTimeSlotsCompatible = exports.extractArea = exports.getZoneCoordinates = exports.MIN_BATCH_SIZE = exports.MAX_BATCH_SIZE = void 0;
 
 const supabase_1 = require("../config/supabase");
 
-const MIN_BATCH_SIZE = 4;
+const MIN_BATCH_SIZE = 1;
 exports.MIN_BATCH_SIZE = MIN_BATCH_SIZE;
 
-const MAX_BATCH_SIZE = 6;
+const MAX_BATCH_SIZE = 4;
 exports.MAX_BATCH_SIZE = MAX_BATCH_SIZE;
 
 // Coordinates center for Chennai transit zones
@@ -102,10 +102,10 @@ exports.areTimeSlotsCompatible = areTimeSlotsCompatible;
 /**
  * AI & Proximity-based order clustering function
  * Only orders marked ready (READY_FOR_DELIVERY) are eligible.
- * Enforces minimum batch size of 4 orders!
+ * Batch size is maximum 4 orders (1, 2, 3, or 4 orders per batch). Never exceeds 4.
  */
 const findCompatibleBatches = (eligibleOrders, minBatchSize = MIN_BATCH_SIZE, maxBatchSize = MAX_BATCH_SIZE) => {
-  if (!eligibleOrders || eligibleOrders.length < minBatchSize) {
+  if (!eligibleOrders || eligibleOrders.length === 0) {
     return [];
   }
 
@@ -148,7 +148,7 @@ const findCompatibleBatches = (eligibleOrders, minBatchSize = MIN_BATCH_SIZE, ma
         const timeOk = areTimeSlotsCompatible(seedSlot, candidateSlot);
         if (!timeOk) continue;
 
-        // Check spatial proximity (pickup within 7km, delivery within 8km)
+        // Check spatial proximity (pickup within 8.5km, delivery within 9.0km)
         const pickupDist = calculateDistance(seedPickup, candidatePickup);
         const dropDist = calculateDistance(seedDrop, candidateDrop);
 
@@ -157,8 +157,8 @@ const findCompatibleBatches = (eligibleOrders, minBatchSize = MIN_BATCH_SIZE, ma
         }
       }
 
-      // CRITICAL: Minimum 4 orders required to confirm a batch!
-      if (cluster.length >= minBatchSize) {
+      // Enforce batch size: minimum 1, maximum 4
+      if (cluster.length >= minBatchSize && cluster.length <= maxBatchSize) {
         cluster.forEach(o => usedOrderIds.add(o.id));
 
         const pickupAreas = Array.from(new Set(cluster.map(o => extractArea(o.pickup_location || o.pickupLocation))));
@@ -190,11 +190,16 @@ exports.findCompatibleBatches = findCompatibleBatches;
 /**
  * Select the best available delivery agent for a formed batch
  */
-const findBestAvailableAgent = (batch, agents = []) => {
+const findBestAvailableAgent = (batch, agents = [], excludedAgentIds = []) => {
   if (!agents || agents.length === 0) return null;
 
-  // 1. Filter available agents
+  // 1. Filter available agents and exclude any rejecting agent
   const availableAgents = agents.filter(a => {
+    if (excludedAgentIds && excludedAgentIds.length > 0) {
+      if (excludedAgentIds.includes(a.id) || excludedAgentIds.includes(a.legacy_id)) {
+        return false;
+      }
+    }
     const st = (a.status || '').toLowerCase();
     const av = (a.availability || '').toLowerCase();
     return st === 'available' || av === 'available';
@@ -231,6 +236,134 @@ const findBestAvailableAgent = (batch, agents = []) => {
   return scoredAgents[0]?.agent || null;
 };
 exports.findBestAvailableAgent = findBestAvailableAgent;
+
+/**
+ * Reassign a batch safely when a delivery agent rejects or declines assignment
+ */
+const reassignBatch = async (batchIdentifier, rejectedAgentId) => {
+  try {
+    if (!supabase_1.supabase) return { success: false, message: 'DB not available' };
+
+    let query = supabase_1.supabase.from('delivery_batches').select(`
+      *,
+      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location)
+    `);
+    if (batchIdentifier.includes('-') && batchIdentifier.length > 15) {
+      query = query.eq('id', batchIdentifier).single();
+    } else {
+      query = query.eq('batch_code', batchIdentifier).single();
+    }
+
+    const { data: batch, error: bErr } = await query;
+    if (bErr || !batch) {
+      return { success: false, message: 'Batch not found' };
+    }
+
+    // 1. Decrement rejected agent's workload if previously recorded
+    const agentToUnassign = rejectedAgentId || batch.agent_id;
+    if (agentToUnassign) {
+      const { data: prevAgent } = await supabase_1.supabase
+        .from('delivery_agents')
+        .select('id, current_orders')
+        .or(`id.eq.${agentToUnassign},legacy_id.eq.${agentToUnassign}`)
+        .single();
+
+      if (prevAgent) {
+        const updatedCount = Math.max(0, (prevAgent.current_orders || 0) - (batch.order_count || 1));
+        await supabase_1.supabase
+          .from('delivery_agents')
+          .update({ current_orders: updatedCount })
+          .eq('id', prevAgent.id);
+      }
+    }
+
+    // 2. Fetch candidate agents excluding the rejecting agent
+    const { data: allAgents } = await supabase_1.supabase
+      .from('delivery_agents')
+      .select('*, profile:profiles(username, phone)');
+
+    const excluded = [];
+    if (agentToUnassign) excluded.push(agentToUnassign);
+    if (batch.agent_id) excluded.push(batch.agent_id);
+
+    const pickupAreas = Array.from(new Set((batch.orders || []).map(o => extractArea(o.pickup_location))));
+    const dropAreas = Array.from(new Set((batch.orders || []).map(o => extractArea(o.delivery_location))));
+
+    const batchCandidate = {
+      pickupArea: pickupAreas.join(' / ') || 'Central Zone',
+      deliveryArea: dropAreas.join(' / ') || 'Central Zone',
+      orderCount: batch.order_count || (batch.orders || []).length
+    };
+
+    const newAgent = findBestAvailableAgent(batchCandidate, allAgents || [], excluded);
+
+    if (newAgent) {
+      // Reassign to new agent
+      await supabase_1.supabase
+        .from('delivery_batches')
+        .update({
+          agent_id: newAgent.id,
+          status: 'ASSIGNED',
+          aggregation_status: 'ASSIGNED'
+        })
+        .eq('id', batch.id);
+
+      await supabase_1.supabase
+        .from('orders')
+        .update({
+          assigned_agent_id: newAgent.id,
+          order_status: 'ASSIGNED',
+          delivery_status: 'ASSIGNED',
+          aggregation_status: 'ASSIGNED'
+        })
+        .eq('batch_id', batch.id);
+
+      const newAgentOrders = (newAgent.current_orders || 0) + (batch.order_count || 1);
+      await supabase_1.supabase
+        .from('delivery_agents')
+        .update({ current_orders: newAgentOrders })
+        .eq('id', newAgent.id);
+
+      return {
+        success: true,
+        reassigned: true,
+        newAgentId: newAgent.id,
+        newAgentName: newAgent.profile?.username || 'Agent',
+        message: `Batch safely reassigned to ${newAgent.profile?.username || 'new courier'}`
+      };
+    } else {
+      // No alternate agent available right now; keep batch pending assignment
+      await supabase_1.supabase
+        .from('delivery_batches')
+        .update({
+          agent_id: null,
+          status: 'PENDING_ASSIGNMENT',
+          aggregation_status: 'BATCH_CREATED'
+        })
+        .eq('id', batch.id);
+
+      await supabase_1.supabase
+        .from('orders')
+        .update({
+          assigned_agent_id: null,
+          order_status: 'READY_FOR_DELIVERY',
+          delivery_status: 'PENDING_ASSIGNMENT',
+          aggregation_status: 'BATCH_CREATED'
+        })
+        .eq('batch_id', batch.id);
+
+      return {
+        success: true,
+        reassigned: false,
+        message: 'Assignment declined. Batch marked Pending Assignment awaiting available courier.'
+      };
+    }
+  } catch (err) {
+    console.error('Reassignment error:', err);
+    return { success: false, message: err.message };
+  }
+};
+exports.reassignBatch = reassignBatch;
 
 // Concurrency mutex flag
 let isAggregationRunning = false;
@@ -269,17 +402,17 @@ const runAutomaticAggregation = async () => {
 
     const queuedCount = eligibleOrders ? eligibleOrders.length : 0;
 
-    // 2. Enforce minimum batch size (>= 4 orders)
-    if (queuedCount < MIN_BATCH_SIZE) {
+    // 2. Check if any eligible ready orders exist
+    if (queuedCount === 0) {
       return {
         success: true,
         formedBatchesCount: 0,
-        queuedCount,
-        message: `Pending aggregation: ${queuedCount} ready order(s) detected. Minimum ${MIN_BATCH_SIZE} required to form an automated delivery batch.`
+        queuedCount: 0,
+        message: 'No unassigned ready orders awaiting delivery aggregation.'
       };
     }
 
-    // 3. Cluster compatible orders into batches of 4-6
+    // 3. Cluster compatible orders into batches of maximum 4 orders (1-4 orders per batch)
     const validBatches = findCompatibleBatches(eligibleOrders, MIN_BATCH_SIZE, MAX_BATCH_SIZE);
 
     if (validBatches.length === 0) {
@@ -287,7 +420,7 @@ const runAutomaticAggregation = async () => {
         success: true,
         formedBatchesCount: 0,
         queuedCount,
-        message: `Pending compatible clusters: ${queuedCount} ready order(s) detected, but no group of >= ${MIN_BATCH_SIZE} satisfies route and time window constraints yet.`
+        message: `Pending compatible clusters: ${queuedCount} ready order(s) detected, but awaiting compatible route or time window grouping.`
       };
     }
 

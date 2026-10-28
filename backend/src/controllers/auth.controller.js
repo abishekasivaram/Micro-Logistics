@@ -34,6 +34,7 @@ exports.resolveIdentifier = async (req, res) => {
       'v2': 'v2@example.com',
       'v3': 'v3@example.com',
       'v4': 'v4@example.com',
+      'da': 'da2@example.com',
       'da1': 'agent1_auth@example.com',
       'da2': 'da2@example.com',
       'da3': 'da3@example.com',

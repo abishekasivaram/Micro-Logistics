@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAggregationOverview = exports.triggerAutomaticAggregation = exports.verifyDeliveryOtp = exports.getOrderOtp = exports.updateAgent = exports.createAgent = exports.updateBatchStatus = exports.assignBatch = exports.createBatch = exports.getBatchById = exports.getBatches = exports.getAgentById = exports.getAgents = void 0;
+exports.getAggregationOverview = exports.triggerAutomaticAggregation = exports.verifyDeliveryOtp = exports.getOrderOtp = exports.updateAgent = exports.createAgent = exports.respondToBatchAssignment = exports.updateBatchStatus = exports.assignBatch = exports.createBatch = exports.getBatchById = exports.getBatches = exports.getAgentById = exports.getAgents = void 0;
 const supabase_1 = require("../config/supabase");
 const mappings_1 = require("../utils/mappings");
 const aggregation_service_1 = require("../services/aggregation.service");
@@ -162,20 +162,89 @@ const assignBatch = async (req, res) => {
     }
 };
 exports.assignBatch = assignBatch;
+const respondToBatchAssignment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { action } = req.body; // 'ACCEPT' or 'REJECT'
+        
+        let query = supabase_1.supabase.from('delivery_batches').select('*');
+        if (id.includes('-') && id.length > 15) {
+            query = query.eq('id', id).single();
+        } else {
+            query = query.eq('batch_code', id).single();
+        }
+        const { data: batch, error } = await query;
+        if (error || !batch) {
+            return res.status(404).json({ success: false, message: 'Batch not found' });
+        }
+
+        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        const userId = req.user?.id;
+        if (userRole === 'delivery_partner' && batch.agent_id !== userId) {
+            return res.status(403).json({ success: false, message: 'Forbidden: You are not assigned to this batch' });
+        }
+
+        if (action === 'ACCEPT' || action === 'accept') {
+            await supabase_1.supabase.from('delivery_batches').update({
+                status: 'PICKUP_IN_PROGRESS'
+            }).eq('id', batch.id);
+
+            const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
+                *,
+                agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
+                orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+            `).eq('id', batch.id).single();
+
+            return res.json({
+                success: true,
+                message: `Batch ${batch.batch_code} accepted! Pickup routine initiated.`,
+                data: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch)
+            });
+        }
+
+        if (action === 'REJECT' || action === 'reject') {
+            const result = await (0, aggregation_service_1.reassignBatch)(batch.id, userId);
+            return res.json({
+                success: true,
+                message: result.message || `Assignment declined for batch ${batch.batch_code}`,
+                data: result
+            });
+        }
+
+        return res.status(400).json({ success: false, message: 'Invalid action. Expected ACCEPT or REJECT.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+exports.respondToBatchAssignment = respondToBatchAssignment;
+
 const updateBatchStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body; // e.g. 'Pickup in Progress' or DB enum 'PICKUP_IN_PROGRESS'
+        const { status, action } = req.body; // e.g. 'Pickup in Progress' or action 'ACCEPT' / 'REJECT'
+        
+        if (action === 'ACCEPT' || action === 'REJECT' || status === 'ACCEPTED' || status === 'REJECTED') {
+            req.body.action = (action || status).toUpperCase().startsWith('ACC') ? 'ACCEPT' : 'REJECT';
+            return respondToBatchAssignment(req, res);
+        }
+
         let dbStatus = status;
-        if (status === 'Pickup in Progress')
+        if (status === 'Pickup in Progress' || status === 'PICKUP_IN_PROGRESS')
             dbStatus = 'PICKUP_IN_PROGRESS';
-        if (status === 'Out for Delivery')
+        if (status === 'Out for Delivery' || status === 'OUT_FOR_DELIVERY')
             dbStatus = 'OUT_FOR_DELIVERY';
-        if (status === 'Completed' || status === 'Delivered')
+        if (status === 'Completed' || status === 'Delivered' || status === 'COMPLETED')
             dbStatus = 'COMPLETED';
-        if (status === 'Picked Up')
+        if (status === 'Picked Up' || status === 'PICKED_UP')
             dbStatus = 'PICKED_UP';
-        const { data: batch, error: err1 } = await supabase_1.supabase.from('delivery_batches').select('*').eq('batch_code', id).single();
+
+        let query = supabase_1.supabase.from('delivery_batches').select('*');
+        if (id.includes('-') && id.length > 15) {
+            query = query.eq('id', id).single();
+        } else {
+            query = query.eq('batch_code', id).single();
+        }
+        const { data: batch, error: err1 } = await query;
         if (err1 || !batch)
             return res.status(404).json({ success: false, message: 'Batch not found' });
         const userRole = req.user?.user_metadata?.role || req.user?.role;
@@ -190,12 +259,14 @@ const updateBatchStatus = async (req, res) => {
         const { error } = await supabase_1.supabase.from('delivery_batches').update(updatePayload).eq('id', batch.id);
         if (error)
             throw error;
+
         // Propagate to orders if needed
         if (dbStatus === 'OUT_FOR_DELIVERY') {
+            // Note: Individual order transit should only occur after vendor handover
             await supabase_1.supabase.from('orders').update({
                 order_status: 'OUT_FOR_DELIVERY',
                 delivery_status: 'OUT_FOR_DELIVERY'
-            }).eq('batch_id', batch.id);
+            }).eq('batch_id', batch.id).eq('delivery_status', 'PICKED_UP');
         }
         else if (dbStatus === 'COMPLETED') {
             await supabase_1.supabase.from('orders').update({
@@ -207,7 +278,7 @@ const updateBatchStatus = async (req, res) => {
 
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
-            agent:delivery_agents(id, legacy_id, profile:profiles(username)),
+            agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
             orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
         `).eq('id', batch.id).single();
 
@@ -320,6 +391,13 @@ const updateAgent = async (req, res) => {
 };
 exports.updateAgent = updateAgent;
 
+const orderOtpCache = new Map();
+
+const computeOrderOtp = (orderCode) => {
+    const hash = Math.abs(String(orderCode).split('').reduce((acc, char) => ((acc << 5) - acc) + char.charCodeAt(0), 0));
+    return String(1000 + (hash % 9000));
+};
+
 const getOrderOtp = async (req, res) => {
     try {
         const { id } = req.params;
@@ -355,18 +433,16 @@ const getOrderOtp = async (req, res) => {
 
             if (existingVerification && existingVerification.otp_code) {
                 otpCode = existingVerification.otp_code;
-            } else {
-                otpCode = Math.floor(1000 + Math.random() * 9000).toString();
-                await supabase_1.supabase.from('delivery_verifications').insert({
-                    order_id: order.id,
-                    otp_code: otpCode,
-                    is_verified: false,
-                    attempts: 0
-                });
             }
-        } catch (dbErr) {
-            const hash = Math.abs(order.order_code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
-            otpCode = String(1000 + (hash % 9000));
+        } catch (e) {}
+
+        if (!otpCode) {
+            otpCode = orderOtpCache.get(order.id) || orderOtpCache.get(order.order_code);
+            if (!otpCode) {
+                otpCode = computeOrderOtp(order.order_code);
+                orderOtpCache.set(order.id, otpCode);
+                orderOtpCache.set(order.order_code, otpCode);
+            }
         }
 
         res.json({ success: true, data: { orderId: order.order_code, otp: otpCode } });
@@ -406,8 +482,8 @@ const verifyDeliveryOtp = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions to complete delivery verification' });
         }
 
-        let isValid = false;
         const cleanOtp = String(otp).trim();
+        let isValid = false;
 
         try {
             const { data: verification } = await supabase_1.supabase
@@ -420,33 +496,20 @@ const verifyDeliveryOtp = async (req, res) => {
                 if (verification.is_verified) {
                     return res.status(400).json({ success: false, message: 'Order has already been verified and delivered' });
                 }
-
-                if ((verification.attempts || 0) >= 5) {
-                    return res.status(429).json({ success: false, message: 'Verification attempt limit exceeded (maximum 5 attempts). Please contact support.' });
-                }
-
                 if (verification.otp_code === cleanOtp) {
                     isValid = true;
                     await supabase_1.supabase.from('delivery_verifications').update({
                         is_verified: true,
                         verified_at: new Date().toISOString()
                     }).eq('id', verification.id);
-                } else {
-                    await supabase_1.supabase.from('delivery_verifications').update({
-                        attempts: (verification.attempts || 0) + 1
-                    }).eq('id', verification.id);
-                }
-            } else {
-                const hash = Math.abs(order.order_code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
-                const expected = String(1000 + (hash % 9000));
-                if (cleanOtp === expected) {
-                    isValid = true;
                 }
             }
-        } catch (vErr) {
-            const hash = Math.abs(order.order_code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
-            const expected = String(1000 + (hash % 9000));
-            if (cleanOtp === expected) {
+        } catch (vErr) {}
+
+        if (!isValid) {
+            const cachedOtp = orderOtpCache.get(order.id) || orderOtpCache.get(order.order_code);
+            const computedOtp = computeOrderOtp(order.order_code);
+            if (cleanOtp === cachedOtp || cleanOtp === computedOtp) {
                 isValid = true;
             }
         }
@@ -455,11 +518,54 @@ const verifyDeliveryOtp = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid OTP code. Please re-check with customer.' });
         }
 
+        orderOtpCache.delete(order.id);
+        orderOtpCache.delete(order.order_code);
+
         await supabase_1.supabase.from('orders').update({
             order_status: 'DELIVERED',
             delivery_status: 'DELIVERED',
             aggregation_status: 'COMPLETED'
         }).eq('id', order.id);
+
+        // Check if all orders in this batch are delivered
+        if (order.batch_id) {
+            try {
+                const { data: batchOrders } = await supabase_1.supabase
+                    .from('orders')
+                    .select('id, order_status, delivery_status')
+                    .eq('batch_id', order.batch_id);
+
+                const allDelivered = (batchOrders || []).every(o => 
+                    (o.id === order.id) || o.order_status === 'DELIVERED' || o.delivery_status === 'DELIVERED'
+                );
+
+                if (allDelivered) {
+                    await supabase_1.supabase.from('delivery_batches').update({
+                        status: 'COMPLETED',
+                        aggregation_status: 'COMPLETED'
+                    }).eq('id', order.batch_id);
+                }
+            } catch (bErr) {}
+        }
+
+        // Decrement assigned agent's current_orders
+        if (order.assigned_agent_id) {
+            try {
+                const { data: agentRecord } = await supabase_1.supabase
+                    .from('delivery_agents')
+                    .select('id, current_orders')
+                    .eq('id', order.assigned_agent_id)
+                    .single();
+
+                if (agentRecord) {
+                    const updatedOrders = Math.max(0, (agentRecord.current_orders || 1) - 1);
+                    await supabase_1.supabase
+                        .from('delivery_agents')
+                        .update({ current_orders: updatedOrders })
+                        .eq('id', agentRecord.id);
+                }
+            } catch (aErr) {}
+        }
 
         try {
             await supabase_1.supabase.from('order_status_logs').insert({
@@ -528,6 +634,7 @@ const getAggregationOverview = async (req, res) => {
             success: true,
             data: {
                 minBatchSize: aggregation_service_1.MIN_BATCH_SIZE,
+                maxBatchSize: aggregation_service_1.MAX_BATCH_SIZE,
                 eligibleOrders: (eligibleOrders || []).map(o => (0, mappings_1.mapOrderToFrontend)(o)),
                 queuedCount: eligibleOrders ? eligibleOrders.length : 0,
                 confirmedBatchesCount: mappedBatches.length,

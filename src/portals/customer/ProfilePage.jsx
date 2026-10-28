@@ -431,9 +431,8 @@ const ProfilePage = () => {
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
-    const expectedCurrentPassword = currentUser?.password || 'password123';
-    if (passwordForm.currentPassword !== expectedCurrentPassword) {
-      setErrorMsg('Current password is incorrect. (Default demo: password123)');
+    if (!passwordForm.currentPassword) {
+      setErrorMsg('Please enter your current password.');
       return;
     }
     if (passwordForm.newPassword.length < 6) {
@@ -1324,7 +1323,7 @@ const ProfilePage = () => {
                           {showPassword.current ? <EyeOff size={15} /> : <Eye size={15} />}
                         </button>
                       </div>
-                      <span className="field-hint-text">Demo password is <code>password123</code>.</span>
+                      <span className="field-hint-text">Enter your existing account password to confirm changes.</span>
                     </div>
 
                     <div className="form-group">
