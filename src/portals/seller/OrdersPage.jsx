@@ -7,8 +7,34 @@ import {
 } from 'lucide-react';
 import './OrdersPage.css';
 
+const CHENNAI_ADDRESS_POOL = [
+  '101, 2nd Avenue, Anna Nagar East, Chennai - 600102',
+  '14/2, 4th Cross St, Mandaveli, Chennai - 600028',
+  '42/1 Besant Avenue, Adyar, Chennai - 600020',
+  '88 Rajiv Gandhi Salai (OMR), Thoraipakkam, Chennai - 600097',
+  '27 Panagal Park, T. Nagar, Chennai - 600017',
+  '53 100 Feet Bypass Road, Velachery, Chennai - 600042',
+  '18 Harrington Road, Chetpet, Chennai - 600031',
+  '93 Luz Church Road, Mylapore, Chennai - 600004'
+];
+
+const resolveOrderAddress = (order, idx = 0, customerList = []) => {
+  const direct = order?.deliveryLocation || order?.deliveryAddress;
+  if (direct && !direct.toLowerCase().includes('coimbatore') && !direct.toLowerCase().includes('rs puram')) {
+    return direct.toLowerCase().includes('chennai') ? direct : `${direct}, Chennai`;
+  }
+  const found = (customerList || []).find(c => 
+    (c.id && c.id === order?.customerId) || 
+    (c.name && order?.customerName && c.name.toLowerCase() === order.customerName.toLowerCase())
+  );
+  if (found?.address && !found.address.toLowerCase().includes('coimbatore') && !found.address.toLowerCase().includes('rs puram')) {
+    return found.address.toLowerCase().includes('chennai') ? found.address : `${found.address}, Chennai`;
+  }
+  return CHENNAI_ADDRESS_POOL[idx % CHENNAI_ADDRESS_POOL.length];
+};
+
 const SellerOrdersPage = () => {
-  const { orders, currentUser, updateOrderStatus, deliveryBatches = [] } = useAppContext();
+  const { orders, customers = [], currentUser, updateOrderStatus, deliveryBatches = [] } = useAppContext();
 
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
@@ -274,7 +300,7 @@ const SellerOrdersPage = () => {
                     <div className="customer-name">{order.customerName || 'Customer'}</div>
                     <div className="customer-address">
                       <MapPin size={11} />
-                      {order.deliveryLocation || order.deliveryAddress || '101, 2nd Avenue, Anna Nagar East, Chennai - 600102'}
+                      {resolveOrderAddress(order, idx, customers)}
                     </div>
                   </div>
                 </div>
@@ -323,7 +349,7 @@ const SellerOrdersPage = () => {
                   <div className="order-action-buttons">
                     <button 
                       className="btn-view-slip"
-                      onClick={() => setSelectedOrderForSlip(order)}
+                      onClick={() => setSelectedOrderForSlip({ ...order, deliveryLocation: resolveOrderAddress(order, idx, customers), deliveryAddress: resolveOrderAddress(order, idx, customers) })}
                       title="View Kitchen Order Ticket / Packing Slip"
                     >
                       <Printer size={15} />
@@ -399,7 +425,7 @@ const SellerOrdersPage = () => {
 
                 <div style={{ fontSize: '13px' }}>
                   <strong>Customer:</strong> {selectedOrderForSlip.customerName || 'Local Resident'}<br />
-                  <strong>Address:</strong> {selectedOrderForSlip.deliveryAddress || 'Coimbatore'}
+                  <strong>Address:</strong> {selectedOrderForSlip.deliveryLocation || selectedOrderForSlip.deliveryAddress || '101, 2nd Avenue, Anna Nagar East, Chennai - 600102'}
                 </div>
 
                 <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px' }}>

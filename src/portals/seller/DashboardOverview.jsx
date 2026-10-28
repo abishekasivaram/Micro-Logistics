@@ -11,8 +11,34 @@ import ConfirmationModal from '../../components/common/ConfirmationModal';
 import OrderDetailsModal from '../../components/common/OrderDetailsModal';
 import './DashboardOverview.css';
 
+const CHENNAI_ADDRESS_POOL = [
+  '101, 2nd Avenue, Anna Nagar East, Chennai - 600102',
+  '14/2, 4th Cross St, Mandaveli, Chennai - 600028',
+  '42/1 Besant Avenue, Adyar, Chennai - 600020',
+  '88 Rajiv Gandhi Salai (OMR), Thoraipakkam, Chennai - 600097',
+  '27 Panagal Park, T. Nagar, Chennai - 600017',
+  '53 100 Feet Bypass Road, Velachery, Chennai - 600042',
+  '18 Harrington Road, Chetpet, Chennai - 600031',
+  '93 Luz Church Road, Mylapore, Chennai - 600004'
+];
+
+const resolveOrderAddress = (order, idx = 0, customerList = []) => {
+  const direct = order?.deliveryLocation || order?.deliveryAddress;
+  if (direct && !direct.toLowerCase().includes('coimbatore') && !direct.toLowerCase().includes('rs puram')) {
+    return direct.toLowerCase().includes('chennai') ? direct : `${direct}, Chennai`;
+  }
+  const found = (customerList || []).find(c => 
+    (c.id && c.id === order?.customerId) || 
+    (c.name && order?.customerName && c.name.toLowerCase() === order.customerName.toLowerCase())
+  );
+  if (found?.address && !found.address.toLowerCase().includes('coimbatore') && !found.address.toLowerCase().includes('rs puram')) {
+    return found.address.toLowerCase().includes('chennai') ? found.address : `${found.address}, Chennai`;
+  }
+  return CHENNAI_ADDRESS_POOL[idx % CHENNAI_ADDRESS_POOL.length];
+};
+
 const DashboardOverview = () => {
-  const { orders = [], currentUser, updateSellerProfile, updateOrderStatus } = useAppContext();
+  const { orders = [], customers = [], currentUser, updateSellerProfile, updateOrderStatus } = useAppContext();
   const navigate = useNavigate();
 
   const [isStoreClosedModalOpen, setIsStoreClosedModalOpen] = useState(false);
@@ -119,7 +145,7 @@ const DashboardOverview = () => {
                 ID: {displayId} {copiedId ? <Check size={12} color="var(--success)" /> : <Copy size={12} />}
               </div>
               <span className="seller-location-pill">
-                <MapPin size={11} /> RS Puram East Hub
+                <MapPin size={11} /> {currentUser?.address ? (currentUser.address.includes('Chennai') ? currentUser.address : `${currentUser.address}, Chennai`) : (currentUser?.area ? `${currentUser.area}, Chennai` : 'T. Nagar Hub, Chennai')}
               </span>
             </div>
             <h1 className="seller-store-name">
@@ -339,6 +365,7 @@ const DashboardOverview = () => {
                 const firstItemName = order.items?.[0]?.name || order.items?.[0]?.product?.name || 'Aavin Green Milk 500ml';
                 const customerDisplayName = formatCustomerName(order.customerName, idx);
                 const customerInitials = getCustomerInitials(order.customerName, idx);
+                const customerDeliveryAddress = resolveOrderAddress(order, idx, customers);
 
                 const isPending = ['PLACED', 'PENDING', 'NEW'].includes(status);
                 const isPreparing = ['PREPARING', 'CONFIRMED'].includes(status);
@@ -386,7 +413,7 @@ const DashboardOverview = () => {
 
                         <div className="order-destination-row">
                           <span className="order-destination-text">
-                            <MapPin size={12} /> {order.deliveryAddress || '142 D.B. Road, RS Puram, Coimbatore'}
+                            <MapPin size={12} /> {customerDeliveryAddress}
                           </span>
                           <span className="dot-sep">•</span>
                           <span className="order-slot-pill">
@@ -522,7 +549,7 @@ const DashboardOverview = () => {
 
                         <button 
                           className="card-action-btn secondary slip"
-                          onClick={() => setSelectedOrder(order)}
+                          onClick={() => setSelectedOrder({ ...order, customerName: customerDisplayName, deliveryLocation: customerDeliveryAddress, deliveryAddress: customerDeliveryAddress })}
                           title="View order receipt & packing list"
                         >
                           <Eye size={13} /> Order Slip
@@ -547,7 +574,7 @@ const DashboardOverview = () => {
                   <span className="ai-cluster-badge">Real-Time Routing</span>
                 </div>
                 <p className="ai-cluster-explanation">
-                  Orders in the RS Puram delivery sector are dynamically pooled onto aggregated courier runs with neighborhood grocers, slashing delivery transit times by <strong>35%</strong> and boosting packing throughput.
+                  Orders in the Central Chennai delivery sector (T. Nagar, Anna Nagar, Adyar, Velachery) are dynamically pooled onto aggregated courier runs with neighborhood grocers, slashing delivery transit times by <strong>35%</strong> and boosting packing throughput.
                 </p>
               </div>
             </div>
@@ -595,8 +622,8 @@ const DashboardOverview = () => {
                   <TrendingUp size={15} />
                 </div>
                 <div className="alert-main-text">
-                  <div className="alert-item-title">Surge in RS Puram</div>
-                  <div className="alert-item-desc">Order density in your delivery radius spiked +24% today.</div>
+                  <div className="alert-item-title">Surge in Central Chennai</div>
+                  <div className="alert-item-desc">Order density in your Chennai delivery radius spiked +24% today.</div>
                   <div className="alert-item-time">45 minutes ago</div>
                 </div>
               </div>
@@ -631,7 +658,7 @@ const DashboardOverview = () => {
             <div className="zone-meter-list">
               <div className="zone-meter-item">
                 <div className="zone-label-row">
-                  <span>RS Puram</span>
+                  <span>T. Nagar & West Mambalam</span>
                   <span>38 Orders (42%)</span>
                 </div>
                 <div className="zone-track-bg">
@@ -641,7 +668,7 @@ const DashboardOverview = () => {
 
               <div className="zone-meter-item">
                 <div className="zone-label-row">
-                  <span>Gandhipuram</span>
+                  <span>Anna Nagar & Kilpauk</span>
                   <span>24 Orders (26%)</span>
                 </div>
                 <div className="zone-track-bg">
@@ -651,7 +678,7 @@ const DashboardOverview = () => {
 
               <div className="zone-meter-item">
                 <div className="zone-label-row">
-                  <span>Saibaba Colony</span>
+                  <span>Adyar & Besant Nagar</span>
                   <span>16 Orders (18%)</span>
                 </div>
                 <div className="zone-track-bg">
@@ -661,7 +688,7 @@ const DashboardOverview = () => {
 
               <div className="zone-meter-item">
                 <div className="zone-label-row">
-                  <span>Peelamedu</span>
+                  <span>Velachery & OMR</span>
                   <span>12 Orders (14%)</span>
                 </div>
                 <div className="zone-track-bg">
@@ -675,7 +702,7 @@ const DashboardOverview = () => {
                 ⚡ High Fleet Availability
               </div>
               <div className="fleet-status-desc">
-                3 delivery agents are actively circulating in RS Puram sector.
+                3 delivery agents are actively circulating in Chennai micro-clusters.
               </div>
             </div>
           </div>

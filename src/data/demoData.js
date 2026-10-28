@@ -371,6 +371,7 @@ export const demoOrders = [
     vendorName: 'Namma Fresh Mart',
     pickupLocation: '12 T. Nagar Main Rd, Chennai',
     deliveryLocation: '101, 2nd Avenue, Anna Nagar East, Chennai - 600102',
+    deliveryAddress: '101, 2nd Avenue, Anna Nagar East, Chennai - 600102',
     deliveryDate: new Date().toISOString().split('T')[0],
     deliveryTimeSlot: '9:00 AM – 1:00 PM',
     status: 'PLACED',
@@ -396,6 +397,7 @@ export const demoOrders = [
     vendorName: 'Namma Fresh Mart',
     pickupLocation: '12 T. Nagar Main Rd, Chennai',
     deliveryLocation: '14/2, 4th Cross St, Mandaveli, Chennai - 600028',
+    deliveryAddress: '14/2, 4th Cross St, Mandaveli, Chennai - 600028',
     deliveryDate: new Date().toISOString().split('T')[0],
     deliveryTimeSlot: '9:00 AM – 1:00 PM',
     status: 'READY_FOR_DELIVERY',
@@ -421,6 +423,7 @@ export const demoOrders = [
     vendorName: 'Namma Fresh Mart',
     pickupLocation: '12 T. Nagar Main Rd, Chennai',
     deliveryLocation: '42/1 Besant Avenue, Adyar, Chennai - 600020',
+    deliveryAddress: '42/1 Besant Avenue, Adyar, Chennai - 600020',
     deliveryDate: new Date().toISOString().split('T')[0],
     deliveryTimeSlot: '12:00 PM – 4:00 PM',
     status: 'OUT_FOR_DELIVERY',
@@ -448,6 +451,7 @@ export const demoOrders = [
     vendorName: 'Namma Fresh Mart',
     pickupLocation: '12 T. Nagar Main Rd, Chennai',
     deliveryLocation: '88 Rajiv Gandhi Salai (OMR), Thoraipakkam, Chennai - 600097',
+    deliveryAddress: '88 Rajiv Gandhi Salai (OMR), Thoraipakkam, Chennai - 600097',
     deliveryDate: new Date(Date.now() - 86400000).toISOString().split('T')[0],
     deliveryTimeSlot: '9:00 AM – 1:00 PM',
     status: 'DELIVERED',
@@ -486,6 +490,7 @@ export const demoBatches = [
         orderCode: 'ORD-1002',
         pickupLocation: '12 T. Nagar Main Rd, Chennai',
         deliveryLocation: '14/2, 4th Cross St, Mandaveli, Chennai - 600028',
+    deliveryAddress: '14/2, 4th Cross St, Mandaveli, Chennai - 600028',
         vendor: { id: 'demo-vend', shopName: 'Namma Fresh Mart' }
       },
       {
@@ -493,6 +498,7 @@ export const demoBatches = [
         orderCode: 'ORD-1003',
         pickupLocation: '12 T. Nagar Main Rd, Chennai',
         deliveryLocation: '42/1 Besant Avenue, Adyar, Chennai - 600020',
+    deliveryAddress: '42/1 Besant Avenue, Adyar, Chennai - 600020',
         vendor: { id: 'demo-vend', shopName: 'Namma Fresh Mart' }
       }
     ]

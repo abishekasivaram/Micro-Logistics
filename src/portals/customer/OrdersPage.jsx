@@ -65,7 +65,7 @@ const OrdersPage = () => {
   const readyCount = userOrders.filter(o => ['READY_FOR_DELIVERY', 'ASSIGNED'].includes(o.orderStatus || o.status)).length;
   const compCount = userOrders.filter(o => ['DELIVERED'].includes(o.orderStatus || o.status)).length;
 
-  const readyForBatch = userOrders.filter(o => ['READY_FOR_DELIVERY', 'ASSIGNED'].includes(o.orderStatus || o.status) && o.deliveryLocation?.includes('RS Puram'));
+  const readyForBatch = userOrders.filter(o => ['READY_FOR_DELIVERY', 'ASSIGNED'].includes(o.orderStatus || o.status) && (o.deliveryLocation?.includes('Chennai') || o.deliveryLocation?.includes('Anna Nagar') || o.deliveryLocation?.includes('T. Nagar') || o.deliveryLocation?.includes('Adyar') || o.deliveryLocation?.includes('Velachery')));
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -200,7 +200,7 @@ const OrdersPage = () => {
         <div className="batch-banner">
           <div className="batch-banner-text">
             <Zap size={20} color="var(--primary)" />
-            <span><strong>{readyForBatch.length} orders ready</strong> for RS Puram. Combine for delivery to save ₹85.</span>
+            <span><strong>{readyForBatch.length} orders ready</strong> for Chennai cluster. Combine for delivery to save ₹85.</span>
           </div>
           <button className="btn btn-primary" onClick={() => navigate('/order-aggregation')}>Create Batch</button>
         </div>
