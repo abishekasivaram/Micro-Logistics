@@ -6,6 +6,7 @@ import {
   Boxes, ShieldCheck, Check
 } from 'lucide-react';
 import { useDelivery } from '../../context/DeliveryContext';
+import { useAppContext } from '../../context/AppContext';
 import { supabase } from '../../services/supabaseClient';
 import ConfirmationModal from '../common/ConfirmationModal';
 import './DeliverySidebar.css';
@@ -14,6 +15,7 @@ const DeliverySidebar = ({ isCollapsed, toggleCollapse, isOpenMobile, setIsOpenM
   const navigate = useNavigate();
   const location = useLocation();
   const { notifications, agentProfile } = useDelivery();
+  const { logout } = useAppContext();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const unreadNotifCount = (notifications || []).filter(n => !n.isRead).length;
@@ -23,11 +25,7 @@ const DeliverySidebar = ({ isCollapsed, toggleCollapse, isOpenMobile, setIsOpenM
   };
 
   const handleConfirmLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error(e);
-    }
+    await logout();
     setShowLogoutModal(false);
     navigate('/login');
   };

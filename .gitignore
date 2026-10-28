@@ -23,3 +23,14 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Environment and Credentials
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+backend/secure_credentials*
+secure_credentials*
+audit_output*.json
+

@@ -22,6 +22,7 @@ const CustomerRegisterPage = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -30,6 +31,7 @@ const CustomerRegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (
       !formData.fullName ||
@@ -40,6 +42,11 @@ const CustomerRegisterPage = () => {
       !formData.address
     ) {
       setErrorMsg('Please fill in all required fields.');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
       return;
     }
 
@@ -58,10 +65,16 @@ const CustomerRegisterPage = () => {
       return;
     }
 
-    // Call AppContext registration
-    const success = await registerCustomer(formData);
-    if (success) {
-      navigate('/login');
+    setIsSubmitting(true);
+    try {
+      const success = await registerCustomer(formData);
+      if (success) {
+        navigate('/login');
+      }
+    } catch {
+      setErrorMsg('An unexpected error occurred during registration.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -253,12 +266,13 @@ const CustomerRegisterPage = () => {
             <button
               type="submit"
               className="btn btn-primary btn-lg w-full"
+              disabled={isSubmitting}
             >
               <UserCheck
                 size={20}
                 style={{ marginRight: '8px' }}
               />
-              Create Customer Account
+              {isSubmitting ? 'Creating Account...' : 'Create Customer Account'}
             </button>
 
             {/* Google Sign-In - FRONTEND VISUAL ONLY */}

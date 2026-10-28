@@ -2,16 +2,21 @@ import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import app from '../src/app';
 
-vi.mock('../src/config/supabase', () => ({
-  supabase: {
-    from: vi.fn().mockReturnThis(),
+vi.mock('../src/config/supabase', () => {
+  const query = {
     select: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue({ data: [{ id: 'test' }], error: null }),
-    auth: {
-      getUser: vi.fn()
+    single: vi.fn().mockResolvedValue({ data: { id: 'test' }, error: null })
+  };
+  return {
+    supabase: {
+      from: vi.fn().mockReturnValue(query),
+      auth: {
+        getUser: vi.fn()
+      }
     }
-  }
-}));
+  };
+});
 
 describe('Health API', () => {
   it('GET /api/v1/health should return success', async () => {

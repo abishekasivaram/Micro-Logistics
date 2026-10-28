@@ -1,23 +1,30 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
+import LoadingFallback from './LoadingFallback';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { currentUser } = useAppContext();
+  const { currentUser, authLoading } = useAppContext();
+
+  if (authLoading) {
+    return <LoadingFallback />;
+  }
 
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+  const role = currentUser.role === 'seller' ? 'vendor' : currentUser.role;
+
+  if (allowedRoles && !allowedRoles.includes(role)) {
     // Redirect based on current user's role
-    if (currentUser.role === 'customer') {
+    if (role === 'customer') {
       return <Navigate to="/customer-dashboard" replace />;
-    } else if (currentUser.role === 'vendor') {
+    } else if (role === 'vendor') {
       return <Navigate to="/vendor-dashboard" replace />;
-    } else if (currentUser.role === 'admin') {
+    } else if (role === 'admin') {
       return <Navigate to="/admin-dashboard" replace />;
-    } else if (currentUser.role === 'delivery_partner') {
+    } else if (role === 'delivery_partner') {
       return <Navigate to="/delivery" replace />;
     } else {
       return <Navigate to="/login" replace />;

@@ -83,13 +83,25 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Stock quantity cannot be negative and must be a whole number' });
         }
 
-        // Auth & Vendor ID resolution
-        let vId = productData.vendorId || req.headers['x-user-id'] || req.user?.id;
-        if (vId && typeof vId === 'string' && !vId.includes('-')) {
-            const { data: vData } = await supabase_1.supabase.from('vendors').select('id').eq('legacy_id', vId).single();
-            if (vData) vId = vData.id;
+        // Auth & Vendor ID resolution from verified identity
+        let vId = req.user?.id;
+        const userRole = req.user?.role || req.user?.user_metadata?.role;
+        if (userRole === 'admin' && productData.vendorId) {
+            vId = productData.vendorId;
+            if (typeof vId === 'string' && !vId.includes('-')) {
+                const { data: vData } = await supabase_1.supabase.from('vendors').select('id').eq('legacy_id', vId).single();
+                if (vData) vId = vData.id;
+            }
+        } else if (userRole === 'vendor') {
+            const { data: vRec } = await supabase_1.supabase.from('vendors').select('id').or(`id.eq.${req.user?.id},legacy_id.eq.${req.user?.id}`).single();
+            if (vRec) {
+                vId = vRec.id;
+            } else {
+                vId = req.user?.id;
+            }
+        } else {
+            return res.status(403).json({ success: false, message: 'Forbidden: Only vendors and administrators can create products' });
         }
-        if (!vId) vId = req.user?.id;
 
         const status = (stock > 10) ? 'In Stock' : (stock > 0 ? 'Low Stock' : 'Out of Stock');
         const { data, error } = await supabase_1.supabase.from('products').insert({
@@ -124,17 +136,17 @@ const updateProduct = async (req, res) => {
         if (!existing)
             return res.status(404).json({ success: false, message: 'Product not found' });
             
-        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        const userRole = req.user?.role || req.user?.user_metadata?.role;
         if (userRole === 'vendor') {
-            const isOwner = existing.vendor_id === req.user?.id || 
-                            existing.vendor_id === req.headers['x-user-id'] ||
-                            existing.vendor_id === req.body?.vendorId;
-            if (!isOwner) {
+            const isDirectOwner = existing.vendor_id === req.user?.id;
+            if (!isDirectOwner) {
                 const { data: vRec } = await supabase_1.supabase.from('vendors').select('id, legacy_id').or(`id.eq.${req.user?.id},legacy_id.eq.${req.user?.id}`).single();
                 if (!vRec || (vRec.id !== existing.vendor_id && vRec.legacy_id !== existing.vendor_id)) {
                     return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
                 }
             }
+        } else if (userRole !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions' });
         }
 
         const fieldsToUpdate = {};
@@ -201,16 +213,17 @@ const deleteProduct = async (req, res) => {
         if (!existing)
             return res.status(404).json({ success: false, message: 'Product not found' });
             
-        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        const userRole = req.user?.role || req.user?.user_metadata?.role;
         if (userRole === 'vendor') {
-            const isOwner = existing.vendor_id === req.user?.id || 
-                            existing.vendor_id === req.headers['x-user-id'];
-            if (!isOwner) {
+            const isDirectOwner = existing.vendor_id === req.user?.id;
+            if (!isDirectOwner) {
                 const { data: vRec } = await supabase_1.supabase.from('vendors').select('id, legacy_id').or(`id.eq.${req.user?.id},legacy_id.eq.${req.user?.id}`).single();
                 if (!vRec || (vRec.id !== existing.vendor_id && vRec.legacy_id !== existing.vendor_id)) {
                     return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
                 }
             }
+        } else if (userRole !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions' });
         }
         
         const { error } = await supabase_1.supabase.from('products').delete().eq('id', existing.id);

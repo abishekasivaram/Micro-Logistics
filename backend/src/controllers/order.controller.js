@@ -66,64 +66,128 @@ const getOrderById = async (req, res) => {
 };
 exports.getOrderById = getOrderById;
 const createOrder = async (req, res) => {
-    // Omitted validation for brevity
     try {
         const { vendorId, items, deliveryLocation, deliveryDate, deliveryTimeSlot } = req.body;
+        
+        if (!vendorId || !items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ success: false, message: 'Vendor and items are required' });
+        }
+
+        const userRole = req.user?.role || req.user?.user_metadata?.role;
+        if (userRole !== 'customer' && userRole !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Only customers or administrators can place orders' });
+        }
+
         // Resolve vendor UUID
         let vId = vendorId;
-        if (!vId.includes('-')) {
+        if (typeof vId === 'string' && !vId.includes('-')) {
             const { data: vData } = await supabase_1.supabase.from('vendors').select('id').eq('legacy_id', vendorId).single();
             if (!vData)
                 return res.status(400).json({ success: false, message: 'Invalid vendorId' });
             vId = vData.id;
         }
-        // Resolve customer UUID
-        let customerId = req.user?.id;
-        if (req.user?.user_metadata?.role === 'admin' && req.body.customerId) {
-            const { data: cData } = await supabase_1.supabase.from('customer_profiles').select('id').eq('legacy_id', req.body.customerId).single();
-            customerId = cData ? cData.id : req.body.customerId;
+
+        // Derive trusted customer UUID from authenticated session
+        let customerId = req.user.id;
+        if (userRole === 'admin' && req.body.customerId) {
+            const clientCustId = req.body.customerId;
+            if (typeof clientCustId === 'string' && !clientCustId.includes('-')) {
+                const { data: cData } = await supabase_1.supabase.from('customer_profiles').select('id').eq('legacy_id', clientCustId).single();
+                customerId = cData ? cData.id : clientCustId;
+            } else {
+                customerId = clientCustId;
+            }
         }
+
         const { data: vendorData } = await supabase_1.supabase.from('vendors').select('address').eq('id', vId).single();
         const orderCode = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-        const total = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+        // Validate items and resolve trusted prices from product catalog
+        const verifiedItems = [];
+        let calculatedTotal = 0;
+
+        for (const item of items) {
+            const qty = Number(item.qty);
+            if (isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+                return res.status(400).json({ success: false, message: 'Item quantity must be a positive integer' });
+            }
+
+            let pId = item.productId;
+            let productRecord = null;
+            if (typeof pId === 'string' && !pId.includes('-')) {
+                const { data: pData } = await supabase_1.supabase.from('products').select('*').eq('legacy_id', pId).single();
+                productRecord = pData;
+            } else {
+                const { data: pData } = await supabase_1.supabase.from('products').select('*').eq('id', pId).single();
+                productRecord = pData;
+            }
+
+            if (!productRecord) {
+                return res.status(400).json({ success: false, message: `Product not found: ${item.productId}` });
+            }
+
+            // Verify product belongs to specified vendor
+            if (productRecord.vendor_id && productRecord.vendor_id !== vId) {
+                return res.status(400).json({ success: false, message: `Product ${productRecord.name} does not belong to the selected vendor` });
+            }
+
+            // Verify stock availability
+            if ((productRecord.stock || 0) < qty) {
+                return res.status(400).json({ success: false, message: `Insufficient stock for product: ${productRecord.name}` });
+            }
+
+            const trustedPrice = Number(productRecord.price) || 0;
+            calculatedTotal += (trustedPrice * qty);
+            verifiedItems.push({
+                productId: productRecord.id,
+                qty: qty,
+                price: trustedPrice,
+                currentStock: productRecord.stock
+            });
+        }
+
         const { data: newOrder, error } = await supabase_1.supabase.from('orders').insert({
             order_code: orderCode,
             customer_id: customerId,
             vendor_id: vId,
-            total: total,
+            total: calculatedTotal,
             pickup_location: vendorData?.address || 'Vendor',
-            delivery_location: deliveryLocation,
-            delivery_date: deliveryDate,
-            delivery_time_slot: deliveryTimeSlot,
+            delivery_location: deliveryLocation || 'Local Delivery Address',
+            delivery_date: deliveryDate || new Date().toISOString().split('T')[0],
+            delivery_time_slot: deliveryTimeSlot || '9:00 AM – 1:00 PM',
             order_status: 'PLACED',
             delivery_status: 'PENDING_ASSIGNMENT',
             aggregation_status: 'WAITING_FOR_AGGREGATION'
         }).select().single();
+
         if (error)
             throw error;
-        // Insert items
-        for (const item of items) {
-            let pId = item.productId;
-            if (!pId.includes('-')) {
-                const { data: pData } = await supabase_1.supabase.from('products').select('id').eq('legacy_id', pId).single();
-                if (pData)
-                    pId = pData.id;
-            }
+
+        // Insert order items and decrement stock
+        for (const item of verifiedItems) {
             await supabase_1.supabase.from('order_items').insert({
                 order_id: newOrder.id,
-                product_id: pId,
+                product_id: item.productId,
                 qty: item.qty,
                 price: item.price
             });
 
-            // Synchronize inventory: decrement stock and update status
-            const { data: currentProd } = await supabase_1.supabase.from('products').select('stock').eq('id', pId).single();
-            if (currentProd) {
-                const newStock = Math.max(0, (currentProd.stock || 0) - item.qty);
-                const newStatus = (newStock > 10) ? 'In Stock' : (newStock > 0 ? 'Low Stock' : 'Out of Stock');
-                await supabase_1.supabase.from('products').update({ stock: newStock, status: newStatus }).eq('id', pId);
-            }
+            const newStock = Math.max(0, (item.currentStock || 0) - item.qty);
+            const newStatus = (newStock > 10) ? 'In Stock' : (newStock > 0 ? 'Low Stock' : 'Out of Stock');
+            await supabase_1.supabase.from('products').update({ stock: newStock, status: newStatus }).eq('id', item.productId);
         }
+
+        // Initialize delivery verification PIN for customer handover
+        try {
+            const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+            await supabase_1.supabase.from('delivery_verifications').insert({
+                order_id: newOrder.id,
+                otp_code: otpCode,
+                is_verified: false,
+                attempts: 0
+            });
+        } catch (otpErr) {}
+
         res.status(201).json({ success: true, data: { orderId: orderCode } });
     }
     catch (err) {
@@ -131,6 +195,7 @@ const createOrder = async (req, res) => {
     }
 };
 exports.createOrder = createOrder;
+
 const updateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params;
@@ -142,12 +207,40 @@ const updateOrderStatus = async (req, res) => {
         }
         if (!order)
             return res.status(404).json({ success: false, message: 'Order not found' });
-        const userRole = req.user?.user_metadata?.role || req.user?.role;
+
+        const userRole = req.user?.role || req.user?.user_metadata?.role;
         const userId = req.user?.id;
-        if (userRole === 'vendor' && order.vendor_id !== userId)
-            return res.status(403).json({ success: false, message: 'Forbidden' });
-        if (userRole === 'delivery_partner' && order.assigned_agent_id !== userId)
-            return res.status(403).json({ success: false, message: 'Forbidden' });
+
+        // Customers are strictly forbidden from changing order statuses
+        if (userRole === 'customer') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Customers cannot update order fulfillment status' });
+        }
+
+        // Vendors can only manage their own orders and valid preparation statuses
+        if (userRole === 'vendor') {
+            if (order.vendor_id !== userId) {
+                return res.status(403).json({ success: false, message: 'Forbidden: You do not own this order' });
+            }
+            const allowedVendorStatuses = ['CONFIRMED', 'READY_FOR_DELIVERY', 'CANCELLED'];
+            if (status && !allowedVendorStatuses.includes(status)) {
+                return res.status(403).json({ success: false, message: 'Forbidden: Vendors cannot transition orders to this status' });
+            }
+        }
+
+        // Delivery partners can only update their assigned orders and delivery progression
+        if (userRole === 'delivery_partner') {
+            if (order.assigned_agent_id !== userId) {
+                return res.status(403).json({ success: false, message: 'Forbidden: Not assigned to this delivery' });
+            }
+            if (status === 'DELIVERED') {
+                return res.status(400).json({ success: false, message: 'Delivery completion requires OTP verification via /delivery/verify-otp' });
+            }
+        }
+
+        if (userRole !== 'admin' && userRole !== 'vendor' && userRole !== 'delivery_partner') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions' });
+        }
+
         let deliveryStatus = order.delivery_status;
         let aggregationStatus = order.aggregation_status;
         if (status === 'CONFIRMED')

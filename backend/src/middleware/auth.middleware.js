@@ -2,27 +2,105 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireRole = exports.requireAuth = void 0;
 const supabase_1 = require("../config/supabase");
+const env_1 = require("../config/env");
+
+const normalizeRole = (role) => {
+    if (!role || typeof role !== 'string') return null;
+    const r = role.toLowerCase().trim();
+    if (r === 'seller') return 'vendor';
+    return r;
+};
+
+const resolveUserRole = async (userId, userMetadata, appMetadata) => {
+    let role = normalizeRole(appMetadata?.role || userMetadata?.role);
+    if (role && role !== 'authenticated') {
+        return role;
+    }
+
+    try {
+        if (supabase_1.supabase) {
+            const { data: profile, error } = await supabase_1.supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', userId)
+                .single();
+            if (!error && profile?.role) {
+                return normalizeRole(profile.role);
+            }
+        }
+    } catch (err) {
+        // Log non-sensitive operational error
+        console.error('Role resolution error from database');
+    }
+
+    return null;
+};
+
 const requireAuth = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.split(' ')[1];
-            const { data: { user }, error } = await supabase_1.supabase.auth.getUser(token);
+            if (!token || token.trim() === '' || token === 'undefined' || token === 'null') {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Unauthorized: Invalid token format'
+                });
+            }
+
+            if (!supabase_1.supabase) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Authentication service unavailable'
+                });
+            }
+
+            const { data: { user } = {}, error } = await supabase_1.supabase.auth.getUser(token);
             if (!error && user) {
+                const effectiveRole = await resolveUserRole(user.id, user.user_metadata, user.app_metadata);
+                user.role = effectiveRole || 'customer';
+                if (!user.user_metadata) user.user_metadata = {};
+                user.user_metadata.role = user.role;
                 req.user = user;
                 return next();
             }
+
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: Invalid or expired token'
+            });
         }
 
-        // Fallback for valid session identified by client headers in local app
-        const xUserId = req.headers['x-user-id'];
-        const xUserRole = req.headers['x-user-role'];
-        if (xUserId) {
-            req.user = {
-                id: xUserId,
-                user_metadata: { role: xUserRole || 'vendor' }
-            };
-            return next();
+        // Strictly development/test only fallback if explicitly enabled
+        const isDevOrTest = process.env.NODE_ENV === 'test' || (!env_1.isProduction && env_1.env.ALLOW_DEV_HEADER_AUTH === 'true');
+        if (isDevOrTest) {
+            const xUserId = req.headers['x-user-id'];
+            if (xUserId) {
+                let resolvedRole = null;
+                try {
+                    if (supabase_1.supabase) {
+                        const { data: profile } = await supabase_1.supabase
+                            .from('profiles')
+                            .select('role')
+                            .eq('id', xUserId)
+                            .single();
+                        if (profile?.role) {
+                            resolvedRole = normalizeRole(profile.role);
+                        }
+                    }
+                } catch {}
+
+                if (!resolvedRole && process.env.NODE_ENV === 'test') {
+                    resolvedRole = normalizeRole(req.headers['x-user-role']);
+                }
+
+                req.user = {
+                    id: xUserId,
+                    role: resolvedRole || 'customer',
+                    user_metadata: { role: resolvedRole || 'customer' }
+                };
+                return next();
+            }
         }
 
         return res.status(401).json({
@@ -38,68 +116,36 @@ exports.requireAuth = requireAuth;
 
 const requireRole = (roles) => {
     return async (req, res, next) => {
-        if (!req.user) {
+        if (!req.user || !req.user.id) {
             return res.status(401).json({
                 success: false,
                 message: 'Unauthorized: Not logged in'
             });
         }
 
-        const normalizedRoles = roles.map(r => r === 'seller' ? 'vendor' : r);
+        const normalizedAllowedRoles = roles.map(r => normalizeRole(r)).filter(Boolean);
 
-        // 1. Check user_metadata or app_metadata
-        let userRole = req.user.user_metadata?.role || req.user.app_metadata?.role;
+        let userRole = req.user.role || normalizeRole(req.user.user_metadata?.role || req.user.app_metadata?.role);
 
-        // 2. Fallback to profiles table in database
         if (!userRole || userRole === 'authenticated') {
-            try {
-                const { data: profile } = await supabase_1.supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', req.user.id)
-                    .single();
-                if (profile?.role) {
-                    userRole = profile.role;
-                }
-            } catch (err) {
-                console.error('Error fetching role from profiles:', err.message);
-            }
+            userRole = await resolveUserRole(req.user.id, req.user.user_metadata, req.user.app_metadata);
         }
 
-        // 3. Fallback: Check if user exists in vendors table
-        if (normalizedRoles.includes('vendor')) {
-            try {
-                const candidateId = req.headers['x-user-id'] || req.user.id || req.body?.vendorId;
-                if (candidateId) {
-                    const { data: vRec } = await supabase_1.supabase
-                        .from('vendors')
-                        .select('id')
-                        .or(`id.eq.${candidateId},legacy_id.eq.${candidateId}`)
-                        .single();
-                    if (vRec) {
-                        req.user.id = vRec.id;
-                        userRole = 'vendor';
-                    }
-                }
-            } catch (e) {}
-        }
+        const effectiveRole = normalizeRole(userRole);
 
-        // 4. Fallback: Check x-user-role header
-        const headerRole = req.headers['x-user-role'];
-        if (headerRole && normalizedRoles.includes(headerRole === 'seller' ? 'vendor' : headerRole)) {
-            userRole = headerRole;
-        }
-
-        const effectiveRole = userRole === 'seller' ? 'vendor' : userRole;
-
-        if (!normalizedRoles.includes(effectiveRole)) {
+        if (!effectiveRole || !normalizedAllowedRoles.includes(effectiveRole)) {
             return res.status(403).json({
                 success: false,
                 message: 'Forbidden: Insufficient permissions'
             });
         }
+
+        req.user.role = effectiveRole;
+        if (!req.user.user_metadata) req.user.user_metadata = {};
+        req.user.user_metadata.role = effectiveRole;
         next();
     };
 };
 exports.requireRole = requireRole;
+
 

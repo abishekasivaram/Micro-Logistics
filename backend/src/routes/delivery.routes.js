@@ -9,11 +9,11 @@ router.get('/agents', (0, auth_middleware_1.requireRole)(['admin', 'delivery_par
 router.get('/agents/:id', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.getAgentById);
 router.post('/agents', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.createAgent);
 router.put('/agents/:id', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.updateAgent);
-router.get('/batches', delivery_controller_1.getBatches);
-router.get('/batches/:id', delivery_controller_1.getBatchById);
+router.get('/batches', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.getBatches);
+router.get('/batches/:id', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.getBatchById);
 router.post('/batches', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.createBatch);
 router.post('/batches/:id/assign', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.assignBatch);
 router.patch('/batches/:id/status', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.updateBatchStatus);
-router.get('/orders/:id/otp', delivery_controller_1.getOrderOtp);
+router.get('/orders/:id/otp', (0, auth_middleware_1.requireRole)(['customer', 'admin']), delivery_controller_1.getOrderOtp);
 router.post('/verify-otp', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.verifyDeliveryOtp);
 exports.default = router;

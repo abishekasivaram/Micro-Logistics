@@ -12,7 +12,7 @@ import {
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
-  const { currentUser, setCurrentUser, cart, notifications } = useAppContext();
+  const { currentUser, logout, cart, notifications } = useAppContext();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const location = useLocation();
@@ -26,12 +26,8 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, toggleCollapse }) => {
   };
 
   const handleConfirmLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error("SignOut error:", e);
-    }
-    setCurrentUser(null);
+    await logout();
+    setShowLogoutModal(false);
     navigate('/login');
   };
 

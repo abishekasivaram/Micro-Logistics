@@ -28,8 +28,12 @@ const LoginPage = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showForgotModal]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     setErrorMsg('');
     
     const searchId = usernameOrEmail.trim();
@@ -43,23 +47,19 @@ const LoginPage = () => {
     }
 
     const lowerSearchId = searchId.toLowerCase();
-
-    // Helper to determine role from email or metadata (fallback if needed)
-    const getRole = (metadata, emailStr) => {
-      if (metadata?.role) return metadata.role;
-      if (emailStr.includes('admin')) return 'admin';
-      return 'customer'; // Default
-    };
+    setIsSubmitting(true);
 
     const loginSuccess = (userObj, role) => {
-      setCurrentUser({ ...userObj, role });
-      if (role === 'customer') {
+      const normalizedRole = role === 'seller' ? 'vendor' : role;
+      setCurrentUser({ ...userObj, role: normalizedRole });
+      setPassword('');
+      if (normalizedRole === 'customer') {
         navigate('/customer-dashboard');
-      } else if (role === 'vendor') {
+      } else if (normalizedRole === 'vendor') {
         navigate('/vendor-dashboard');
-      } else if (role === 'admin') {
+      } else if (normalizedRole === 'admin') {
         navigate('/admin-dashboard');
-      } else if (role === 'delivery_partner') {
+      } else if (normalizedRole === 'delivery_partner') {
         navigate('/delivery');
       } else {
         navigate('/');
@@ -127,14 +127,35 @@ const LoginPage = () => {
         });
 
         if (!authError && authData?.user) {
-          const role = getRole(authData.user.user_metadata, resolvedEmail);
-          
-          // Use basic user details for now; AppContext will hydrate full data
+          // Resolve role from verified database profiles table
+          let role = null;
+          let profileName = null;
+          let profilePhone = null;
+
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', authData.user.id)
+              .single();
+            if (profile) {
+              role = profile.role;
+              profileName = profile.username;
+              profilePhone = profile.phone;
+            }
+          } catch {}
+
+          if (!role) {
+            role = authData.user.user_metadata?.role || authData.user.app_metadata?.role || 'customer';
+          }
+          if (role === 'seller') role = 'vendor';
+
           const baseUser = {
             id: authData.user.id,
             email: resolvedEmail,
-            name: authData.user.user_metadata?.full_name || searchId,
-            username: searchId,
+            name: profileName || authData.user.user_metadata?.full_name || searchId,
+            username: profileName || searchId,
+            phone: profilePhone,
             legacy_id: authData.user.user_metadata?.legacy_id || searchId,
             shop_name: authData.user.user_metadata?.shop_name || authData.user.user_metadata?.full_name,
             shopName: authData.user.user_metadata?.shop_name || authData.user.user_metadata?.full_name
@@ -143,21 +164,17 @@ const LoginPage = () => {
           loginSuccess(baseUser, role);
           return;
         } else {
-          // Graceful fallback for offline / demo mode
-          
-
-          setErrorMsg("Incorrect credentials. Please try again.");
+          setErrorMsg("Incorrect credentials. Please verify your details and try again.");
           return;
         }
       } else {
-        
         setErrorMsg("Account not found. Please check your User ID, Shop Name, or Agent ID.");
         return;
       }
     } catch (err) {
-      console.error("Login failed:", err);
-      
-      setErrorMsg("An error occurred during login.");
+      setErrorMsg("An unexpected error occurred during sign in. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -221,6 +238,7 @@ const LoginPage = () => {
                 className="form-control" 
                 placeholder="Enter your ID or shop name"
                 value={usernameOrEmail}
+                disabled={isSubmitting}
                 onChange={e => {
                   setUsernameOrEmail(e.target.value);
                   if (errorMsg) setErrorMsg('');
@@ -238,6 +256,7 @@ const LoginPage = () => {
                   className="form-control" 
                   placeholder="Enter your password" 
                   value={password}
+                  disabled={isSubmitting}
                   onChange={e => {
                     setPassword(e.target.value);
                     if (errorMsg) setErrorMsg('');
@@ -250,6 +269,7 @@ const LoginPage = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   title={showPassword ? "Hide password" : "Show password"}
+                  disabled={isSubmitting}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -262,6 +282,7 @@ const LoginPage = () => {
                   id="rememberMe"
                   type="checkbox" 
                   checked={rememberMe} 
+                  disabled={isSubmitting}
                   onChange={e => setRememberMe(e.target.checked)} 
                 />
                 <span>Remember me</span>
@@ -270,6 +291,7 @@ const LoginPage = () => {
                 type="button" 
                 className="forgot-password-btn"
                 onClick={() => setShowForgotModal(true)}
+                disabled={isSubmitting}
               >
                 Forgot password?
               </button>
@@ -278,8 +300,9 @@ const LoginPage = () => {
             <button 
               type="submit" 
               className="btn w-full login-btn btn-primary"
+              disabled={isSubmitting}
             >
-              Sign In
+              {isSubmitting ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 

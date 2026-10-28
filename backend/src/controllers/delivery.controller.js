@@ -280,9 +280,9 @@ const updateAgent = async (req, res) => {
         }
         if (!existing) return res.status(404).json({ success: false, message: 'Agent not found' });
         
-        const userRole = req.user?.user_metadata?.role || req.user?.role;
-        if (userRole === 'delivery_partner' && existing.id !== req.user?.id) {
-            return res.status(403).json({ success: false, message: 'Forbidden' });
+        const userRole = req.user?.role || req.user?.user_metadata?.role;
+        if (userRole !== 'admin' && (userRole !== 'delivery_partner' || existing.id !== req.user?.id)) {
+            return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions to update delivery agent' });
         }
         
         const payload = {
@@ -333,7 +333,18 @@ const getOrderOtp = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        let otpCode = '1234';
+        const userRole = req.user?.role || req.user?.user_metadata?.role;
+        const userId = req.user?.id;
+
+        // Confidentiality: Only the purchasing customer (or admin) may view the secret delivery OTP
+        if (userRole === 'customer' && order.customer_id !== userId) {
+            return res.status(403).json({ success: false, message: 'Forbidden: You can only view the delivery code for your own order' });
+        }
+        if (userRole !== 'customer' && userRole !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Handover verification code is restricted to customer recipient' });
+        }
+
+        let otpCode = null;
         try {
             const { data: existingVerification } = await supabase_1.supabase
                 .from('delivery_verifications')
@@ -347,7 +358,9 @@ const getOrderOtp = async (req, res) => {
                 otpCode = Math.floor(1000 + Math.random() * 9000).toString();
                 await supabase_1.supabase.from('delivery_verifications').insert({
                     order_id: order.id,
-                    otp_code: otpCode
+                    otp_code: otpCode,
+                    is_verified: false,
+                    attempts: 0
                 });
             }
         } catch (dbErr) {
@@ -369,7 +382,7 @@ const verifyDeliveryOtp = async (req, res) => {
             return res.status(400).json({ success: false, message: 'orderId and otp are required' });
         }
 
-        let query = supabase_1.supabase.from('orders').select('id, order_code, batch_id');
+        let query = supabase_1.supabase.from('orders').select('id, order_code, batch_id, assigned_agent_id');
         if (orderId.includes('-') && orderId.length > 15) {
             query = query.eq('id', orderId).single();
         } else {
@@ -380,7 +393,21 @@ const verifyDeliveryOtp = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        let isValid = (otp.trim() === '1234');
+        const userRole = req.user?.role || req.user?.user_metadata?.role;
+        const userId = req.user?.id;
+
+        // Authorization: Only assigned delivery partner or admin can verify completion
+        if (userRole === 'delivery_partner') {
+            if (order.assigned_agent_id && order.assigned_agent_id !== userId) {
+                return res.status(403).json({ success: false, message: 'Forbidden: You are not assigned to deliver this order' });
+            }
+        } else if (userRole !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions to complete delivery verification' });
+        }
+
+        let isValid = false;
+        const cleanOtp = String(otp).trim();
+
         try {
             const { data: verification } = await supabase_1.supabase
                 .from('delivery_verifications')
@@ -389,7 +416,15 @@ const verifyDeliveryOtp = async (req, res) => {
                 .single();
 
             if (verification) {
-                if (verification.otp_code === otp.trim()) {
+                if (verification.is_verified) {
+                    return res.status(400).json({ success: false, message: 'Order has already been verified and delivered' });
+                }
+
+                if ((verification.attempts || 0) >= 5) {
+                    return res.status(429).json({ success: false, message: 'Verification attempt limit exceeded (maximum 5 attempts). Please contact support.' });
+                }
+
+                if (verification.otp_code === cleanOtp) {
                     isValid = true;
                     await supabase_1.supabase.from('delivery_verifications').update({
                         is_verified: true,
@@ -403,12 +438,16 @@ const verifyDeliveryOtp = async (req, res) => {
             } else {
                 const hash = Math.abs(order.order_code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
                 const expected = String(1000 + (hash % 9000));
-                if (otp.trim() === expected) {
+                if (cleanOtp === expected) {
                     isValid = true;
                 }
             }
         } catch (vErr) {
-            // fallback
+            const hash = Math.abs(order.order_code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
+            const expected = String(1000 + (hash % 9000));
+            if (cleanOtp === expected) {
+                isValid = true;
+            }
         }
 
         if (!isValid) {
@@ -417,7 +456,8 @@ const verifyDeliveryOtp = async (req, res) => {
 
         await supabase_1.supabase.from('orders').update({
             order_status: 'DELIVERED',
-            delivery_status: 'DELIVERED'
+            delivery_status: 'DELIVERED',
+            aggregation_status: 'COMPLETED'
         }).eq('id', order.id);
 
         try {

@@ -1672,6 +1672,8 @@
 .sticky-action-dock {
   position: fixed;
   bottom: 0;
+}
+
 /* ─── Floating Action Dock (Only Shown in Edit Mode) ───────────────────────── */
 .sticky-action-dock.is-active-floating {
   position: fixed;

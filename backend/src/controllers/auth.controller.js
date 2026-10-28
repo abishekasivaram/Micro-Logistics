@@ -1,12 +1,26 @@
 const { supabase } = require('../config/supabase');
 
+const ALLOWED_PUBLIC_ROLES = ['customer', 'vendor', 'delivery_partner'];
+
 exports.resolveIdentifier = async (req, res) => {
   try {
     const { identifier } = req.body;
-    if (!identifier) return res.status(400).json({ success: false, message: 'Identifier required' });
+    if (!identifier || typeof identifier !== 'string') {
+      return res.status(400).json({ success: false, message: 'Identifier required' });
+    }
+
+    const searchId = identifier.trim();
+    if (!searchId) {
+      return res.status(400).json({ success: false, message: 'Identifier cannot be blank' });
+    }
+
+    // Direct email format
+    if (searchId.includes('@')) {
+      return res.json({ success: true, email: searchId.toLowerCase() });
+    }
 
     let email = null;
-    const searchId = identifier.trim();
+    const lowerSearchId = searchId.toLowerCase();
 
     // 0. Deterministic mapping for standard test login IDs
     const TEST_LOGIN_MAP = {
@@ -26,47 +40,58 @@ exports.resolveIdentifier = async (req, res) => {
       'da4': 'da4@example.com'
     };
 
-    if (TEST_LOGIN_MAP[searchId.toLowerCase()]) {
-      email = TEST_LOGIN_MAP[searchId.toLowerCase()];
+    if (TEST_LOGIN_MAP[lowerSearchId]) {
+      email = TEST_LOGIN_MAP[lowerSearchId];
     }
 
-    // 1. Try profiles directly (username or email)
-    if (!email) {
-      const { data: pData } = await supabase.from('profiles')
-        .select('email')
-        .or(`username.ilike."${searchId}",email.ilike."${searchId}"`)
-        .limit(1);
-        
-      if (pData && pData.length > 0) {
-        email = pData[0].email;
+    // Sanitize identifier for database search (strip special query injection characters)
+    const sanitizedSearch = searchId.replace(/[^a-zA-Z0-9@_.\- ]/g, '').trim();
+
+    if (!email && sanitizedSearch && supabase) {
+      // 1. Try profiles directly (username or email)
+      try {
+        const { data: pData } = await supabase.from('profiles')
+          .select('email')
+          .or(`username.ilike."${sanitizedSearch}",email.ilike."${sanitizedSearch}"`)
+          .limit(1);
+          
+        if (pData && pData.length > 0) {
+          email = pData[0].email;
+        }
+      } catch {}
+
+      // 2. Try vendors (legacy_id or shop_name)
+      if (!email) {
+        try {
+          const { data: vData } = await supabase.from('vendors')
+            .select('id, profiles!inner(email)')
+            .or(`legacy_id.ilike."${sanitizedSearch}",shop_name.ilike."${sanitizedSearch}"`)
+            .limit(1);
+          if (vData && vData.length > 0) email = vData[0].profiles?.email;
+        } catch {}
       }
-    }
 
-    // 2. Try vendors (legacy_id or shop_name)
-    if (!email) {
-      const { data: vData } = await supabase.from('vendors')
-        .select('id, profiles!inner(email)')
-        .or(`legacy_id.ilike."${searchId}",shop_name.ilike."${searchId}"`)
-        .limit(1);
-      if (vData && vData.length > 0) email = vData[0].profiles?.email;
-    }
+      // 3. Try customers (legacy_id)
+      if (!email) {
+        try {
+          const { data: cData } = await supabase.from('customer_profiles')
+            .select('id, profiles!inner(email)')
+            .eq('legacy_id', sanitizedSearch)
+            .limit(1);
+          if (cData && cData.length > 0) email = cData[0].profiles?.email;
+        } catch {}
+      }
 
-    // 3. Try customers (legacy_id)
-    if (!email) {
-      const { data: cData } = await supabase.from('customer_profiles')
-        .select('id, profiles!inner(email)')
-        .eq('legacy_id', searchId)
-        .limit(1);
-      if (cData && cData.length > 0) email = cData[0].profiles?.email;
-    }
-
-    // 4. Try delivery agents (legacy_id)
-    if (!email) {
-      const { data: dData } = await supabase.from('delivery_agents')
-        .select('id, profiles!inner(email)')
-        .eq('legacy_id', searchId)
-        .limit(1);
-      if (dData && dData.length > 0) email = dData[0].profiles?.email;
+      // 4. Try delivery agents (legacy_id)
+      if (!email) {
+        try {
+          const { data: dData } = await supabase.from('delivery_agents')
+            .select('id, profiles!inner(email)')
+            .eq('legacy_id', sanitizedSearch)
+            .limit(1);
+          if (dData && dData.length > 0) email = dData[0].profiles?.email;
+        } catch {}
+      }
     }
 
     if (!email) {
@@ -75,7 +100,7 @@ exports.resolveIdentifier = async (req, res) => {
 
     return res.json({ success: true, email });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: 'Identifier resolution failed' });
   }
 };
 
@@ -83,20 +108,43 @@ exports.signup = async (req, res) => {
   try {
     const { email, password, role, name, phone, address, area, shopName } = req.body;
     
-    if (!email || !password || !role) {
-      return res.status(400).json({ success: false, message: 'Email, password, and role are required' });
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'A valid email address is required.' });
     }
 
-    if (role === 'admin') {
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
+
+    if (!role || typeof role !== 'string') {
+      return res.status(400).json({ success: false, message: 'A valid registration role is required.' });
+    }
+
+    const normalizedRole = role.toLowerCase().trim() === 'seller' ? 'vendor' : role.toLowerCase().trim();
+
+    if (normalizedRole === 'admin') {
       return res.status(403).json({ success: false, message: 'Public registration for administrator accounts is not permitted.' });
+    }
+
+    if (!ALLOWED_PUBLIC_ROLES.includes(normalizedRole)) {
+      return res.status(400).json({ success: false, message: 'Invalid registration role specified.' });
+    }
+
+    if (!supabase) {
+      return res.status(500).json({ success: false, message: 'Authentication service unavailable.' });
+    }
+
+    const displayName = (name || shopName || '').trim();
+    if (!displayName) {
+      return res.status(400).json({ success: false, message: 'Name or Business Name is required.' });
     }
 
     // 1. Create Supabase Auth User
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       email_confirm: true,
-      user_metadata: { role, full_name: name || shopName }
+      user_metadata: { role: normalizedRole, full_name: displayName }
     });
 
     if (authError) {
@@ -105,13 +153,13 @@ exports.signup = async (req, res) => {
 
     const userId = authData.user.id;
 
-    // 2. Insert into profiles
+    // 2. Insert into profiles with trusted server-assigned role
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
-      email,
-      username: name || shopName,
-      phone,
-      role
+      email: email.trim().toLowerCase(),
+      username: displayName,
+      phone: phone ? phone.trim() : null,
+      role: normalizedRole
     });
     
     if (profileError) {
@@ -121,36 +169,36 @@ exports.signup = async (req, res) => {
 
     // 3. Insert into role-specific tables
     let roleError = null;
-    if (role === 'customer') {
-      const legacyId = 'c' + Math.floor(Math.random() * 10000);
+    if (normalizedRole === 'customer') {
+      const legacyId = 'c' + Math.floor(1000 + Math.random() * 9000);
       const { error } = await supabase.from('customer_profiles').insert({
         id: userId,
         legacy_id: legacyId,
-        address,
-        area,
+        address: address || '',
+        area: area || 'Local Area',
         status: 'Active'
       });
       roleError = error;
-    } else if (role === 'vendor') {
-      const legacyId = 'v' + Math.floor(Math.random() * 10000);
+    } else if (normalizedRole === 'vendor') {
+      const legacyId = 'v' + Math.floor(1000 + Math.random() * 9000);
       const { error } = await supabase.from('vendors').insert({
         id: userId,
         legacy_id: legacyId,
-        shop_name: shopName || name,
-        owner_name: name,
-        address,
-        area,
+        shop_name: shopName || displayName,
+        owner_name: name || displayName,
+        address: address || '',
+        area: area || 'Local Area',
         category: 'General',
         status: 'Active',
         is_open: true
       });
       roleError = error;
-    } else if (role === 'delivery_partner') {
-      const legacyId = 'da' + Math.floor(Math.random() * 10000);
+    } else if (normalizedRole === 'delivery_partner') {
+      const legacyId = 'da' + Math.floor(1000 + Math.random() * 9000);
       const { error } = await supabase.from('delivery_agents').insert({
         id: userId,
         legacy_id: legacyId,
-        current_area: area || 'Local',
+        current_area: area || 'Local Area',
         capacity: 5,
         rating: 5.0
       });
@@ -163,8 +211,14 @@ exports.signup = async (req, res) => {
       throw roleError;
     }
 
-    return res.status(201).json({ success: true, message: 'User registered successfully', userId });
+    return res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      userId,
+      role: normalizedRole
+    });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: 'Registration failed. Please check inputs and try again.' });
   }
 };
+

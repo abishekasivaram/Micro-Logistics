@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import { supabase } from '../services/supabaseClient';
 import { initialProducts } from '../data/initialProducts';
 import { 
   demoVendors, demoProducts, demoCustomers, demoAgents, 
@@ -45,6 +46,7 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotifications] = useState(() => getStorageItem('notifications', []));
   const [cart, setCart] = useState(() => getStorageItem('cart', []));
   const [currentUser, setCurrentUser] = useState(() => getStorageItem('currentUser', null));
+  const [authLoading, setAuthLoading] = useState(true);
   const [adminSettings, setAdminSettings] = useState(() => getStorageItem('adminSettings', {
     autoAssignWaitTime: 15,
     maxOrdersPerBatch: 5,
@@ -58,6 +60,122 @@ export const AppProvider = ({ children }) => {
   // --- Initial Data Loading via API ---
   const [globalLoading, setGlobalLoading] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
+
+  // --- Supabase Session Restoration and Auth State Listener ---
+  useEffect(() => {
+    let isMounted = true;
+
+    const restoreSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session?.user) {
+          const cachedUser = getStorageItem('currentUser', null);
+          if (cachedUser?.isDemo) {
+            if (isMounted) {
+              setCurrentUser(cachedUser);
+              setAuthLoading(false);
+            }
+            return;
+          }
+          if (isMounted) {
+            setCurrentUser(null);
+            setAuthLoading(false);
+          }
+          return;
+        }
+
+        let role = session.user.user_metadata?.role || session.user.app_metadata?.role;
+        let username = session.user.user_metadata?.full_name || session.user.email;
+        let phone = null;
+        let address = null;
+        let area = null;
+        let shopName = session.user.user_metadata?.shop_name || username;
+        let legacyId = session.user.user_metadata?.legacy_id;
+
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile) {
+            if (profile.role) role = profile.role;
+            if (profile.username) username = profile.username;
+            if (profile.phone) phone = profile.phone;
+          }
+        } catch {}
+
+        if (role === 'seller') role = 'vendor';
+        if (!role || role === 'authenticated') role = 'customer';
+
+        if (role === 'customer') {
+          try {
+            const { data: cData } = await supabase.from('customer_profiles').select('*').eq('id', session.user.id).single();
+            if (cData) {
+              address = cData.address;
+              area = cData.area;
+              legacyId = cData.legacy_id || legacyId;
+            }
+          } catch {}
+        } else if (role === 'vendor') {
+          try {
+            const { data: vData } = await supabase.from('vendors').select('*').eq('id', session.user.id).single();
+            if (vData) {
+              shopName = vData.shop_name || shopName;
+              address = vData.address;
+              area = vData.area;
+              legacyId = vData.legacy_id || legacyId;
+            }
+          } catch {}
+        }
+
+        const authenticatedUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: username,
+          username,
+          phone,
+          address,
+          area,
+          shopName,
+          shop_name: shopName,
+          legacy_id: legacyId,
+          role,
+          isDemo: false
+        };
+
+        if (isMounted) {
+          setCurrentUser(authenticatedUser);
+          setAuthLoading(false);
+        }
+      } catch {
+        if (isMounted) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    restoreSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        if (isMounted) {
+          setCurrentUser(prev => prev?.isDemo ? prev : null);
+          setAuthLoading(false);
+        }
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (isMounted && session?.user) {
+          restoreSession();
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     // Only load if user is logged in
@@ -867,6 +985,17 @@ export const AppProvider = ({ children }) => {
     // For simplicity, updateBatchStatus will be called by the component if needed.
   };
 
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    setCurrentUser(null);
+    setCart([]);
+    localStorage.removeItem('micrologi_currentUser');
+    localStorage.removeItem('micrologi_cart');
+    addNotification('Logged out successfully.', 'system');
+  };
+
   return (
     <AppContext.Provider value={{
       orders, setOrders, updateOrderStatus, requestDeliverySlotChange,
@@ -877,7 +1006,7 @@ export const AppProvider = ({ children }) => {
       deliveryGroups,
       products, addProduct, updateProduct, deleteProduct,
       notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
-      currentUser, setCurrentUser,
+      currentUser, setCurrentUser, authLoading, logout,
       cart, addToCart, removeFromCart, updateCartQty, clearCart,
       registerCustomer, registerSeller, placeOrder,
       updateUserProfile, updateSellerProfile,

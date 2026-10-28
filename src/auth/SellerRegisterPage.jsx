@@ -29,6 +29,7 @@ const SellerRegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showGoogleNotice, setShowGoogleNotice] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -38,9 +39,15 @@ const SellerRegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!formData.businessName || !formData.ownerName || !formData.username || !formData.email || !formData.password || !formData.phone || !formData.businessAddress) {
       setErrorMsg('Please fill in all required business information fields.');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
       return;
     }
 
@@ -60,9 +67,16 @@ const SellerRegisterPage = () => {
       return;
     }
 
-    const success = await registerSeller(formData);
-    if (success) {
-      navigate('/login');
+    setIsSubmitting(true);
+    try {
+      const success = await registerSeller(formData);
+      if (success) {
+        navigate('/login');
+      }
+    } catch {
+      setErrorMsg('An unexpected error occurred during seller registration.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -309,8 +323,8 @@ const SellerRegisterPage = () => {
           </div>
 
           <div className="auth-actions-full full-width">
-            <button type="submit" className="btn btn-primary btn-lg w-full">
-              <Store size={20} style={{ marginRight: '8px' }} /> Register as Seller
+            <button type="submit" className="btn btn-primary btn-lg w-full" disabled={isSubmitting}>
+              <Store size={20} style={{ marginRight: '8px' }} /> {isSubmitting ? 'Registering Seller...' : 'Register as Seller'}
             </button>
           </div>
         </form>

@@ -8,8 +8,7 @@
     "build": "echo 'No build step required'",
     "start": "node src/server.js",
     "test": "vitest run",
-    "fix": "node fix_seed.js",
-    "dump": "node -e \"console.log(process.env.SUPABASE_SERVICE_ROLE_KEY)\""
+    "fix": "node fix_seed.js"
   },
   "keywords": [],
   "author": "",
