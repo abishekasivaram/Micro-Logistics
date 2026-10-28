@@ -42,8 +42,9 @@ const getBatches = async (req, res) => {
     try {
         let query = supabase_1.supabase.from('delivery_batches').select(`
       *,
-      agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+      agent:delivery_agents(id, legacy_id, vehicle, capacity, profile:profiles(username, phone)),
+      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, delivery_date, delivery_time_slot, order_status, delivery_status, total, vendor:vendors(id, legacy_id, shop_name, address), customer:customer_profiles(id, legacy_id, address, profile:profiles(username, phone))),
+      batch_waypoints(*)
     `);
         const userRole = req.user?.user_metadata?.role || req.user?.role;
         const userId = req.user?.id;
@@ -64,11 +65,18 @@ exports.getBatches = getBatches;
 const getBatchById = async (req, res) => {
     try {
         const { id } = req.params;
-        const { data, error } = await supabase_1.supabase.from('delivery_batches').select(`
+        let query = supabase_1.supabase.from('delivery_batches').select(`
       *,
-      agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
-    `).eq('batch_code', id).single();
+      agent:delivery_agents(id, legacy_id, vehicle, capacity, profile:profiles(username, phone)),
+      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, delivery_date, delivery_time_slot, order_status, delivery_status, total, vendor:vendors(id, legacy_id, shop_name, address), customer:customer_profiles(id, legacy_id, address, profile:profiles(username, phone))),
+      batch_waypoints(*)
+    `);
+        if (id.includes('-') && id.length > 15) {
+            query = query.eq('id', id).single();
+        } else {
+            query = query.eq('batch_code', id).single();
+        }
+        const { data, error } = await query;
         if (error || !data)
             return res.status(404).json({ success: false, message: 'Batch not found' });
         const userRole = req.user?.user_metadata?.role || req.user?.role;
@@ -83,25 +91,106 @@ const getBatchById = async (req, res) => {
 exports.getBatchById = getBatchById;
 const createBatch = async (req, res) => {
     try {
+        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        if (userRole !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Only administrators can authorize delivery batches' });
+        }
+
         const { orderIds, estimatedDistance, estimatedTime, deliveryDate, deliverySlot } = req.body;
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'A non-empty array of orderIds is required' });
+        }
+
+        const MAX_BATCH_LIMIT = 5;
+        if (orderIds.length > MAX_BATCH_LIMIT) {
+            return res.status(400).json({
+                success: false,
+                message: `Batch order count (${orderIds.length}) exceeds the maximum allowed batch limit of ${MAX_BATCH_LIMIT} orders`
+            });
+        }
+
+        // Query candidate orders from database by order_code or UUID
+        const { data: dbOrders, error: fetchErr } = await supabase_1.supabase
+            .from('orders')
+            .select('id, order_code, batch_id, order_status, delivery_status, aggregation_status, delivery_date, delivery_time_slot, pickup_location, delivery_location, vendor_id, vendor:vendors(id, shop_name, address)')
+            .or(`order_code.in.(${orderIds.join(',')}),id.in.(${orderIds.join(',')})`);
+
+        if (fetchErr || !dbOrders || dbOrders.length !== orderIds.length) {
+            return res.status(400).json({ success: false, message: 'One or more requested orders could not be found' });
+        }
+
+        // 1. Concurrency & Duplicate Check: Ensure NO order is already assigned to a batch
+        const alreadyBatched = dbOrders.filter(o => o.batch_id);
+        if (alreadyBatched.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: `Conflict: Order(s) ${alreadyBatched.map(o => o.order_code).join(', ')} have already been assigned to a delivery batch`
+            });
+        }
+
+        // 2. Status Eligibility Check: Reject cancelled, delivered, or terminal orders
+        const ineligible = dbOrders.filter(o => {
+            const st = String(o.order_status || '').toUpperCase();
+            return ['CANCELLED', 'DELIVERED', 'OUT_FOR_DELIVERY'].includes(st);
+        });
+        if (ineligible.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot batch orders: Order(s) ${ineligible.map(o => `${o.order_code} (${o.order_status})`).join(', ')} are not eligible for batch creation`
+            });
+        }
+
+        // 3. Spatio-Temporal Compatibility Validation
+        const aggregationUtils = require('../utils/aggregationUtils');
+        const firstOrder = dbOrders[0];
+        const targetDate = deliveryDate || firstOrder.delivery_date || new Date().toISOString().split('T')[0];
+        const targetSlot = deliverySlot || firstOrder.delivery_time_slot || '9:00 AM – 1:00 PM';
+
+        for (const order of dbOrders) {
+            // Validate delivery date matches
+            const oDate = order.delivery_date ? String(order.delivery_date).split('T')[0] : targetDate;
+            if (oDate !== targetDate) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Date incompatibility: Order ${order.order_code} is scheduled for ${oDate}, but batch is targeted for ${targetDate}`
+                });
+            }
+
+            // Validate time slot compatibility with primary slot
+            const oSlot = order.delivery_time_slot || targetSlot;
+            if (!aggregationUtils.areTimeSlotsCompatible(targetSlot, oSlot)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Time slot incompatibility: Order ${order.order_code} slot (${oSlot}) does not overlap with batch slot (${targetSlot})`
+                });
+            }
+
+            // Validate geographic compatibility with first order
+            if (!aggregationUtils.areLocationsCompatible(firstOrder, order)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Geographic incompatibility: Order ${order.order_code} delivery area is too far from ${firstOrder.order_code}`
+                });
+            }
+        }
+
         const batchCode = `B-${Math.floor(1000 + Math.random() * 9000)}`;
-        // Resolve order UUIDs
-        const { data: dbOrders } = await supabase_1.supabase.from('orders').select('id, order_code').in('order_code', orderIds);
-        if (!dbOrders || dbOrders.length !== orderIds.length)
-            return res.status(400).json({ success: false, message: 'Some orders not found' });
-        const { data: batch, error } = await supabase_1.supabase.from('delivery_batches').insert({
+
+        // Insert new delivery batch
+        const { data: batch, error: batchErr } = await supabase_1.supabase.from('delivery_batches').insert({
             batch_code: batchCode,
-            order_count: orderIds.length,
-            estimated_distance: estimatedDistance,
-            estimated_time: estimatedTime,
-            delivery_date: deliveryDate || new Date().toISOString().split('T')[0],
-            delivery_slot: deliverySlot || '9:00 AM – 1:00 PM',
+            order_count: dbOrders.length,
+            estimated_distance: estimatedDistance || parseFloat((2.5 + dbOrders.length * 1.2).toFixed(1)),
+            estimated_time: estimatedTime || Math.round(15 + (2.5 + dbOrders.length * 1.2) * 6),
+            delivery_date: targetDate,
+            delivery_slot: targetSlot,
             status: 'PENDING_ASSIGNMENT',
             aggregation_status: 'BATCH_CREATED'
         }).select().single();
-        if (error)
-            throw error;
-        // Create delivery_batch_orders mapping and update orders.batch_id
+
+        if (batchErr || !batch) throw batchErr;
+
+        // Atomically link orders to batch and populate junction table
         for (const order of dbOrders) {
             await supabase_1.supabase.from('delivery_batch_orders').insert({ batch_id: batch.id, order_id: order.id });
             await supabase_1.supabase.from('orders').update({
@@ -110,10 +199,43 @@ const createBatch = async (req, res) => {
                 delivery_status: 'PENDING_ASSIGNMENT'
             }).eq('id', order.id);
         }
+
+        // Generate and persist structured waypoints in batch_waypoints
+        try {
+            let seq = 1;
+            // 1. Unique vendor pickup stops
+            const uniqueVendors = Array.from(new Set(dbOrders.map(o => o.vendor_id || (o.vendor && o.vendor.id))));
+            for (const vId of uniqueVendors) {
+                const sampleOrd = dbOrders.find(o => (o.vendor_id === vId) || (o.vendor && o.vendor.id === vId));
+                const shopName = sampleOrd?.vendor?.shop_name || 'Vendor Shop';
+                const addr = sampleOrd?.vendor?.address || sampleOrd?.pickup_location || 'Vendor Hub';
+                await supabase_1.supabase.from('batch_waypoints').insert({
+                    batch_id: batch.id,
+                    sequence_index: seq++,
+                    stop_type: 'PICKUP',
+                    location: `${shopName} - ${addr}`,
+                    is_completed: false
+                });
+            }
+            // 2. Customer delivery drop stops
+            for (const order of dbOrders) {
+                await supabase_1.supabase.from('batch_waypoints').insert({
+                    batch_id: batch.id,
+                    sequence_index: seq++,
+                    stop_type: 'DELIVERY',
+                    location: `${order.order_code} - ${order.delivery_location || 'Customer Address'}`,
+                    is_completed: false
+                });
+            }
+        } catch (wpErr) {
+            console.warn('Could not persist waypoints to batch_waypoints table:', wpErr);
+        }
+
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
-            agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+            agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name)),
+            batch_waypoints(*)
         `).eq('id', batch.id).single();
 
         res.status(201).json({ success: true, data: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) });
@@ -125,22 +247,57 @@ const createBatch = async (req, res) => {
 exports.createBatch = createBatch;
 const assignBatch = async (req, res) => {
     try {
+        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        if (userRole !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Only administrators can assign batches to couriers' });
+        }
+
         const { id } = req.params;
         const { agentId } = req.body;
-        let aId = agentId;
-        if (!aId.includes('-')) {
-            const { data: aData } = await supabase_1.supabase.from('delivery_agents').select('id').eq('legacy_id', agentId).single();
-            if (!aData)
-                return res.status(400).json({ success: false, message: 'Agent not found' });
-            aId = aData.id;
+        if (!agentId) {
+            return res.status(400).json({ success: false, message: 'agentId is required' });
         }
+
+        let aId = agentId;
+        let agentRecord = null;
+        if (!aId.includes('-')) {
+            const { data: aData } = await supabase_1.supabase.from('delivery_agents').select('*, profile:profiles(username)').eq('legacy_id', agentId).single();
+            if (!aData) return res.status(400).json({ success: false, message: 'Agent not found' });
+            aId = aData.id;
+            agentRecord = aData;
+        } else {
+            const { data: aData } = await supabase_1.supabase.from('delivery_agents').select('*, profile:profiles(username)').eq('id', aId).single();
+            if (!aData) return res.status(400).json({ success: false, message: 'Agent not found' });
+            agentRecord = aData;
+        }
+
+        // Validate batch exists
+        let bQuery = supabase_1.supabase.from('delivery_batches').select('*');
+        if (id.includes('-') && id.length > 15) bQuery = bQuery.eq('id', id).single();
+        else bQuery = bQuery.eq('batch_code', id).single();
+        const { data: targetBatch, error: bErr } = await bQuery;
+        if (bErr || !targetBatch) {
+            return res.status(404).json({ success: false, message: 'Batch not found' });
+        }
+
+        // Check vehicle capacity limit
+        if (agentRecord.capacity && targetBatch.order_count > agentRecord.capacity) {
+            return res.status(400).json({
+                success: false,
+                message: `Agent capacity exceeded: Agent ${agentRecord.profile?.username || agentRecord.legacy_id} has capacity for ${agentRecord.capacity} orders, but batch contains ${targetBatch.order_count} orders`
+            });
+        }
+
+        // Update batch assignment
         const { data: batch, error } = await supabase_1.supabase.from('delivery_batches').update({
             agent_id: aId,
             status: 'ASSIGNED',
             aggregation_status: 'ASSIGNED'
-        }).eq('batch_code', id).select().single();
-        if (error)
-            throw error;
+        }).eq('id', targetBatch.id).select().single();
+
+        if (error) throw error;
+
+        // Cascade assignment to orders
         await supabase_1.supabase.from('orders').update({
             assigned_agent_id: aId,
             order_status: 'ASSIGNED',
@@ -148,10 +305,17 @@ const assignBatch = async (req, res) => {
             aggregation_status: 'ASSIGNED'
         }).eq('batch_id', batch.id);
 
+        // Update courier availability to Busy / On Delivery
+        await supabase_1.supabase.from('delivery_agents').update({
+            availability: 'Busy',
+            status: 'On Delivery'
+        }).eq('id', aId);
+
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
-            agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+            agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name)),
+            batch_waypoints(*)
         `).eq('id', batch.id).single();
 
         res.json({ success: true, message: `Batch ${id} assigned to agent`, data: { batch: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) } });
@@ -164,50 +328,80 @@ exports.assignBatch = assignBatch;
 const updateBatchStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body; // e.g. 'Pickup in Progress' or DB enum 'PICKUP_IN_PROGRESS'
+        const { status } = req.body; // e.g. 'Pickup in Progress', 'Out for Delivery', 'Completed'
         let dbStatus = status;
-        if (status === 'Pickup in Progress')
-            dbStatus = 'PICKUP_IN_PROGRESS';
-        if (status === 'Out for Delivery')
-            dbStatus = 'OUT_FOR_DELIVERY';
-        if (status === 'Completed' || status === 'Delivered')
-            dbStatus = 'COMPLETED';
-        if (status === 'Picked Up')
-            dbStatus = 'PICKED_UP';
-        const { data: batch, error: err1 } = await supabase_1.supabase.from('delivery_batches').select('*').eq('batch_code', id).single();
+        if (status === 'Pickup in Progress') dbStatus = 'PICKUP_IN_PROGRESS';
+        if (status === 'Out for Delivery') dbStatus = 'OUT_FOR_DELIVERY';
+        if (status === 'Completed' || status === 'Delivered') dbStatus = 'COMPLETED';
+        if (status === 'Picked Up') dbStatus = 'PICKED_UP';
+
+        let query = supabase_1.supabase.from('delivery_batches').select('*');
+        if (id.includes('-') && id.length > 15) query = query.eq('id', id).single();
+        else query = query.eq('batch_code', id).single();
+        const { data: batch, error: err1 } = await query;
+
         if (err1 || !batch)
             return res.status(404).json({ success: false, message: 'Batch not found' });
+
         const userRole = req.user?.user_metadata?.role || req.user?.role;
         const userId = req.user?.id;
         if (userRole === 'delivery_partner' && batch.agent_id !== userId)
-            return res.status(403).json({ success: false, message: 'Forbidden' });
+            return res.status(403).json({ success: false, message: 'Forbidden: You are not assigned to this batch' });
+
+        // CRITICAL BUSINESS RULE & OTP PROTECTION:
+        // Batch status CANNOT be set to COMPLETED unless 100% of member orders have been verified and marked DELIVERED via OTP!
+        if (dbStatus === 'COMPLETED') {
+            const { data: memberOrders } = await supabase_1.supabase
+                .from('orders')
+                .select('id, order_code, delivery_status, order_status')
+                .eq('batch_id', batch.id);
+
+            const unverifiedOrders = (memberOrders || []).filter(o => o.delivery_status !== 'DELIVERED');
+            if (unverifiedOrders.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Cannot complete batch: ${unverifiedOrders.length} order(s) (${unverifiedOrders.map(o => o.order_code).join(', ')}) have not satisfied OTP verification. Handover verification must be completed for every order first.`
+                });
+            }
+        }
+
         const updatePayload = { status: dbStatus };
         if (dbStatus === 'COMPLETED') {
             updatePayload.aggregation_status = 'COMPLETED';
         }
-        
+
         const { error } = await supabase_1.supabase.from('delivery_batches').update(updatePayload).eq('id', batch.id);
-        if (error)
-            throw error;
-        // Propagate to orders if needed
+        if (error) throw error;
+
+        // Cascade intermediate transitions to orders
         if (dbStatus === 'OUT_FOR_DELIVERY') {
             await supabase_1.supabase.from('orders').update({
                 order_status: 'OUT_FOR_DELIVERY',
                 delivery_status: 'OUT_FOR_DELIVERY'
-            }).eq('batch_id', batch.id);
+            }).eq('batch_id', batch.id).neq('delivery_status', 'DELIVERED');
         }
-        else if (dbStatus === 'COMPLETED') {
-            await supabase_1.supabase.from('orders').update({
-                order_status: 'DELIVERED',
-                delivery_status: 'DELIVERED',
-                aggregation_status: 'COMPLETED'
-            }).eq('batch_id', batch.id);
+
+        // When batch completes, restore delivery agent availability if they have no other active batches
+        if (dbStatus === 'COMPLETED' && batch.agent_id) {
+            const { data: activeBatches } = await supabase_1.supabase
+                .from('delivery_batches')
+                .select('id')
+                .eq('agent_id', batch.agent_id)
+                .neq('status', 'COMPLETED');
+
+            if (!activeBatches || activeBatches.length === 0) {
+                await supabase_1.supabase.from('delivery_agents').update({
+                    availability: 'Available',
+                    status: 'Active'
+                }).eq('id', batch.agent_id);
+            }
         }
 
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
-            agent:delivery_agents(id, legacy_id, profile:profiles(username)),
-            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
+            agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name)),
+            batch_waypoints(*)
         `).eq('id', batch.id).single();
 
         res.json({ success: true, message: `Batch ${id} updated to ${status}`, data: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) });
@@ -344,28 +538,29 @@ const getOrderOtp = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Forbidden: Handover verification code is restricted to customer recipient' });
         }
 
+        const crypto = require('crypto');
         let otpCode = null;
-        try {
-            const { data: existingVerification } = await supabase_1.supabase
-                .from('delivery_verifications')
-                .select('otp_code, is_verified')
-                .eq('order_id', order.id)
-                .single();
 
-            if (existingVerification && existingVerification.otp_code) {
-                otpCode = existingVerification.otp_code;
-            } else {
-                otpCode = Math.floor(1000 + Math.random() * 9000).toString();
-                await supabase_1.supabase.from('delivery_verifications').insert({
-                    order_id: order.id,
-                    otp_code: otpCode,
-                    is_verified: false,
-                    attempts: 0
-                });
+        const { data: existingVerification, error: vErr } = await supabase_1.supabase
+            .from('delivery_verifications')
+            .select('otp_code, is_verified')
+            .eq('order_id', order.id)
+            .single();
+
+        if (existingVerification && existingVerification.otp_code) {
+            otpCode = existingVerification.otp_code;
+        } else {
+            // Secure cryptographically generated 4-digit numeric PIN
+            otpCode = String(crypto.randomInt(1000, 10000));
+            const { error: insErr } = await supabase_1.supabase.from('delivery_verifications').insert({
+                order_id: order.id,
+                otp_code: otpCode,
+                is_verified: false,
+                attempts: 0
+            });
+            if (insErr) {
+                return res.status(500).json({ success: false, message: 'Failed to initialize secure verification code' });
             }
-        } catch (dbErr) {
-            const hash = Math.abs(order.order_code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
-            otpCode = String(1000 + (hash % 9000));
         }
 
         res.json({ success: true, data: { orderId: order.order_code, otp: otpCode } });
@@ -382,7 +577,7 @@ const verifyDeliveryOtp = async (req, res) => {
             return res.status(400).json({ success: false, message: 'orderId and otp are required' });
         }
 
-        let query = supabase_1.supabase.from('orders').select('id, order_code, batch_id, assigned_agent_id');
+        let query = supabase_1.supabase.from('orders').select('id, order_code, batch_id, assigned_agent_id, delivery_status, order_status');
         if (orderId.includes('-') && orderId.length > 15) {
             query = query.eq('id', orderId).single();
         } else {
@@ -405,77 +600,130 @@ const verifyDeliveryOtp = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions to complete delivery verification' });
         }
 
-        let isValid = false;
+        // Replay Protection: Order must not already be marked delivered
+        if (order.delivery_status === 'DELIVERED' || order.order_status === 'DELIVERED') {
+            return res.status(400).json({ success: false, message: 'Order has already been verified and delivered' });
+        }
+
         const cleanOtp = String(otp).trim();
+        const { data: verification, error: vFetchErr } = await supabase_1.supabase
+            .from('delivery_verifications')
+            .select('*')
+            .eq('order_id', order.id)
+            .single();
 
-        try {
-            const { data: verification } = await supabase_1.supabase
-                .from('delivery_verifications')
-                .select('*')
-                .eq('order_id', order.id)
-                .single();
-
-            if (verification) {
-                if (verification.is_verified) {
-                    return res.status(400).json({ success: false, message: 'Order has already been verified and delivered' });
-                }
-
-                if ((verification.attempts || 0) >= 5) {
-                    return res.status(429).json({ success: false, message: 'Verification attempt limit exceeded (maximum 5 attempts). Please contact support.' });
-                }
-
-                if (verification.otp_code === cleanOtp) {
-                    isValid = true;
-                    await supabase_1.supabase.from('delivery_verifications').update({
-                        is_verified: true,
-                        verified_at: new Date().toISOString()
-                    }).eq('id', verification.id);
-                } else {
-                    await supabase_1.supabase.from('delivery_verifications').update({
-                        attempts: (verification.attempts || 0) + 1
-                    }).eq('id', verification.id);
-                }
-            } else {
-                const hash = Math.abs(order.order_code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
-                const expected = String(1000 + (hash % 9000));
-                if (cleanOtp === expected) {
-                    isValid = true;
-                }
-            }
-        } catch (vErr) {
-            const hash = Math.abs(order.order_code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
-            const expected = String(1000 + (hash % 9000));
-            if (cleanOtp === expected) {
-                isValid = true;
-            }
+        // Fail closed: Missing or unreadable verification record prevents delivery
+        if (vFetchErr || !verification || !verification.otp_code) {
+            return res.status(400).json({
+                success: false,
+                message: 'Delivery verification record not found or uninitialized for this order. Please contact dispatch support.'
+            });
         }
 
-        if (!isValid) {
-            return res.status(400).json({ success: false, message: 'Invalid OTP code. Please re-check with customer.' });
+        if (verification.is_verified) {
+            return res.status(400).json({ success: false, message: 'Order has already been verified and delivered' });
         }
 
+        // Attempt limit lock (max 5 failed attempts)
+        if ((verification.attempts || 0) >= 5) {
+            return res.status(429).json({
+                success: false,
+                message: 'Verification attempt limit exceeded (maximum 5 attempts). Order locked. Please contact support.'
+            });
+        }
+
+        // Validate submitted OTP against database record
+        if (verification.otp_code !== cleanOtp) {
+            await supabase_1.supabase.from('delivery_verifications').update({
+                attempts: (verification.attempts || 0) + 1
+            }).eq('id', verification.id);
+
+            return res.status(400).json({
+                success: false,
+                message: `Invalid OTP code. Please re-check with customer (Attempt ${(verification.attempts || 0) + 1}/5).`
+            });
+        }
+
+        // OTP is valid: Update verification record
+        await supabase_1.supabase.from('delivery_verifications').update({
+            is_verified: true,
+            verified_at: new Date().toISOString()
+        }).eq('id', verification.id);
+
+        // Update order status to DELIVERED
         await supabase_1.supabase.from('orders').update({
             order_status: 'DELIVERED',
             delivery_status: 'DELIVERED',
             aggregation_status: 'COMPLETED'
         }).eq('id', order.id);
 
+        // Record status log
         try {
             await supabase_1.supabase.from('order_status_logs').insert({
                 order_id: order.id,
-                previous_status: 'OUT_FOR_DELIVERY',
+                previous_status: order.delivery_status || 'OUT_FOR_DELIVERY',
                 new_status: 'DELIVERED',
-                notes: 'OTP Handover verified successfully'
+                notes: 'OTP Handover verified successfully at doorstep'
             });
         } catch (logErr) {}
+
+        // Auto-complete parent batch if all member orders are now DELIVERED
+        let batchCompleted = false;
+        try {
+            if (order.batch_id) {
+                const { data: batchOrders } = await supabase_1.supabase
+                    .from('orders')
+                    .select('id, delivery_status')
+                    .eq('batch_id', order.batch_id);
+
+                const allDone = batchOrders && batchOrders.every(o => o.delivery_status === 'DELIVERED' || o.id === order.id);
+                if (allDone) {
+                    await supabase_1.supabase.from('delivery_batches').update({
+                        status: 'COMPLETED',
+                        aggregation_status: 'COMPLETED'
+                    }).eq('id', order.batch_id);
+                    batchCompleted = true;
+                }
+            }
+        } catch (bErr) {
+            console.warn('Batch completion check skipped:', bErr?.message);
+        }
+
+        // Restore courier availability if no active orders remain
+        try {
+            const agentToCheck = order.assigned_agent_id || (userRole === 'delivery_partner' ? userId : null);
+            if (agentToCheck) {
+                let q = supabase_1.supabase.from('orders').select('id, delivery_status, order_status').eq('assigned_agent_id', agentToCheck);
+                if (typeof q.neq === 'function') {
+                    q = q.neq('delivery_status', 'DELIVERED').neq('order_status', 'CANCELLED');
+                }
+                const { data: remainingActive } = await q;
+                const stillActive = (remainingActive || []).filter(o => o.delivery_status !== 'DELIVERED' && o.order_status !== 'CANCELLED' && o.id !== order.id);
+
+                if (stillActive.length === 0) {
+                    await supabase_1.supabase.from('delivery_agents').update({
+                        availability: 'Available',
+                        status: 'Active'
+                    }).eq('id', agentToCheck);
+                }
+            }
+        } catch (agentErr) {
+            console.warn('Agent availability update skipped:', agentErr?.message);
+        }
+
 
         res.json({
             success: true,
             message: `Order ${order.order_code} successfully verified and delivered!`,
-            data: { orderId: order.order_code, status: 'DELIVERED' }
+            data: {
+                orderId: order.order_code,
+                status: 'DELIVERED',
+                batchCompleted
+            }
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 };
 exports.verifyDeliveryOtp = verifyDeliveryOtp;
+

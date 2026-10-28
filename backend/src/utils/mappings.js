@@ -135,34 +135,43 @@ const mapAgentToFrontend = (dbAgent) => {
 };
 exports.mapAgentToFrontend = mapAgentToFrontend;
 const mapBatchToFrontend = (dbBatch) => {
-    const orders = dbBatch.orders || [];
-    const orderCodes = orders.map((o) => o.order_code);
-    const sellerIds = Array.from(new Set(orders.map((o) => o.vendor_id)));
-    const sellerNames = Array.from(new Set(orders.map((o) => o.vendor?.shop_name || 'Vendor')));
-    const pickupLocations = Array.from(new Set(orders.map((o) => o.pickup_location)));
-    const deliveryLocations = Array.from(new Set(orders.map((o) => o.delivery_location)));
+    const rawOrders = dbBatch.orders || [];
+    const orderCodes = rawOrders.map((o) => o.order_code || o.id);
+    const sellerIds = Array.from(new Set(rawOrders.map((o) => o.vendor_id || (o.vendor && o.vendor.id))));
+    const sellerNames = Array.from(new Set(rawOrders.map((o) => (o.vendor && o.vendor.shop_name) || o.vendorName || 'Vendor')));
+    const pickupLocations = Array.from(new Set(rawOrders.map((o) => o.pickup_location)));
+    const deliveryLocations = Array.from(new Set(rawOrders.map((o) => o.delivery_location)));
+    const mappedOrders = rawOrders.map((o) => (0, exports.mapOrderToFrontend)(o));
+    const sortedWaypoints = (dbBatch.batch_waypoints || []).slice().sort((a, b) => (a.sequence_index || 0) - (b.sequence_index || 0));
+
     return {
         uuid: dbBatch.id,
         id: dbBatch.batch_code,
         batchId: dbBatch.batch_code,
+        batchCode: dbBatch.batch_code,
         orderIds: orderCodes,
+        orders: mappedOrders,
+        waypoints: sortedWaypoints,
         sellerIds,
         sellerNames,
         agentId: dbBatch.agent_id,
         agentName: dbBatch.agent?.profile?.username || null,
+        agentPhone: dbBatch.agent?.profile?.phone || null,
         pickupLocations,
         deliveryLocations,
         deliveryDate: dbBatch.delivery_date,
         deliverySlot: dbBatch.delivery_slot,
         orderCount: dbBatch.order_count,
         estimatedDistance: dbBatch.estimated_distance,
-
         estimatedTime: dbBatch.estimated_time,
         status: (0, exports.getBatchHumanReadableStatus)(dbBatch.status),
-        aggregationStatus: (0, exports.getHumanReadableAggregationStatus)(dbBatch.aggregation_status)
+        rawStatus: dbBatch.status,
+        aggregationStatus: (0, exports.getHumanReadableAggregationStatus)(dbBatch.aggregation_status),
+        rawAggregationStatus: dbBatch.aggregation_status
     };
 };
 exports.mapBatchToFrontend = mapBatchToFrontend;
+
 
 const mapCustomerToFrontend = (dbCustomer) => {
     return {
