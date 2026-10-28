@@ -46,10 +46,7 @@ export const AppProvider = ({ children }) => {
   });
   const [notifications, setNotifications] = useState(() => getStorageItem('notifications', []));
   const [cart, setCart] = useState(() => getStorageItem('cart', []));
-<<<<<<< HEAD
-  const [currentUser, setCurrentUser] = useState(() => getStorageItem('currentUser', null));
   const [authLoading, setAuthLoading] = useState(true);
-=======
   const [currentUser, setCurrentUserRaw] = useState(() => {
     const saved = getStorageItem('currentUser', null);
     return saved ? rectifyCustomerUser(saved) : null;
@@ -58,8 +55,6 @@ export const AppProvider = ({ children }) => {
   const setCurrentUser = (user) => {
     setCurrentUserRaw(user ? rectifyCustomerUser(user) : null);
   };
-
->>>>>>> dd88abc (feat(customer): enhance UI, rectify delivery addresses, and fix wishlist card alignment)
   const [adminSettings, setAdminSettings] = useState(() => getStorageItem('adminSettings', {
     autoAssignWaitTime: 15,
     maxOrdersPerBatch: 5,
