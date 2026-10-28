@@ -542,7 +542,8 @@ export const AppProvider = ({ children }) => {
       }
     } catch (err) {
       console.error(err);
-      addNotification(`Failed to update order ${orderId}.`, 'error');
+      const errMsg = err.response?.data?.message || `Failed to update order ${orderId}.`;
+      addNotification(errMsg, 'error');
     }
   };
 

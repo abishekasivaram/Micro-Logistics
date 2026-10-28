@@ -157,16 +157,19 @@ const SellerOrdersPage = () => {
 
   // Calculate elapsed time from mock or real timestamp
   const getElapsedMinutes = (order) => {
-    if (order.createdAt) {
-      const diff = Math.floor((new Date() - new Date(order.createdAt)) / 60000);
-      return Math.max(1, diff);
+    if (!order) return 5;
+    const rawDate = order.createdAt || order.date || order.created_at;
+    if (rawDate) {
+      const diff = Math.floor((new Date() - new Date(rawDate)) / 60000);
+      return Math.max(1, isNaN(diff) ? 5 : diff);
     }
-    const num = (order.id || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const num = String(order.id || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return (num % 25) + 3;
   };
 
   // Stage rank for workflow-based sorting: Prep -> Mark Ready -> Handover Confirmed -> Dispatched -> Delivered
   const getStageRank = (order) => {
+    if (!order) return 8;
     const lifecycle = getOrderLifecycle(order);
     switch (lifecycle.stage) {
       case 'NEW': return 1;                  // Needs Prep
@@ -191,12 +194,12 @@ const SellerOrdersPage = () => {
       return getElapsedMinutes(b) - getElapsedMinutes(a);
     }
     if (sortBy === 'NEWEST') {
-      const timeA = new Date(a.createdAt || a.date || 0).getTime();
-      const timeB = new Date(b.createdAt || b.date || 0).getTime();
+      const timeA = new Date(a.createdAt || a.date || a.created_at || 0).getTime();
+      const timeB = new Date(b.createdAt || b.date || b.created_at || 0).getTime();
       return timeB - timeA;
     }
     if (sortBy === 'AMOUNT') {
-      return (b.total || 0) - (a.total || 0);
+      return (Number(b.total) || 0) - (Number(a.total) || 0);
     }
     return 0;
   });
@@ -377,7 +380,7 @@ const SellerOrdersPage = () => {
             const elapsed = getElapsedMinutes(order);
             const isUrgent = lifecycle.stage === 'NEW' && elapsed > 10;
             const items = order.items || [];
-            const displayCode = (order.id || order.orderId || 'ORD').slice(-8).toUpperCase();
+            const displayCode = String(order.id || order.orderId || 'ORD').slice(-8).toUpperCase();
             const courier = lifecycle.courier;
 
             // Status Styling
@@ -455,7 +458,7 @@ const SellerOrdersPage = () => {
                           <span>{item.name || item.product?.name || `Item #${itemIdx+1}`}</span>
                         </div>
                         <div className="order-item-price">
-                          ₹{(item.price || item.product?.price || 0) * (item.qty || item.quantity || 1)}
+                          ₹{((Number(item.price || item.product?.price) || 0) * (Number(item.qty || item.quantity) || 1)).toFixed(2)}
                         </div>
                       </div>
                     ))
@@ -471,7 +474,7 @@ const SellerOrdersPage = () => {
                 ) : order.batchId ? (
                   <div className="order-batch-tag awaiting-assignment">
                     <Clock size={12} color="#d97706" />
-                    <span>Batch #{order.batchId.slice(-6).toUpperCase()} · Waiting for Driver Assignment</span>
+                    <span>Batch #{String(order.batchId).slice(-6).toUpperCase()} · Waiting for Driver Assignment</span>
                   </div>
                 ) : (
                   <div className="order-batch-tag awaiting-assignment">
@@ -485,7 +488,7 @@ const SellerOrdersPage = () => {
                   <div className="order-total-block">
                     <span className="order-total-label">Total Amount</span>
                     <span className="order-total-amount">
-                      ₹{(order.total || 0).toFixed(2)}
+                      ₹{Number(order.total || 0).toFixed(2)}
                     </span>
                   </div>
 
@@ -599,7 +602,7 @@ const SellerOrdersPage = () => {
               <div className="handover-order-card">
                 <div className="handover-order-row">
                   <span className="handover-label">Order Code:</span>
-                  <span className="handover-val mono">#{(handoverModalOrder.id || handoverModalOrder.orderId || '').slice(-8).toUpperCase()}</span>
+                  <span className="handover-val mono">#{String(handoverModalOrder.id || handoverModalOrder.orderId || '').slice(-8).toUpperCase()}</span>
                 </div>
                 <div className="handover-order-row">
                   <span className="handover-label">Assigned Courier:</span>
@@ -623,12 +626,12 @@ const SellerOrdersPage = () => {
                 </div>
                 <div className="handover-order-row">
                   <span className="handover-label">Total Amount:</span>
-                  <span className="handover-val highlight">₹{(handoverModalOrder.total || 0).toFixed(2)}</span>
+                  <span className="handover-val highlight">₹{Number(handoverModalOrder.total || 0).toFixed(2)}</span>
                 </div>
                 {handoverModalOrder.batchId && (
                   <div className="handover-order-row">
                     <span className="handover-label">Batch Code:</span>
-                    <span className="handover-val mono">Batch #{handoverModalOrder.batchId.slice(-6).toUpperCase()}</span>
+                    <span className="handover-val mono">Batch #{String(handoverModalOrder.batchId).slice(-6).toUpperCase()}</span>
                   </div>
                 )}
               </div>
@@ -681,7 +684,7 @@ const SellerOrdersPage = () => {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontFamily: 'JetBrains Mono', fontWeight: '700', fontSize: '13px' }}>
-                      #{selectedOrderForSlip.id.slice(-8).toUpperCase()}
+                      #{String(selectedOrderForSlip?.id || selectedOrderForSlip?.orderId || 'ORD').slice(-8).toUpperCase()}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                       Slot: {selectedOrderForSlip.deliveryTimeSlot || 'Standard'}
@@ -701,14 +704,14 @@ const SellerOrdersPage = () => {
                   {(selectedOrderForSlip.items || []).map((item, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '4px 0' }}>
                       <span>[  ] {item.qty || 1}x {item.name || item.product?.name || `Item ${i+1}`}</span>
-                      <span>₹{((item.price || item.product?.price || 0) * (item.qty || 1)).toFixed(2)}</span>
+                      <span>₹{((Number(item.price || item.product?.price) || 0) * (Number(item.qty) || 1)).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
 
                 <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontWeight: '700', fontSize: '15px' }}>
                   <span>Total Amount</span>
-                  <span>₹{(selectedOrderForSlip.total || 0).toFixed(2)}</span>
+                  <span>₹{Number(selectedOrderForSlip.total || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>

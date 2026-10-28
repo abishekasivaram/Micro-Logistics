@@ -450,7 +450,7 @@ const DeliveriesPage = () => {
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                         {courier ? (
-                          order.batchId ? `Assigned to Batch #${order.batchId.slice(-6).toUpperCase()}` : 'Dedicated Courier Partner'
+                          order.batchId ? `Assigned to Batch #${String(order.batchId).slice(-6).toUpperCase()}` : 'Dedicated Courier Partner'
                         ) : (
                           'Admin assignment pending'
                         )}
