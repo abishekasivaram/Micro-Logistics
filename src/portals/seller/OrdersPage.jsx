@@ -3,7 +3,8 @@ import { useAppContext } from '../../context/AppContext';
 import { 
   ShoppingBag, Search, Clock, CheckCircle2, ChevronRight, 
   Printer, ArrowRight, ChefHat, Truck, MapPin, AlertCircle, 
-  Copy, Check, Sparkles, Filter, X, Eye, PackageCheck
+  Copy, Check, Sparkles, Filter, X, Eye, PackageCheck,
+  ShieldCheck, CheckCheck, ArrowUpDown
 } from 'lucide-react';
 import './OrdersPage.css';
 
@@ -38,8 +39,11 @@ const SellerOrdersPage = () => {
 
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('LIFECYCLE');
+  const [slotFilter, setSlotFilter] = useState('ALL');
   const [copiedId, setCopiedId] = useState(null);
   const [selectedOrderForSlip, setSelectedOrderForSlip] = useState(null);
+  const [handoverModalOrder, setHandoverModalOrder] = useState(null);
 
   // Scoped to seller
   const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
@@ -61,7 +65,7 @@ const SellerOrdersPage = () => {
   const placedCount = sellerOrders.filter(o => ['PLACED', 'PENDING', 'NEW'].includes(getOrderStatus(o))).length;
   const prepCount = sellerOrders.filter(o => ['PREPARING', 'CONFIRMED'].includes(getOrderStatus(o))).length;
   const readyCount = sellerOrders.filter(o => ['READY_FOR_DELIVERY', 'READY'].includes(getOrderStatus(o))).length;
-  const outCount = sellerOrders.filter(o => ['ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(getOrderStatus(o))).length;
+  const outCount = sellerOrders.filter(o => ['ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT', 'PICKED_UP'].includes(getOrderStatus(o))).length;
   const deliveredCount = sellerOrders.filter(o => ['DELIVERED', 'COMPLETED'].includes(getOrderStatus(o))).length;
 
   const filteredOrders = sellerOrders.filter(o => {
@@ -72,10 +76,18 @@ const SellerOrdersPage = () => {
 
     if (!matchesSearch) return false;
 
+    // Delivery slot filter
+    if (slotFilter !== 'ALL') {
+      const slot = (o.deliveryTimeSlot || o.deliverySlot || '').toUpperCase();
+      if (slotFilter === 'MORNING' && !slot.includes('9') && !slot.includes('MORNING')) return false;
+      if (slotFilter === 'AFTERNOON' && !slot.includes('12') && !slot.includes('1') && !slot.includes('AFTERNOON')) return false;
+      if (slotFilter === 'EVENING' && !slot.includes('4') && !slot.includes('EVENING')) return false;
+    }
+
     if (activeTab === 'NEW') return ['PLACED', 'PENDING', 'NEW'].includes(status);
     if (activeTab === 'PREPARING') return ['PREPARING', 'CONFIRMED'].includes(status);
     if (activeTab === 'READY') return ['READY_FOR_DELIVERY', 'READY'].includes(status);
-    if (activeTab === 'OUT') return ['ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(status);
+    if (activeTab === 'OUT') return ['ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT', 'PICKED_UP'].includes(status);
     if (activeTab === 'DELIVERED') return ['DELIVERED', 'COMPLETED'].includes(status);
     return true;
   });
@@ -90,6 +102,43 @@ const SellerOrdersPage = () => {
     const num = (order.id || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return (num % 25) + 3;
   };
+
+  // Stage rank for workflow-based sorting: Prep -> Mark Ready -> Handovered & Dispatched -> Delivered
+  const getStageRank = (status) => {
+    // 1. Needs Prep (Start Prep)
+    if (['PLACED', 'PENDING', 'NEW'].includes(status)) return 1;
+    // 2. In Packing (Mark Ready)
+    if (['PREPARING', 'CONFIRMED'].includes(status)) return 2;
+    // 3. Ready for Driver (Handover after delivery person collection)
+    if (['READY_FOR_DELIVERY', 'READY'].includes(status)) return 3;
+    // 4. Handovered & Dispatched (Out with courier)
+    if (['PICKED_UP', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(status)) return 4;
+    // 5. Delivered / Completed
+    if (['DELIVERED', 'COMPLETED'].includes(status)) return 5;
+    return 6;
+  };
+
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    if (sortBy === 'LIFECYCLE') {
+      const rankA = getStageRank(getOrderStatus(a));
+      const rankB = getStageRank(getOrderStatus(b));
+      if (rankA !== rankB) return rankA - rankB;
+      // Within same stage: higher elapsed minutes (urgency) first
+      return getElapsedMinutes(b) - getElapsedMinutes(a);
+    }
+    if (sortBy === 'URGENT') {
+      return getElapsedMinutes(b) - getElapsedMinutes(a);
+    }
+    if (sortBy === 'NEWEST') {
+      const timeA = new Date(a.createdAt || a.date || 0).getTime();
+      const timeB = new Date(b.createdAt || b.date || 0).getTime();
+      return timeB - timeA;
+    }
+    if (sortBy === 'AMOUNT') {
+      return (b.total || 0) - (a.total || 0);
+    }
+    return 0;
+  });
 
   const advanceOrderStatus = (order) => {
     const current = getOrderStatus(order);
@@ -162,13 +211,13 @@ const SellerOrdersPage = () => {
           className={`pipeline-tab ${placedCount > 0 ? 'urgent' : ''} ${activeTab === 'NEW' ? 'active' : ''}`}
           onClick={() => setActiveTab('NEW')}
         >
-          New Orders <span className="pipeline-badge">{placedCount}</span>
+          Needs Prep <span className="pipeline-badge">{placedCount}</span>
         </button>
         <button 
           className={`pipeline-tab ${activeTab === 'PREPARING' ? 'active' : ''}`}
           onClick={() => setActiveTab('PREPARING')}
         >
-          Packing / In Prep <span className="pipeline-badge">{prepCount}</span>
+          In Packing <span className="pipeline-badge">{prepCount}</span>
         </button>
         <button 
           className={`pipeline-tab ${activeTab === 'READY' ? 'active' : ''}`}
@@ -180,7 +229,7 @@ const SellerOrdersPage = () => {
           className={`pipeline-tab ${activeTab === 'OUT' ? 'active' : ''}`}
           onClick={() => setActiveTab('OUT')}
         >
-          Out with Partner <span className="pipeline-badge">{outCount}</span>
+          Handovered & Dispatched <span className="pipeline-badge">{outCount}</span>
         </button>
         <button 
           className={`pipeline-tab ${activeTab === 'DELIVERED' ? 'active' : ''}`}
@@ -190,7 +239,7 @@ const SellerOrdersPage = () => {
         </button>
       </div>
 
-      {/* Toolbar */}
+      {/* Toolbar with Search and Sorting */}
       <div className="orders-toolbar">
         <div className="orders-search-box">
           <Search size={16} className="orders-search-icon" />
@@ -203,8 +252,24 @@ const SellerOrdersPage = () => {
           />
         </div>
 
-        <div className="orders-filter-group">
-          <select className="orders-select" defaultValue="ALL">
+        <div className="orders-filter-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <select 
+            className="orders-select" 
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            title="Sort order fulfillment sequence"
+          >
+            <option value="LIFECYCLE">Sort: Prep → Ready → Handover → Dispatched</option>
+            <option value="URGENT">Sort: Most Urgent First</option>
+            <option value="NEWEST">Sort: Newest Orders</option>
+            <option value="AMOUNT">Sort: Total Amount (High to Low)</option>
+          </select>
+
+          <select 
+            className="orders-select" 
+            value={slotFilter}
+            onChange={(e) => setSlotFilter(e.target.value)}
+          >
             <option value="ALL">All Delivery Slots</option>
             <option value="MORNING">Morning (9 AM - 12 PM)</option>
             <option value="AFTERNOON">Afternoon (12 PM - 4 PM)</option>
@@ -214,7 +279,7 @@ const SellerOrdersPage = () => {
       </div>
 
       {/* Orders Grid */}
-      {filteredOrders.length === 0 ? (
+      {sortedOrders.length === 0 ? (
         <div className="orders-empty-state">
           <div className="orders-empty-icon">
             <ShoppingBag size={28} />
@@ -236,7 +301,7 @@ const SellerOrdersPage = () => {
         </div>
       ) : (
         <div className="orders-grid">
-          {filteredOrders.map((order, orderIdx) => {
+          {sortedOrders.map((order, orderIdx) => {
             const status = getOrderStatus(order);
             const elapsed = getElapsedMinutes(order);
             const isUrgent = ['PLACED', 'PENDING', 'NEW'].includes(status) && elapsed > 10;
@@ -260,6 +325,10 @@ const SellerOrdersPage = () => {
               cardClass += ' ready';
               badgeClass += ' status-badge-ready';
               statusLabel = 'Ready for Driver';
+            } else if (['PICKED_UP', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(status)) {
+              cardClass += ' dispatched';
+              badgeClass += ' status-badge-dispatched';
+              statusLabel = 'Handovered & Dispatched';
             } else if (['DELIVERED', 'COMPLETED'].includes(status)) {
               cardClass += ' delivered';
               badgeClass += ' status-badge-delivered';
@@ -355,38 +424,135 @@ const SellerOrdersPage = () => {
                       <Printer size={15} />
                     </button>
 
-                    {/* Progression Workflow */}
+                    {/* Step 1: Start Prep */}
                     {['PLACED', 'PENDING', 'NEW'].includes(status) && (
                       <button 
                         className="btn-status-advance btn-start-prep"
                         onClick={() => advanceOrderStatus(order)}
+                        title="Start preparing and packing store items"
                       >
                         <ChefHat size={14} /> Start Prep
                       </button>
                     )}
 
+                    {/* Step 2: Mark Ready */}
                     {['PREPARING', 'CONFIRMED'].includes(status) && (
                       <button 
                         className="btn-status-advance btn-mark-ready"
                         onClick={() => advanceOrderStatus(order)}
+                        title="Mark items as packed and ready for courier pickup"
                       >
                         <CheckCircle2 size={14} /> Mark Ready
                       </button>
                     )}
 
+                    {/* Step 3: Handover (proceeds after delivery person collects order) */}
                     {['READY_FOR_DELIVERY', 'READY'].includes(status) && (
                       <button 
                         className="btn-status-advance btn-handover"
-                        onClick={() => advanceOrderStatus(order)}
+                        onClick={() => setHandoverModalOrder(order)}
+                        title="Confirm handover once delivery person collects this order from shop"
                       >
                         <Truck size={14} /> Handover
                       </button>
+                    )}
+
+                    {/* Step 4: Dispatched indicator */}
+                    {['PICKED_UP', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(status) && (
+                      <div className="order-dispatched-indicator" title="Package collected by courier and out for delivery">
+                        <CheckCheck size={13} /> Dispatched
+                      </div>
+                    )}
+
+                    {/* Step 5: Completed indicator */}
+                    {['DELIVERED', 'COMPLETED'].includes(status) && (
+                      <div className="order-completed-indicator" title="Order successfully delivered to customer">
+                        <CheckCircle2 size={13} /> Completed
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Courier Handover Modal (proceeds after delivery person collects order from the shop) */}
+      {handoverModalOrder && (
+        <div className="slip-overlay" onClick={() => setHandoverModalOrder(null)}>
+          <div className="handover-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="handover-modal-header">
+              <div className="handover-modal-title">
+                <Truck size={20} color="#059669" />
+                <span>Confirm Courier Handover</span>
+              </div>
+              <button 
+                className="btn-view-slip"
+                onClick={() => setHandoverModalOrder(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="handover-modal-body">
+              <div className="handover-alert-box">
+                <ShieldCheck size={20} color="#059669" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong>Delivery Person Collection Verification</strong>
+                  <p>Proceed with handover after the delivery person collects the order package from your shop counter.</p>
+                </div>
+              </div>
+
+              <div className="handover-order-card">
+                <div className="handover-order-row">
+                  <span className="handover-label">Order Code:</span>
+                  <span className="handover-val mono">#{(handoverModalOrder.id || handoverModalOrder.orderId || '').slice(-8).toUpperCase()}</span>
+                </div>
+                <div className="handover-order-row">
+                  <span className="handover-label">Customer:</span>
+                  <span className="handover-val">{handoverModalOrder.customerName || 'Customer'}</span>
+                </div>
+                <div className="handover-order-row">
+                  <span className="handover-label">Delivery Destination:</span>
+                  <span className="handover-val">{resolveOrderAddress(handoverModalOrder, 0, customers)}</span>
+                </div>
+                <div className="handover-order-row">
+                  <span className="handover-label">Fulfillment Status:</span>
+                  <span className="handover-val" style={{ color: '#0369a1', fontWeight: '700' }}>Ready for Pickup</span>
+                </div>
+                <div className="handover-order-row">
+                  <span className="handover-label">Total Amount:</span>
+                  <span className="handover-val highlight">₹{(handoverModalOrder.total || 0).toFixed(2)}</span>
+                </div>
+                {handoverModalOrder.batchId && (
+                  <div className="handover-order-row">
+                    <span className="handover-label">Batch Assignment:</span>
+                    <span className="handover-val mono">Batch #{handoverModalOrder.batchId.slice(-6).toUpperCase()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="handover-modal-footer">
+              <button 
+                className="orders-action-btn"
+                onClick={() => setHandoverModalOrder(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-status-advance btn-handover"
+                style={{ padding: '8px 16px', fontSize: '13px' }}
+                onClick={() => {
+                  advanceOrderStatus(handoverModalOrder);
+                  setHandoverModalOrder(null);
+                }}
+              >
+                <CheckCircle2 size={15} /> Confirm Handover & Dispatch
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
