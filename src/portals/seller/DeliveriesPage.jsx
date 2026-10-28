@@ -8,7 +8,7 @@ import {
   CheckCheck, UserCheck, PackageCheck, AlertCircle
 } from 'lucide-react';
 import GoogleRouteMap from '../../components/common/GoogleRouteMap';
-import { resolveOrderAddress, getAssignedCourier } from './OrdersPage';
+import { resolveOrderAddress, getAssignedCourier } from './sellerUtils';
 import './DeliveriesPage.css';
 
 // Curated authentic Chennai customer dropoff profiles per batch identifier
