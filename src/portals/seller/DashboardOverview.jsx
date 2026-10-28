@@ -1,733 +1,375 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { 
-  ShoppingBag, Truck, CheckCircle, Clock, Package, AlertTriangle, 
-  DollarSign, MapPin, ChevronRight, TrendingUp, Copy, Check, Plus, 
-  ArrowUpRight, Flame, Store, Sparkles, Navigation, Eye, ExternalLink,
-  ShieldCheck, ArrowRight, Zap, RefreshCw, UserCheck
+  ShoppingBag, Truck, Clock, Package, AlertTriangle, 
+  MapPin, Plus, Store, Bell, ArrowRight,
+  ShieldCheck, Info, BellOff, ChevronRight
 } from 'lucide-react';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
-import OrderDetailsModal from '../../components/common/OrderDetailsModal';
 import './DashboardOverview.css';
 
-const CHENNAI_ADDRESS_POOL = [
-  '101, 2nd Avenue, Anna Nagar East, Chennai - 600102',
-  '14/2, 4th Cross St, Mandaveli, Chennai - 600028',
-  '42/1 Besant Avenue, Adyar, Chennai - 600020',
-  '88 Rajiv Gandhi Salai (OMR), Thoraipakkam, Chennai - 600097',
-  '27 Panagal Park, T. Nagar, Chennai - 600017',
-  '53 100 Feet Bypass Road, Velachery, Chennai - 600042',
-  '18 Harrington Road, Chetpet, Chennai - 600031',
-  '93 Luz Church Road, Mylapore, Chennai - 600004'
+const DEFAULT_SELLER_NOTIFICATIONS = [
+  {
+    id: 'sn-0',
+    title: 'Low Stock Alert: Aashirvaad Atta',
+    message: 'You have 2 units of Aashirvaad Atta left in inventory. Restock soon to avoid fulfillment delays.',
+    type: 'alert',
+    date: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    isRead: false
+  },
+  {
+    id: 'sn-1',
+    title: 'New Customer Order #ORD-1001',
+    message: 'Order ORD-1001 was placed by Priya Rajan (2x items, ₹89.00). Packing SLA target is 15 minutes.',
+    type: 'order',
+    date: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
+    isRead: false
+  },
+  {
+    id: 'sn-2',
+    title: 'Batch Dispatch Assigned to Courier',
+    message: 'Batch #B-8041 has been assigned to driver David Anand for scheduled courier pickup.',
+    type: 'delivery',
+    date: new Date(Date.now() - 1000 * 60 * 28).toISOString(),
+    isRead: false
+  },
+  {
+    id: 'sn-3',
+    title: 'New Customer Order #ORD-1002',
+    message: 'Sivakumar R placed an order for Ponni Boiled Rice (₹320.00). Stage ready for driver pickup.',
+    type: 'order',
+    date: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    isRead: true
+  }
 ];
 
-const resolveOrderAddress = (order, idx = 0, customerList = []) => {
-  const direct = order?.deliveryLocation || order?.deliveryAddress;
-  if (direct && !direct.toLowerCase().includes('coimbatore') && !direct.toLowerCase().includes('rs puram')) {
-    return direct.toLowerCase().includes('chennai') ? direct : `${direct}, Chennai`;
-  }
-  const found = (customerList || []).find(c => 
-    (c.id && c.id === order?.customerId) || 
-    (c.name && order?.customerName && c.name.toLowerCase() === order.customerName.toLowerCase())
-  );
-  if (found?.address && !found.address.toLowerCase().includes('coimbatore') && !found.address.toLowerCase().includes('rs puram')) {
-    return found.address.toLowerCase().includes('chennai') ? found.address : `${found.address}, Chennai`;
-  }
-  return CHENNAI_ADDRESS_POOL[idx % CHENNAI_ADDRESS_POOL.length];
+const getTimeAgo = (dateStr) => {
+  if (!dateStr) return 'Just now';
+  const d = new Date(dateStr);
+  const diff = Math.floor((new Date() - d) / 1000);
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 };
 
 const DashboardOverview = () => {
-  const { orders = [], customers = [], currentUser, updateSellerProfile, updateOrderStatus } = useAppContext();
+  const { 
+    orders = [], 
+    notifications: contextNotifications = [],
+    currentUser, 
+    updateSellerProfile,
+    authLoading 
+  } = useAppContext();
   const navigate = useNavigate();
 
   const [isStoreClosedModalOpen, setIsStoreClosedModalOpen] = useState(false);
   const [storeStatus, setStoreStatus] = useState(currentUser?.isOpen !== false);
-  const [copiedId, setCopiedId] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [orderFilter, setOrderFilter] = useState('ALL');
-  const [copiedOrderId, setCopiedOrderId] = useState(null);
 
   const sellerId = currentUser?.role === 'vendor' ? currentUser.id : null;
-  const displayId = sellerId ? (sellerId.length > 12 ? `${sellerId.slice(0, 8)}...${sellerId.slice(-4)}` : sellerId) : 'N/A';
 
-  // Filter orders for this seller
-  const sellerOrders = orders.filter(o => currentUser?.role === 'admin' || (sellerId && (o.vendorId === sellerId || o.vendor_id === sellerId)));
-  const totalOrders = sellerOrders.length;
-  
+  // Filter orders for this seller (admins see all orders)
+  const sellerOrders = useMemo(() => {
+    return orders.filter(o => 
+      currentUser?.role === 'admin' || 
+      (sellerId && (o.vendorId === sellerId || o.vendor_id === sellerId))
+    );
+  }, [orders, currentUser, sellerId]);
+
   const getStatus = (o) => (o.orderStatus || o.status || 'PLACED').toUpperCase();
 
-  const newOrders = sellerOrders.filter(o => ['PLACED', 'PENDING', 'NEW'].includes(getStatus(o))).length;
-  const readyOrders = sellerOrders.filter(o => ['READY_FOR_DELIVERY', 'READY'].includes(getStatus(o))).length;
-  const completedOrders = sellerOrders.filter(o => ['DELIVERED', 'COMPLETED'].includes(getStatus(o))).length;
-  const todayRevenue = sellerOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  // 1. Pending Orders: Waiting for seller action or confirmation
+  const pendingOrdersCount = useMemo(() => {
+    return sellerOrders.filter(o => ['PLACED', 'PENDING', 'NEW'].includes(getStatus(o))).length;
+  }, [sellerOrders]);
 
-  const handleCopyId = () => {
-    if (!sellerId) return;
-    navigator.clipboard.writeText(sellerId);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
-  };
+  // 2. Orders in Progress: Packing, item prep, or store processing
+  const inProgressOrdersCount = useMemo(() => {
+    return sellerOrders.filter(o => ['PREPARING', 'CONFIRMED'].includes(getStatus(o))).length;
+  }, [sellerOrders]);
 
-  const handleCopyOrderId = (e, id) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(id);
-    setCopiedOrderId(id);
-    setTimeout(() => setCopiedOrderId(null), 2000);
-  };
+  // 3. Orders to Deliver: Ready for pickup, awaiting courier assignment, or handover
+  const toDeliverOrdersCount = useMemo(() => {
+    return sellerOrders.filter(o => ['READY_FOR_DELIVERY', 'READY'].includes(getStatus(o))).length;
+  }, [sellerOrders]);
 
-  const getCustomerInitials = (name, index = 0) => {
-    if (!name || name.toLowerCase() === 'customer' || name.toLowerCase() === 'priyarajan') {
-      const sampleInitials = ['PR', 'KM', 'AK', 'DS'];
-      return sampleInitials[index % sampleInitials.length];
-    }
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-  };
+  // 4. Total Orders: All lifetime orders handled
+  const totalOrdersCount = sellerOrders.length;
 
-  const formatCustomerName = (name, index = 0) => {
-    if (!name || name.toLowerCase() === 'customer' || name.toLowerCase() === 'priyarajan') {
-      const sampleNames = ['Priya Rajan', 'Kavitha Mohan', 'Arun Kumar', 'Deepak Soundar'];
-      return sampleNames[index % sampleNames.length];
-    }
-    return name
-      .split(' ')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join(' ');
-  };
+  // Recent notifications (latest 3-5)
+  const recentNotifications = useMemo(() => {
+    const combined = contextNotifications && contextNotifications.length > 0
+      ? contextNotifications
+      : DEFAULT_SELLER_NOTIFICATIONS;
+    return combined.slice(0, 5);
+  }, [contextNotifications]);
+
+  const unreadCount = useMemo(() => {
+    return recentNotifications.filter(n => !n.isRead).length;
+  }, [recentNotifications]);
 
   const toggleStatus = (targetOpen) => {
     if (!targetOpen) {
       setIsStoreClosedModalOpen(true);
     } else {
       setStoreStatus(true);
-      updateSellerProfile({ isOpen: true });
+      if (updateSellerProfile) {
+        updateSellerProfile({ isOpen: true });
+      }
     }
   };
 
   const confirmCloseStore = () => {
     setStoreStatus(false);
-    updateSellerProfile({ isOpen: false });
+    if (updateSellerProfile) {
+      updateSellerProfile({ isOpen: false });
+    }
     setIsStoreClosedModalOpen(false);
   };
 
-  // Active orders in flight needing seller attention
-  const rawActionableOrders = sellerOrders
-    .filter(o => !['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(getStatus(o)));
+  const shopName = currentUser?.shopName || currentUser?.name || 'Namma Chennai Naturals';
+  const shopLocation = currentUser?.area 
+    ? `${currentUser.area}, Chennai` 
+    : (currentUser?.address ? (currentUser.address.includes('Chennai') ? currentUser.address : `${currentUser.address}, Chennai`) : 'T. Nagar Hub, Chennai');
 
-  const actionableOrders = rawActionableOrders.length > 0 ? rawActionableOrders : sellerOrders.slice(0, 3);
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'order':
+        return <ShoppingBag size={16} className="notif-type-icon order" />;
+      case 'delivery':
+        return <Truck size={16} className="notif-type-icon delivery" />;
+      case 'alert':
+      case 'warning':
+        return <AlertTriangle size={16} className="notif-type-icon alert" />;
+      default:
+        return <Info size={16} className="notif-type-icon system" />;
+    }
+  };
 
-  const packingCount = actionableOrders.filter(o => ['PLACED', 'PENDING', 'NEW', 'PREPARING', 'CONFIRMED'].includes(getStatus(o))).length;
-  const readyCount = actionableOrders.filter(o => ['READY_FOR_DELIVERY', 'READY'].includes(getStatus(o))).length;
-  const transitCount = actionableOrders.filter(o => ['ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(getStatus(o))).length;
-
-  const filteredOrders = actionableOrders.filter(o => {
-    const s = getStatus(o);
-    if (orderFilter === 'PACKING') return ['PLACED', 'PENDING', 'NEW', 'PREPARING', 'CONFIRMED'].includes(s);
-    if (orderFilter === 'READY') return ['READY_FOR_DELIVERY', 'READY'].includes(s);
-    if (orderFilter === 'TRANSIT') return ['ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(s);
-    return true;
-  });
+  if (authLoading) {
+    return (
+      <div className="seller-dashboard-loading">
+        <div className="loading-spinner" />
+        <p>Loading seller dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="seller-dashboard-page">
-      {/* Header Profile & Store Status Banner */}
-      <div className="seller-header-card">
+      {/* ─── 1. Compact Seller Information Header ───────────────────────── */}
+      <header className="seller-header-card">
         <div className="seller-identity-block">
           <div className="seller-avatar-badge">
-            <Store size={26} strokeWidth={2.2} />
+            <Store size={26} />
           </div>
+
           <div className="seller-title-column">
             <div className="seller-tags-row">
-              <span className="seller-role-pill">Verified Merchant</span>
-              <div className="seller-id-chip" onClick={handleCopyId} title="Click to copy Store ID">
-                ID: {displayId} {copiedId ? <Check size={12} color="var(--success)" /> : <Copy size={12} />}
-              </div>
+              <span className="seller-verification-badge">
+                <ShieldCheck size={13} /> Verified Merchant
+              </span>
               <span className="seller-location-pill">
-                <MapPin size={11} /> {currentUser?.address ? (currentUser.address.includes('Chennai') ? currentUser.address : `${currentUser.address}, Chennai`) : (currentUser?.area ? `${currentUser.area}, Chennai` : 'T. Nagar Hub, Chennai')}
+                <MapPin size={11} /> {shopLocation}
               </span>
             </div>
-            <h1 className="seller-store-name">
-              {currentUser?.shopName || currentUser?.name || 'Kannan Dept Store'}
-            </h1>
+            <h1 className="seller-store-name">{shopName}</h1>
           </div>
         </div>
 
-        {/* Live Operational Ticker */}
-        <div className="seller-telemetry-ticker">
-          <div className="ticker-item">
-            <span className="ticker-label">Fleet Status</span>
-            <span className="ticker-val active">
-              <span className="pulse-dot"></span> AI Pooled (Live)
-            </span>
-          </div>
-          <div className="ticker-divider"></div>
-          <div className="ticker-item">
-            <span className="ticker-label">Hours Today</span>
-            <span className="ticker-val">07:00 AM – 10:00 PM</span>
-          </div>
-        </div>
-
-        {/* Action Controls */}
         <div className="seller-header-actions">
-          {/* Store Open / Closed Switch */}
+          {/* Open / Closed Store Toggle */}
           <div className="store-status-toggle-wrap">
             <button 
               className={`status-toggle-btn ${storeStatus ? 'active open' : ''}`}
               onClick={() => toggleStatus(true)}
-              title="Store is online and accepting incoming customer orders"
+              type="button"
+              title="Store is active and receiving customer orders"
             >
-              <span className="status-dot-indicator open"></span>
-              Accepting Orders
+              <span className="status-dot-indicator open" /> Open for Orders
             </button>
             <button 
               className={`status-toggle-btn ${!storeStatus ? 'active closed' : ''}`}
               onClick={() => toggleStatus(false)}
-              title="Pause incoming orders temporarily"
+              type="button"
+              title="Pause store to halt incoming order dispatch"
             >
-              <span className="status-dot-indicator closed"></span>
-              Paused
+              <span className="status-dot-indicator closed" /> Store Paused
             </button>
+          </div>
+
+          {/* Add Product Button */}
+          <button 
+            className="btn-add-product"
+            onClick={() => navigate('/seller/products')}
+            title="Add a new item to your store catalog"
+          >
+            <Plus size={16} /> Add Product
+          </button>
+        </div>
+      </header>
+
+      {/* ─── 2. Four Essential Summary Cards ───────────────────────────── */}
+      <section className="seller-summary-grid">
+        {/* Card 1: Pending Orders */}
+        <div 
+          className="seller-summary-card pending"
+          onClick={() => navigate('/seller/orders')}
+          role="button"
+          tabIndex={0}
+          title="Click to view pending orders needing action"
+        >
+          <div className="summary-card-top">
+            <span className="summary-card-label">Pending Orders</span>
+            <div className="summary-icon-box pending">
+              <Clock size={20} />
+            </div>
+          </div>
+          <div className="summary-card-count">{pendingOrdersCount}</div>
+          <div className="summary-card-footer">
+            <span className="summary-card-subtext">Waiting for store confirmation</span>
+            <span className="summary-card-link">View <ChevronRight size={14} /></span>
+          </div>
+        </div>
+
+        {/* Card 2: Orders in Progress */}
+        <div 
+          className="seller-summary-card in-progress"
+          onClick={() => navigate('/seller/orders')}
+          role="button"
+          tabIndex={0}
+          title="Click to view orders currently being packed"
+        >
+          <div className="summary-card-top">
+            <span className="summary-card-label">Orders in Progress</span>
+            <div className="summary-icon-box in-progress">
+              <Package size={20} />
+            </div>
+          </div>
+          <div className="summary-card-count">{inProgressOrdersCount}</div>
+          <div className="summary-card-footer">
+            <span className="summary-card-subtext">Packing & item preparation</span>
+            <span className="summary-card-link">View <ChevronRight size={14} /></span>
+          </div>
+        </div>
+
+        {/* Card 3: Orders to Deliver */}
+        <div 
+          className="seller-summary-card to-deliver"
+          onClick={() => navigate('/seller/deliveries')}
+          role="button"
+          tabIndex={0}
+          title="Click to view orders ready for courier pickup & handover"
+        >
+          <div className="summary-card-top">
+            <span className="summary-card-label">Orders to Deliver</span>
+            <div className="summary-icon-box to-deliver">
+              <Truck size={20} />
+            </div>
+          </div>
+          <div className="summary-card-count">{toDeliverOrdersCount}</div>
+          <div className="summary-card-footer">
+            <span className="summary-card-subtext">Ready for pickup & courier handover</span>
+            <span className="summary-card-link">View <ChevronRight size={14} /></span>
+          </div>
+        </div>
+
+        {/* Card 4: Total Orders */}
+        <div 
+          className="seller-summary-card total"
+          onClick={() => navigate('/seller/orders')}
+          role="button"
+          tabIndex={0}
+          title="Click to view complete order history"
+        >
+          <div className="summary-card-top">
+            <span className="summary-card-label">Total Orders</span>
+            <div className="summary-icon-box total">
+              <ShoppingBag size={20} />
+            </div>
+          </div>
+          <div className="summary-card-count">{totalOrdersCount}</div>
+          <div className="summary-card-footer">
+            <span className="summary-card-subtext">Lifetime store fulfillments</span>
+            <span className="summary-card-link">View <ChevronRight size={14} /></span>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 3. Recent Notifications Section ───────────────────────────── */}
+      <section className="seller-notifications-card">
+        <div className="notifications-header-row">
+          <div className="notifications-title-group">
+            <div className="notifications-icon-wrap">
+              <Bell size={18} />
+            </div>
+            <div>
+              <h2 className="notifications-title">Recent Notifications</h2>
+              <p className="notifications-subtitle">Live store alerts, stock warnings, and courier milestones</p>
+            </div>
+            {unreadCount > 0 && (
+              <span className="unread-counter-badge">{unreadCount} new</span>
+            )}
           </div>
 
           <button 
-            className="orders-action-btn primary"
-            onClick={() => navigate('/seller/products')}
+            className="view-all-notifs-btn"
+            onClick={() => navigate('/seller/notifications')}
+            title="Go to the full Notifications page"
           >
-            <Plus size={15} /> Add Product
+            View All Notifications <ArrowRight size={14} />
           </button>
         </div>
-      </div>
 
-      {/* KPI Bento Grid (5 cleanly balanced cards) */}
-      <div className="seller-kpi-grid">
-        <div className="seller-kpi-card" onClick={() => navigate('/seller/analytics')}>
-          <div className="kpi-top-row">
-            <div className="kpi-icon-wrap" style={{ background: 'var(--primary-soft)', color: 'var(--primary)' }}>
-              <DollarSign size={20} />
-            </div>
-            <span className="kpi-delta-pill positive">
-              <ArrowUpRight size={12} /> +14.2%
-            </span>
-          </div>
-          <div className="kpi-value-block">
-            <div className="kpi-main-number">
-              ₹{todayRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </div>
-            <div className="kpi-metric-title">Gross Volume (Today)</div>
-          </div>
-          <div className="kpi-subtext">Direct seller disbursements</div>
-        </div>
-
-        <div className="seller-kpi-card" onClick={() => navigate('/seller/orders')}>
-          <div className="kpi-top-row">
-            <div className="kpi-icon-wrap" style={{ background: '#fef3c7', color: '#b45309' }}>
-              <ShoppingBag size={20} />
-            </div>
-            <span className="kpi-delta-pill positive">{completedOrders} Fulfilled</span>
-          </div>
-          <div className="kpi-value-block">
-            <div className="kpi-main-number">{totalOrders}</div>
-            <div className="kpi-metric-title">Total Orders Handled</div>
-          </div>
-          <div className="kpi-subtext">{totalOrders - completedOrders} in active fulfillment</div>
-        </div>
-
-        <div className="seller-kpi-card" onClick={() => navigate('/seller/orders')}>
-          <div className="kpi-top-row">
-            <div className="kpi-icon-wrap" style={{ background: '#fee2e2', color: '#dc2626' }}>
-              <Flame size={20} />
-            </div>
-            {newOrders > 0 ? (
-              <span className="kpi-delta-pill warning">⚡ Action Needed</span>
-            ) : (
-              <span className="kpi-delta-pill positive">✓ All Clear</span>
-            )}
-          </div>
-          <div className="kpi-value-block">
-            <div className="kpi-main-number">{newOrders}</div>
-            <div className="kpi-metric-title">Incoming / Needs Prep</div>
-          </div>
-          <div className="kpi-subtext">Awaiting kitchen confirmation</div>
-        </div>
-
-        <div className="seller-kpi-card" onClick={() => navigate('/seller/orders')}>
-          <div className="kpi-top-row">
-            <div className="kpi-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
-              <Package size={20} />
-            </div>
-            <span className="kpi-delta-pill neutral">Awaiting Driver</span>
-          </div>
-          <div className="kpi-value-block">
-            <div className="kpi-main-number">{readyOrders}</div>
-            <div className="kpi-metric-title">Ready for Pickup</div>
-          </div>
-          <div className="kpi-subtext">Packed and staged at counter</div>
-        </div>
-
-        <div className="seller-kpi-card" onClick={() => navigate('/seller/orders')}>
-          <div className="kpi-top-row">
-            <div className="kpi-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
-              <CheckCircle size={20} />
-            </div>
-            <span className="kpi-delta-pill positive">Target Met</span>
-          </div>
-          <div className="kpi-value-block">
-            <div className="kpi-main-number">98.4%</div>
-            <div className="kpi-metric-title">On-Time Handover SLA</div>
-          </div>
-          <div className="kpi-subtext">Optimal fulfillment velocity</div>
-        </div>
-      </div>
-
-      {/* Main Two-Column Layout: Active Orders Feed on Left, Store Intel on Right */}
-      <div className="seller-main-layout">
-        {/* Left Column: Live Orders Feed */}
-        <div className="live-orders-feed-card">
-          <div className="feed-header-panel">
-            <div className="feed-header-left">
-              <div className="feed-header-badge-row">
-                <span className="live-radar-badge">
-                  <span className="live-radar-dot" /> LIVE DISPATCH
-                </span>
-                <span className="live-orders-count-pill">
-                  {actionableOrders.length} In Progress
-                </span>
-              </div>
-              <h3 className="section-card-title">
-                <ShoppingBag size={20} color="var(--primary)" />
-                Active Orders In-Flight
-              </h3>
-              <p className="feed-subtitle">
-                Real-time queue synchronized with AI route clustering & courier handover.
-              </p>
-            </div>
-
-            <button 
-              className="view-all-hub-btn"
-              onClick={() => navigate('/seller/orders')}
-              title="Open full dedicated orders management portal"
-            >
-              <span>Full Orders Hub</span>
-              <ChevronRight size={15} />
-            </button>
-          </div>
-
-          {/* Quick Filter Segmented Pills */}
-          <div className="feed-filter-bar">
-            <button
-              className={`filter-tab-pill ${orderFilter === 'ALL' ? 'active' : ''}`}
-              onClick={() => setOrderFilter('ALL')}
-            >
-              All Active ({actionableOrders.length})
-            </button>
-            <button
-              className={`filter-tab-pill ${orderFilter === 'PACKING' ? 'active' : ''}`}
-              onClick={() => setOrderFilter('PACKING')}
-            >
-              <Package size={12} /> Prep & Pack ({packingCount})
-            </button>
-            <button
-              className={`filter-tab-pill ${orderFilter === 'READY' ? 'active' : ''}`}
-              onClick={() => setOrderFilter('READY')}
-            >
-              <CheckCircle size={12} /> Ready at Hub ({readyCount})
-            </button>
-            <button
-              className={`filter-tab-pill ${orderFilter === 'TRANSIT' ? 'active' : ''}`}
-              onClick={() => setOrderFilter('TRANSIT')}
-            >
-              <Truck size={12} /> In Transit ({transitCount})
-            </button>
-          </div>
-
-          {filteredOrders.length === 0 ? (
-            <div className="feed-empty-state">
-              <div className="feed-empty-icon">
-                <CheckCircle size={32} color="#059669" />
-              </div>
-              <div className="feed-empty-title">
-                {orderFilter === 'ALL' ? 'All Live Orders Completed!' : `No Orders in ${orderFilter} Stage`}
-              </div>
-              <p className="feed-empty-desc">
-                {orderFilter === 'ALL' 
-                  ? 'Your packing counter is completely clear. New incoming orders will alert here in real-time.' 
-                  : 'There are no active orders matching this filter stage right now. Switch tabs to see other orders.'}
-              </p>
+        <div className="notifications-content">
+          {recentNotifications.length === 0 ? (
+            <div className="notifications-empty-box">
+              <BellOff size={28} />
+              <p className="empty-title">No new notifications.</p>
+              <span className="empty-desc">Your store alerts, order updates, and delivery status logs will appear here in real time.</span>
             </div>
           ) : (
-            <div className="feed-items-list">
-              {filteredOrders.map((order, idx) => {
-                const status = getStatus(order);
-                const displayCode = (order.id || '').slice(-8).toUpperCase();
-                const itemsCount = (order.items || []).reduce((acc, i) => acc + (i.qty || i.quantity || 1), 0);
-                const firstItemName = order.items?.[0]?.name || order.items?.[0]?.product?.name || 'Aavin Green Milk 500ml';
-                const customerDisplayName = formatCustomerName(order.customerName, idx);
-                const customerInitials = getCustomerInitials(order.customerName, idx);
-                const customerDeliveryAddress = resolveOrderAddress(order, idx, customers);
-
-                const isPending = ['PLACED', 'PENDING', 'NEW'].includes(status);
-                const isPreparing = ['PREPARING', 'CONFIRMED'].includes(status);
-                const isReady = ['READY_FOR_DELIVERY', 'READY'].includes(status);
-                const isTransit = ['ASSIGNED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(status);
-
-                const isStep1Done = true;
-                const isStep2Done = isReady || isTransit;
-                const isStep2Active = isPreparing || isPending;
-                const isStep3Done = isTransit;
-                const isStep3Active = isReady;
-
-                // Color themes for avatars
-                const avatarGradients = [
-                  'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                  'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                  'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
-                  'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)'
-                ];
-                const avatarBg = avatarGradients[idx % avatarGradients.length];
-
-                return (
-                  <div key={order.id || idx} className="feed-order-card">
-                    {/* Top Identity & Status Bar */}
-                    <div className="order-card-header">
-                      <div className="customer-avatar-box" style={{ background: avatarBg }}>
-                        <span className="customer-initials">{customerInitials}</span>
-                        <span className={`customer-online-dot ${isTransit ? 'transit' : isReady ? 'ready' : 'active'}`} />
-                      </div>
-
-                      <div className="order-customer-info">
-                        <div className="order-id-customer-row">
-                          <span 
-                            className="order-id-badge" 
-                            onClick={(e) => handleCopyOrderId(e, order.id || displayCode)}
-                            title="Click to copy Order ID"
-                          >
-                            #{displayCode} {copiedOrderId === (order.id || displayCode) ? <Check size={10} color="#10b981" /> : <Copy size={10} />}
-                          </span>
-                          <h4 className="order-customer-name">{customerDisplayName}</h4>
-                          <span className="order-vip-chip">
-                            <Sparkles size={11} /> {idx === 0 ? 'Priority SLA' : 'Standard 20m'}
-                          </span>
-                        </div>
-
-                        <div className="order-destination-row">
-                          <span className="order-destination-text">
-                            <MapPin size={12} /> {customerDeliveryAddress}
-                          </span>
-                          <span className="dot-sep">•</span>
-                          <span className="order-slot-pill">
-                            <Clock size={11} /> {order.deliveryTimeSlot || '10:00 AM – 1:00 PM'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="order-header-status-col">
-                        {isTransit && (
-                          <span className="order-status-badge transit">
-                            <Truck size={12} className="pulse-icon" /> In Transit
-                          </span>
-                        )}
-                        {isReady && (
-                          <span className="order-status-badge ready">
-                            <CheckCircle size={12} /> Ready for Pickup
-                          </span>
-                        )}
-                        {isPreparing && (
-                          <span className="order-status-badge preparing">
-                            <Package size={12} /> Packing Items
-                          </span>
-                        )}
-                        {isPending && (
-                          <span className="order-status-badge pending">
-                            <Clock size={12} /> Order Placed
-                          </span>
-                        )}
-
-                        <div className="order-amount-tag">
-                          ₹{(order.total || 44).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Middle: Items & Stepper */}
-                    <div className="order-card-body">
-                      <div className="order-items-preview-strip">
-                        <div className="order-item-chip">
-                          <Package size={13} color="var(--primary)" />
-                          <span className="item-name-bold">{itemsCount}x {firstItemName}</span>
-                          {order.items?.length > 1 && (
-                            <span className="item-extra-count">+{order.items.length - 1} more items</span>
-                          )}
-                        </div>
-                        <span className="payment-mode-pill">
-                          <Check size={11} color="#059669" /> UPI Verified
-                        </span>
-                      </div>
-
-                      {/* 3-Step Milestone Stepper */}
-                      <div className="order-stepper-track">
-                        <div className={`step-node ${isStep1Done ? 'completed' : 'current'}`}>
-                          <span className="step-circle">{isStep1Done ? <Check size={11} /> : '1'}</span>
-                          <span className="step-label">Order Confirmed</span>
-                        </div>
-                        <div className={`step-connector ${isStep2Done ? 'active' : ''}`} />
-                        <div className={`step-node ${isStep2Done ? 'completed' : isStep2Active ? 'current' : 'pending'}`}>
-                          <span className="step-circle">{isStep2Done ? <Check size={11} /> : '2'}</span>
-                          <span className="step-label">Store Packaging</span>
-                        </div>
-                        <div className={`step-connector ${isStep3Done ? 'active' : ''}`} />
-                        <div className={`step-node ${isStep3Done ? 'completed' : isStep3Active ? 'current' : 'pending'}`}>
-                          <span className="step-circle">{isStep3Done ? <Truck size={11} /> : '3'}</span>
-                          <span className="step-label">Courier Handover</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bottom: Fleet Info & Quick Actions */}
-                    <div className="order-card-footer">
-                      <div className="fleet-assignment-info">
-                        {isTransit ? (
-                          <div className="rider-assigned-pill">
-                            <div className="rider-avatar-circle">
-                              <Truck size={12} />
-                            </div>
-                            <span className="rider-text">
-                              Courier: <strong>S. Rajesh</strong> (4.9 ★) • Vehicle: <strong>Hero Electric</strong>
-                            </span>
-                          </div>
-                        ) : isReady ? (
-                          <div className="ready-counter-pill">
-                            <CheckCircle size={13} color="#059669" />
-                            <span>Staged at: <strong>Counter Bay 2 (Ground Floor)</strong></span>
-                          </div>
-                        ) : (
-                          <div className="prep-time-pill">
-                            <Clock size={13} color="#d97706" />
-                            <span>Target SLA: <strong>15 mins buffer</strong></span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="order-card-actions">
-                        {isPending && (
-                          <button 
-                            className="card-action-btn primary start-prep"
-                            onClick={() => updateOrderStatus(order.id, 'PREPARING')}
-                          >
-                            <Package size={13} /> Start Packing
-                          </button>
-                        )}
-
-                        {isPreparing && (
-                          <button 
-                            className="card-action-btn primary mark-ready"
-                            onClick={() => updateOrderStatus(order.id, 'READY_FOR_DELIVERY')}
-                          >
-                            <CheckCircle size={13} /> Mark Ready
-                          </button>
-                        )}
-
-                        {isReady && (
-                          <button 
-                            className="card-action-btn primary handover"
-                            onClick={() => updateOrderStatus(order.id, 'OUT_FOR_DELIVERY')}
-                          >
-                            <Truck size={13} /> Handover to Courier
-                          </button>
-                        )}
-
-                        {isTransit && (
-                          <button 
-                            className="card-action-btn secondary track"
-                            onClick={() => navigate('/seller/deliveries')}
-                            title="Open Live Fleet Tracking"
-                          >
-                            <Navigation size={13} /> Track Courier
-                          </button>
-                        )}
-
-                        <button 
-                          className="card-action-btn secondary slip"
-                          onClick={() => setSelectedOrder({ ...order, customerName: customerDisplayName, deliveryLocation: customerDeliveryAddress, deliveryAddress: customerDeliveryAddress })}
-                          title="View order receipt & packing list"
-                        >
-                          <Eye size={13} /> Order Slip
-                        </button>
-                      </div>
-                    </div>
+            <div className="notifications-list">
+              {recentNotifications.map((notif, index) => (
+                <div 
+                  key={notif.id || index} 
+                  className={`notification-item ${!notif.isRead ? 'unread' : ''}`}
+                  onClick={() => navigate('/seller/notifications')}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="notification-icon-col">
+                    {getNotificationIcon(notif.type)}
                   </div>
-                );
-              })}
+                  <div className="notification-body">
+                    <div className="notification-title-row">
+                      <span className="notification-item-title">{notif.title || notif.message}</span>
+                      <span className="notification-time">{getTimeAgo(notif.date || notif.createdAt)}</span>
+                    </div>
+                    {notif.title && notif.message && notif.title !== notif.message && (
+                      <p className="notification-item-desc">{notif.message}</p>
+                    )}
+                  </div>
+                  {!notif.isRead && <span className="notification-unread-dot" title="Unread" />}
+                </div>
+              ))}
             </div>
           )}
-
-          {/* AI Batch Aggregation & Fleet Telemetry Card */}
-          <div className="ai-clustering-summary-card">
-            <div className="ai-cluster-left">
-              <div className="ai-cluster-icon-box">
-                <Sparkles size={20} />
-              </div>
-              <div className="ai-cluster-text-col">
-                <div className="ai-cluster-title-row">
-                  <span className="ai-cluster-headline">MicroLogi AI Batch Aggregation Active</span>
-                  <span className="ai-cluster-badge">Real-Time Routing</span>
-                </div>
-                <p className="ai-cluster-explanation">
-                  Orders in the Central Chennai delivery sector (T. Nagar, Anna Nagar, Adyar, Velachery) are dynamically pooled onto aggregated courier runs with neighborhood grocers, slashing delivery transit times by <strong>35%</strong> and boosting packing throughput.
-                </p>
-              </div>
-            </div>
-
-            <div className="ai-cluster-metrics">
-              <div className="cluster-stat-pill">
-                <span className="stat-label">Batch Density</span>
-                <span className="stat-val">{actionableOrders.length} Orders Pooled</span>
-              </div>
-              <div className="cluster-stat-pill">
-                <span className="stat-label">Prep Velocity</span>
-                <span className="stat-val highlight">4.8 min avg</span>
-              </div>
-              <div className="cluster-stat-pill">
-                <span className="stat-label">Nearby Fleet</span>
-                <span className="stat-val green">3 Live Couriers</span>
-              </div>
-            </div>
-          </div>
         </div>
+      </section>
 
-
-        {/* Right Column: Alerts & Telemetry */}
-        <div className="seller-side-column">
-          {/* Smart Alerts & Notifications */}
-          <div className="smart-alerts-card">
-            <div className="section-card-title">
-              <AlertTriangle size={18} color="#d97706" /> Store Alerts & Intel
-            </div>
-
-            <div className="alerts-scroll-list">
-              <div className="alert-row-item">
-                <div className="alert-icon-box" style={{ background: '#fee2e2', color: '#dc2626' }}>
-                  <Package size={15} />
-                </div>
-                <div className="alert-main-text">
-                  <div className="alert-item-title">Critical Stock Warning</div>
-                  <div className="alert-item-desc">Aashirvaad Atta is down to 2 units in inventory.</div>
-                  <div className="alert-item-time">5 minutes ago</div>
-                </div>
-              </div>
-
-              <div className="alert-row-item">
-                <div className="alert-icon-box" style={{ background: '#ecfdf5', color: '#059669' }}>
-                  <TrendingUp size={15} />
-                </div>
-                <div className="alert-main-text">
-                  <div className="alert-item-title">Surge in Central Chennai</div>
-                  <div className="alert-item-desc">Order density in your Chennai delivery radius spiked +24% today.</div>
-                  <div className="alert-item-time">45 minutes ago</div>
-                </div>
-              </div>
-
-              <div className="alert-row-item">
-                <div className="alert-icon-box" style={{ background: '#fef3c7', color: '#b45309' }}>
-                  <Clock size={15} />
-                </div>
-                <div className="alert-main-text">
-                  <div className="alert-item-title">Target SLA Maintained</div>
-                  <div className="alert-item-desc">Orders packed and dispatched consistently on schedule.</div>
-                  <div className="alert-item-time">2 hours ago</div>
-                </div>
-              </div>
-            </div>
-
-            <button 
-              className="view-all-link"
-              style={{ marginTop: 'auto', paddingTop: '10px' }}
-              onClick={() => navigate('/seller/notifications')}
-            >
-              View all store notifications <ChevronRight size={14} />
-            </button>
-          </div>
-
-          {/* Top Delivery Zones */}
-          <div className="telemetry-card">
-            <h3 className="section-card-title">
-              <MapPin size={18} color="var(--primary)" /> Top Delivery Zones
-            </h3>
-
-            <div className="zone-meter-list">
-              <div className="zone-meter-item">
-                <div className="zone-label-row">
-                  <span>T. Nagar & West Mambalam</span>
-                  <span>38 Orders (42%)</span>
-                </div>
-                <div className="zone-track-bg">
-                  <div className="zone-progress-fill" style={{ width: '85%', background: 'linear-gradient(90deg, #4f46e5, #7c3aed)' }}></div>
-                </div>
-              </div>
-
-              <div className="zone-meter-item">
-                <div className="zone-label-row">
-                  <span>Anna Nagar & Kilpauk</span>
-                  <span>24 Orders (26%)</span>
-                </div>
-                <div className="zone-track-bg">
-                  <div className="zone-progress-fill" style={{ width: '60%', background: '#0284c7' }}></div>
-                </div>
-              </div>
-
-              <div className="zone-meter-item">
-                <div className="zone-label-row">
-                  <span>Adyar & Besant Nagar</span>
-                  <span>16 Orders (18%)</span>
-                </div>
-                <div className="zone-track-bg">
-                  <div className="zone-progress-fill" style={{ width: '42%', background: '#059669' }}></div>
-                </div>
-              </div>
-
-              <div className="zone-meter-item">
-                <div className="zone-label-row">
-                  <span>Velachery & OMR</span>
-                  <span>12 Orders (14%)</span>
-                </div>
-                <div className="zone-track-bg">
-                  <div className="zone-progress-fill" style={{ width: '30%', background: '#d97706' }}></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="fleet-status-banner">
-              <div className="fleet-status-title">
-                ⚡ High Fleet Availability
-              </div>
-              <div className="fleet-status-desc">
-                3 delivery agents are actively circulating in Chennai micro-clusters.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Confirmation Modal for Store Close */}
+      {/* Confirmation Modal for Store Pause */}
       <ConfirmationModal
         isOpen={isStoreClosedModalOpen}
         onClose={() => setIsStoreClosedModalOpen(false)}
         onConfirm={confirmCloseStore}
-        title="Pause Store Orders?"
-        message="Are you sure you want to stop receiving new orders on the customer app? Any active orders already in progress will still require fulfillment."
-        confirmText="Yes, Pause Store"
+        title="Pause Store Operations?"
+        message="Pausing your store stops new incoming customer orders from being routed to your packing counter. Existing active orders will remain in progress."
+        confirmText="Confirm Pause"
         cancelText="Keep Open"
-        variant="danger"
+        type="warning"
       />
-
-      {/* Order Details Modal */}
-      {selectedOrder && (
-        <OrderDetailsModal 
-          order={selectedOrder} 
-          onClose={() => setSelectedOrder(null)} 
-        />
-      )}
     </div>
   );
 };
