@@ -218,10 +218,24 @@ const updateOrderStatus = async (req, res) => {
 
         // Vendors can only manage their own orders and valid preparation statuses
         if (userRole === 'vendor') {
-            if (order.vendor_id !== userId) {
+            let isOwner = (order.vendor_id === userId);
+            if (!isOwner) {
+                try {
+                    const query = supabase_1.supabase.from('vendors').select('id, legacy_id');
+                    const { data: vendorRecord } = typeof query.maybeSingle === 'function'
+                        ? await query.or(`id.eq.${userId},legacy_id.eq.${userId}`).maybeSingle()
+                        : await query.or(`id.eq.${userId},legacy_id.eq.${userId}`).single();
+                    if (vendorRecord && (order.vendor_id === vendorRecord.id || order.vendor_id === vendorRecord.legacy_id)) {
+                        isOwner = true;
+                    }
+                } catch (e) {
+                    // Not found or DB error, isOwner remains false
+                }
+            }
+            if (!isOwner) {
                 return res.status(403).json({ success: false, message: 'Forbidden: You do not own this order' });
             }
-            const allowedVendorStatuses = ['CONFIRMED', 'READY_FOR_DELIVERY', 'CANCELLED'];
+            const allowedVendorStatuses = ['CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'CANCELLED'];
             if (status && !allowedVendorStatuses.includes(status)) {
                 return res.status(403).json({ success: false, message: 'Forbidden: Vendors cannot transition orders to this status' });
             }
@@ -243,9 +257,11 @@ const updateOrderStatus = async (req, res) => {
 
         let deliveryStatus = order.delivery_status;
         let aggregationStatus = order.aggregation_status;
-        if (status === 'CONFIRMED')
+        if (status === 'CONFIRMED' || status === 'PREPARING') {
             deliveryStatus = 'PENDING_ASSIGNMENT';
-        if (status === 'READY_FOR_DELIVERY') {
+            if (!aggregationStatus) aggregationStatus = 'WAITING_FOR_AGGREGATION';
+        }
+        if (status === 'READY_FOR_DELIVERY' || status === 'READY') {
             deliveryStatus = 'PENDING_ASSIGNMENT';
             aggregationStatus = 'WAITING_FOR_AGGREGATION';
         }

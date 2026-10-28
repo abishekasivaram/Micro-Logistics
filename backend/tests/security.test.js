@@ -338,6 +338,36 @@ describe('Security Hardening Test Suite', () => {
   });
 
   describe('Phase Five: Cross-Role Isolation (Vendor & Admin)', () => {
+    it('should allow vendor to transition their own order to PREPARING (200)', async () => {
+      const res = await request(app)
+        .patch('/api/v1/orders/ORD-1001/status')
+        .set('Authorization', 'Bearer valid-vendor-token')
+        .send({ status: 'PREPARING' });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.orderStatus).toBe('PREPARING');
+    });
+
+    it('should forbid vendor from updating another vendor order (403)', async () => {
+      const res = await request(app)
+        .patch('/api/v1/orders/ORD-1002/status')
+        .set('Authorization', 'Bearer valid-vendor-token')
+        .send({ status: 'PREPARING' });
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('You do not own this order');
+    });
+
+    it('should forbid vendor from directly completing order as DELIVERED (403)', async () => {
+      const res = await request(app)
+        .patch('/api/v1/orders/ORD-1001/status')
+        .set('Authorization', 'Bearer valid-vendor-token')
+        .send({ status: 'DELIVERED' });
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('Vendors cannot transition orders to this status');
+    });
+
     it('should forbid vendor from updating another vendor product (403)', async () => {
       // Vendor 1 attempting to update Product 2 (owned by Vendor 2)
       const res = await request(app)
