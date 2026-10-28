@@ -4,9 +4,10 @@ import ConfirmationModal from './ConfirmationModal';
 import { 
   Search, Bell, ShoppingCart, User, Check, X, Menu, Shield, 
   Settings, LogOut, ChevronDown, ExternalLink, Activity, Radio,
-  Command
+  Command, MapPin, Heart
 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
+import { getCustomerProfileByIdentifier } from '../../utils/customerDirectory';
 import './Header.css';
 
 const Header = ({ onMenuClick }) => {
@@ -71,6 +72,33 @@ const Header = ({ onMenuClick }) => {
 
   const unreadCount = roleFilteredNotifications.filter(n => !n.isRead).length;
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const cartTotal = cart.reduce((total, item) => total + (Number(item.product?.price || 0) * item.quantity), 0);
+
+  const [wishlistCount, setWishlistCount] = useState(() => {
+    try {
+      const saved = localStorage.getItem('micrologi_wishlist');
+      return saved ? JSON.parse(saved).length : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  useEffect(() => {
+    const handleWishlistChange = () => {
+      try {
+        const saved = localStorage.getItem('micrologi_wishlist');
+        setWishlistCount(saved ? JSON.parse(saved).length : 0);
+      } catch {
+        setWishlistCount(0);
+      }
+    };
+    window.addEventListener('storage', handleWishlistChange);
+    window.addEventListener('wishlist-updated', handleWishlistChange);
+    return () => {
+      window.removeEventListener('storage', handleWishlistChange);
+      window.removeEventListener('wishlist-updated', handleWishlistChange);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -117,7 +145,46 @@ const Header = ({ onMenuClick }) => {
         </button>
         
         <div className="header-brand-info">
-          {location.pathname === '/vendor-dashboard' ? (
+          {currentUser?.role === 'customer' ? (
+            <div className="customer-header-nav-wrap">
+              <div 
+                className="customer-location-badge" 
+                onClick={() => navigate('/customer-dashboard')} 
+                title="Delivery location: Chennai"
+                role="button"
+                tabIndex={0}
+              >
+                <div className="location-pin-wrap">
+                  <MapPin size={14} className="location-pin" />
+                </div>
+                <div className="location-text">
+                  <span className="deliver-to-label">Deliver to</span>
+                  <span className="address-snippet">
+                    {currentUser?.address 
+                      ? currentUser.address.split(',')[0] 
+                      : (getCustomerProfileByIdentifier(currentUser?.legacy_id || currentUser?.username || currentUser?.email)?.address?.split(',')[0] || '101 Anna Nagar East')}
+                  </span>
+                </div>
+              </div>
+              <div className="customer-quick-links">
+                <Link to="/customer-dashboard" className={`cust-nav-link ${location.pathname === '/customer-dashboard' || location.pathname === '/dashboard' ? 'active' : ''}`}>
+                  Home
+                </Link>
+                <Link to="/browse-sellers" className={`cust-nav-link ${location.pathname === '/browse-sellers' || location.pathname === '/customer/browse-sellers' ? 'active' : ''}`}>
+                  Stores
+                </Link>
+                <Link to="/products" className={`cust-nav-link ${location.pathname === '/products' ? 'active' : ''}`}>
+                  Explore
+                </Link>
+                <Link to="/orders" className={`cust-nav-link ${location.pathname === '/orders' || location.pathname === '/customer/orders' ? 'active' : ''}`}>
+                  Orders
+                </Link>
+                <Link to="/track-delivery" className={`cust-nav-link ${location.pathname === '/track-delivery' || location.pathname === '/customer/track-delivery' ? 'active' : ''}`}>
+                  Track Live
+                </Link>
+              </div>
+            </div>
+          ) : location.pathname === '/vendor-dashboard' ? (
             <div className="breadcrumb">
               <span className="breadcrumb-item text-muted">Merchant Hub</span>
               <span className="breadcrumb-separator">/</span>
@@ -151,15 +218,31 @@ const Header = ({ onMenuClick }) => {
       {/* Right side: Actions, Notifications, and Polished Profile Chip */}
       <div className="header-right">
         {currentUser?.role === 'customer' && (
-          <button 
-            className="command-icon-btn cart-btn" 
-            onClick={() => navigate('/cart')}
-            title="Shopping Cart"
-            aria-label="View Shopping Cart"
-          >
-            <ShoppingCart size={18} />
-            {cartItemCount > 0 && <span className="cart-badge-counter">{cartItemCount}</span>}
-          </button>
+          <>
+            <button 
+              className="command-icon-btn customer-wishlist-btn" 
+              onClick={() => navigate('/profile?tab=wishlist')}
+              title="My Wishlist"
+              aria-label="View Wishlist"
+            >
+              <Heart size={18} />
+              {wishlistCount > 0 && <span className="cart-badge-counter">{wishlistCount}</span>}
+            </button>
+
+            <button 
+              className="command-icon-btn customer-cart-pill-btn" 
+              onClick={() => navigate('/cart')}
+              title="Shopping Cart"
+              aria-label="View Shopping Cart"
+            >
+              <ShoppingCart size={18} />
+              {cartItemCount > 0 ? (
+                <span className="customer-cart-tag">
+                  {cartItemCount} · ₹{cartTotal.toFixed(0)}
+                </span>
+              ) : null}
+            </button>
+          </>
         )}
 
 

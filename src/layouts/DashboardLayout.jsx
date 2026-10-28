@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import { useAppContext } from '../context/AppContext';
 import './DashboardLayout.css';
 
 const DashboardLayout = ({ children }) => {
+  const { currentUser } = useAppContext();
+  const isCustomer = currentUser?.role === 'customer';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
@@ -27,7 +30,7 @@ const DashboardLayout = ({ children }) => {
   };
 
   return (
-    <div className={`dashboard-layout ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+    <div className={`dashboard-layout ${isCollapsed ? 'sidebar-collapsed' : ''} ${isCustomer ? 'layout-customer-portal' : ''}`}>
       <Sidebar 
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen}

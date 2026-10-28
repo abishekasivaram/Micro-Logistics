@@ -7,6 +7,7 @@ import {
   demoOrders, demoBatches, demoNotifications 
 } from '../data/demoData';
 import { getCategoryFallbackImage } from '../utils/imageUtils';
+import { rectifyCustomerUser } from '../utils/customerDirectory';
 
 const AppContext = createContext();
 
@@ -45,8 +46,20 @@ export const AppProvider = ({ children }) => {
   });
   const [notifications, setNotifications] = useState(() => getStorageItem('notifications', []));
   const [cart, setCart] = useState(() => getStorageItem('cart', []));
+<<<<<<< HEAD
   const [currentUser, setCurrentUser] = useState(() => getStorageItem('currentUser', null));
   const [authLoading, setAuthLoading] = useState(true);
+=======
+  const [currentUser, setCurrentUserRaw] = useState(() => {
+    const saved = getStorageItem('currentUser', null);
+    return saved ? rectifyCustomerUser(saved) : null;
+  });
+
+  const setCurrentUser = (user) => {
+    setCurrentUserRaw(user ? rectifyCustomerUser(user) : null);
+  };
+
+>>>>>>> dd88abc (feat(customer): enhance UI, rectify delivery addresses, and fix wishlist card alignment)
   const [adminSettings, setAdminSettings] = useState(() => getStorageItem('adminSettings', {
     autoAssignWaitTime: 15,
     maxOrdersPerBatch: 5,
@@ -145,8 +158,10 @@ export const AppProvider = ({ children }) => {
           isDemo: false
         };
 
+        const finalUser = role === 'customer' ? rectifyCustomerUser(authenticatedUser) : authenticatedUser;
+
         if (isMounted) {
-          setCurrentUser(authenticatedUser);
+          setCurrentUser(finalUser);
           setAuthLoading(false);
         }
       } catch {
@@ -218,7 +233,22 @@ export const AppProvider = ({ children }) => {
           );
         } else if (role === 'customer') {
           promises.push(
-            api.get('/orders').then(res => { if (res.data?.success) setOrders(res.data.data) })
+            api.get('/orders').then(res => { if (res.data?.success) setOrders(res.data.data) }),
+            api.get(`/customers/${currentUser.legacy_id || currentUser.id}`).then(res => {
+              if (res.data?.success && res.data.data) {
+                const cData = res.data.data;
+                setCurrentUserRaw(prev => {
+                  if (!prev) return prev;
+                  return rectifyCustomerUser({
+                    ...prev,
+                    address: cData.address || prev.address,
+                    area: cData.area || prev.area,
+                    phone: cData.phone || prev.phone,
+                    name: cData.name || prev.name
+                  });
+                });
+              }
+            }).catch(() => {})
           );
         } else if (role === 'delivery_partner') {
           promises.push(

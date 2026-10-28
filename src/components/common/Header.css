@@ -360,3 +360,142 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+   CUSTOMER MARKETPLACE WEBSITE HEADER STYLING
+   ========================================================================== */
+.customer-header-nav-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.customer-location-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.customer-location-badge:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.location-pin-wrap {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #4f46e5;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.location-text {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.deliver-to-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.address-snippet {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.customer-quick-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cust-nav-link {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #475569;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.cust-nav-link:hover {
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.cust-nav-link.active {
+  color: #4f46e5;
+  font-weight: 600;
+  background: #eef2ff;
+}
+
+.customer-cart-pill-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 14px !important;
+  background: #eef2ff !important;
+  border: 1px solid #c7d2fe !important;
+  color: #4338ca !important;
+  border-radius: 99px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.customer-cart-pill-btn:hover {
+  background: #4338ca !important;
+  color: #ffffff !important;
+  border-color: #4338ca !important;
+  transform: translateY(-1px);
+}
+
+.customer-cart-tag {
+  font-size: 12px;
+  background: #4338ca;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.customer-cart-pill-btn:hover .customer-cart-tag {
+  background: #ffffff;
+  color: #4338ca;
+}
+
+.customer-wishlist-btn {
+  position: relative;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.customer-wishlist-btn:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+@media (max-width: 900px) {
+  .customer-quick-links {
+    display: none;
+  }
+}
+

@@ -10,6 +10,7 @@ import {
   Sliders, Plus, ChevronRight, Compass
 } from 'lucide-react';
 import { getProductImage } from '../../utils/imageUtils';
+import { getCustomerProfileByIdentifier, rectifyCustomerUser } from '../../utils/customerDirectory';
 import './ProfilePage.css';
 import './CustomerProfilePage.css';
 import './CustomerWishlist.css';
@@ -156,23 +157,25 @@ const ProfilePage = () => {
     }
   };
 
-  // Saved Addresses State
+  // Saved Addresses State scoped per customer
+  const custKey = currentUser?.legacy_id || currentUser?.username || currentUser?.email || 'c1';
+  const activeProfile = useMemo(() => getCustomerProfileByIdentifier(custKey), [custKey]);
+
   const [savedAddresses, setSavedAddresses] = useState(() => {
     try {
-      const saved = localStorage.getItem('micrologi_customer_addresses');
-      return saved ? JSON.parse(saved) : INITIAL_SAVED_ADDRESSES;
-    } catch {
-      return INITIAL_SAVED_ADDRESSES;
-    }
+      const saved = localStorage.getItem(`micrologi_customer_addresses_${custKey}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return activeProfile?.savedAddresses || INITIAL_SAVED_ADDRESSES;
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('micrologi_customer_addresses', JSON.stringify(savedAddresses));
+      localStorage.setItem(`micrologi_customer_addresses_${custKey}`, JSON.stringify(savedAddresses));
     } catch (e) {
       console.error(e);
     }
-  }, [savedAddresses]);
+  }, [savedAddresses, custKey]);
 
   // Delivery Preferences State
   const [preferences, setPreferences] = useState(() => {
@@ -335,15 +338,47 @@ const ProfilePage = () => {
   }, [wishlistItems]);
 
   // Form State
-  const [formData, setFormData] = useState({
-    name: currentUser?.name || 'Priya Rajan',
-    username: currentUser?.username || 'priyarajan',
-    email: currentUser?.email || 'priya_auth@example.com',
-    phone: currentUser?.phone || '9876543210',
-    address: currentUser?.address || '101, 2nd Avenue, Anna Nagar East, Chennai - 600102',
-    area: currentUser?.area || 'Anna Nagar East',
-    avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=250&auto=format&fit=crop&q=80'
+  const [formData, setFormData] = useState(() => {
+    const key = currentUser?.legacy_id || currentUser?.username || currentUser?.email;
+    const profile = getCustomerProfileByIdentifier(key);
+    return {
+      name: currentUser?.name || profile.name,
+      username: currentUser?.username || currentUser?.legacy_id || profile.username,
+      email: currentUser?.email || profile.email,
+      phone: currentUser?.phone || profile.phone,
+      address: currentUser?.address || profile.address,
+      area: currentUser?.area || profile.area,
+      avatar: currentUser?.avatar || profile.avatar
+    };
   });
+
+  // Re-sync form data and saved addresses whenever currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      const key = currentUser.legacy_id || currentUser.username || currentUser.email;
+      const profile = getCustomerProfileByIdentifier(key);
+      setFormData({
+        name: currentUser.name || profile.name,
+        username: currentUser.username || currentUser.legacy_id || profile.username,
+        email: currentUser.email || profile.email,
+        phone: currentUser.phone || profile.phone,
+        address: currentUser.address || profile.address,
+        area: currentUser.area || profile.area,
+        avatar: currentUser.avatar || profile.avatar
+      });
+
+      try {
+        const saved = localStorage.getItem(`micrologi_customer_addresses_${key}`);
+        if (saved) {
+          setSavedAddresses(JSON.parse(saved));
+        } else {
+          setSavedAddresses(profile.savedAddresses);
+        }
+      } catch {
+        setSavedAddresses(profile.savedAddresses);
+      }
+    }
+  }, [currentUser]);
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -619,6 +654,11 @@ const ProfilePage = () => {
                       src={getProductImage(item)} 
                       alt={item.name} 
                       className="wishlist-prod-img"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80';
+                      }}
                     />
                     <button 
                       type="button"

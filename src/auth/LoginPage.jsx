@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { Eye, EyeOff, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
+import { rectifyCustomerUser } from '../utils/customerDirectory';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -146,20 +147,39 @@ const LoginPage = () => {
           } catch {}
 
           if (!role) {
-            role = authData.user.user_metadata?.role || authData.user.app_metadata?.role || 'customer';
+            role = authData.user.user_metadata?.role || authData.user.app_metadata?.role || getRole(authData.user.user_metadata, resolvedEmail) || 'customer';
           }
           if (role === 'seller') role = 'vendor';
 
-          const baseUser = {
+          let customerAddress = null;
+          let customerArea = null;
+          let customerPhone = null;
+
+          if (role === 'customer') {
+            try {
+              const { data: custProf } = await supabase.from('customer_profiles').select('*').eq('id', authData.user.id).single();
+              if (custProf) {
+                customerAddress = custProf.address;
+                customerArea = custProf.area;
+                customerPhone = custProf.phone;
+              }
+            } catch (e) {}
+          }
+
+          const rawUser = {
             id: authData.user.id,
             email: resolvedEmail,
             name: profileName || authData.user.user_metadata?.full_name || searchId,
             username: profileName || searchId,
-            phone: profilePhone,
+            phone: profilePhone || customerPhone,
             legacy_id: authData.user.user_metadata?.legacy_id || searchId,
             shop_name: authData.user.user_metadata?.shop_name || authData.user.user_metadata?.full_name,
-            shopName: authData.user.user_metadata?.shop_name || authData.user.user_metadata?.full_name
+            shopName: authData.user.user_metadata?.shop_name || authData.user.user_metadata?.full_name,
+            address: customerAddress,
+            area: customerArea
           };
+
+          const baseUser = role === 'customer' ? rectifyCustomerUser(rawUser) : rawUser;
 
           loginSuccess(baseUser, role);
           return;

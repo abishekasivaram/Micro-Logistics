@@ -4,6 +4,7 @@ import { useAppContext } from '../../context/AppContext';
 import { deliverySlots } from '../../utils/deliveryConstants';
 import { Truck, Calendar, Clock, MapPin, Phone, ShieldCheck, CheckCircle, Info, ArrowLeft, ArrowRight, Store, Sparkles } from 'lucide-react';
 import { getProductImage, handleProductImageError } from '../../utils/imageUtils';
+import { getCustomerProfileByIdentifier } from '../../utils/customerDirectory';
 import './CheckoutPage.css';
 
 const CheckoutPage = () => {
@@ -12,8 +13,9 @@ const CheckoutPage = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const [deliveryAddress, setDeliveryAddress] = useState(currentUser?.address || '101 Anna Nagar East, Chennai');
-  const [contactPhone, setContactPhone] = useState(currentUser?.phone || '9876543210');
+  const defaultCustomer = getCustomerProfileByIdentifier(currentUser?.legacy_id || currentUser?.username || currentUser?.email);
+  const [deliveryAddress, setDeliveryAddress] = useState(currentUser?.address || defaultCustomer.address);
+  const [contactPhone, setContactPhone] = useState(currentUser?.phone || defaultCustomer.phone);
   const [deliveryDate, setDeliveryDate] = useState(todayStr);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(deliverySlots[1]); // 9:00 AM - 1:00 PM
 

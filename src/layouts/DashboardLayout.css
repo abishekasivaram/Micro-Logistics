@@ -76,3 +76,14 @@
     padding: 16px;
   }
 }
+
+/* Customer Portal Specialized Marketplace Container */
+.layout-customer-portal .dashboard-content {
+  background: #f8fafc;
+  padding: 24px 36px 80px;
+}
+
+.layout-customer-portal .page-container {
+  max-width: 1360px;
+}
+
