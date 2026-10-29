@@ -44,8 +44,7 @@ const getBatches = async (req, res) => {
         let query = supabase_1.supabase.from('delivery_batches').select(`
       *,
       agent:delivery_agents(id, legacy_id, vehicle, capacity, profile:profiles(username, phone)),
-      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, delivery_date, delivery_time_slot, order_status, delivery_status, total, vendor:vendors(id, legacy_id, shop_name, address), customer:customer_profiles(id, legacy_id, address, profile:profiles(username, phone))),
-      batch_waypoints(*)
+      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, delivery_date, delivery_time_slot, order_status, delivery_status, total, vendor:vendors(id, legacy_id, shop_name, address), customer:customer_profiles(id, legacy_id, address, profile:profiles(username, phone)))
     `);
         const userRole = req.user?.user_metadata?.role || req.user?.role;
         const userId = req.user?.id;
@@ -69,8 +68,7 @@ const getBatchById = async (req, res) => {
         let query = supabase_1.supabase.from('delivery_batches').select(`
       *,
       agent:delivery_agents(id, legacy_id, vehicle, capacity, profile:profiles(username, phone)),
-      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, delivery_date, delivery_time_slot, order_status, delivery_status, total, vendor:vendors(id, legacy_id, shop_name, address), customer:customer_profiles(id, legacy_id, address, profile:profiles(username, phone))),
-      batch_waypoints(*)
+      orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, delivery_date, delivery_time_slot, order_status, delivery_status, total, vendor:vendors(id, legacy_id, shop_name, address), customer:customer_profiles(id, legacy_id, address, profile:profiles(username, phone)))
     `);
         if (id.includes('-') && id.length > 15) {
             query = query.eq('id', id).single();
@@ -235,8 +233,7 @@ const createBatch = async (req, res) => {
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
             agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
-            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name)),
-            batch_waypoints(*)
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
         `).eq('id', batch.id).single();
 
         res.status(201).json({ success: true, data: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) });
@@ -315,8 +312,7 @@ const assignBatch = async (req, res) => {
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
             agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
-            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name)),
-            batch_waypoints(*)
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
         `).eq('id', batch.id).single();
 
         res.json({ success: true, message: `Batch ${id} assigned to agent`, data: { batch: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) } });
@@ -512,8 +508,7 @@ const updateBatchStatus = async (req, res) => {
         const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
             *,
             agent:delivery_agents(id, legacy_id, profile:profiles(username, phone)),
-            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name)),
-            batch_waypoints(*)
+            orders:orders!orders_batch_id_fkey(id, order_code, pickup_location, delivery_location, vendor:vendors(id, legacy_id, shop_name))
         `).eq('id', batch.id).single();
 
         res.json({ success: true, message: `Batch ${id} updated to ${status}`, data: (0, mappings_1.mapBatchToFrontend)(fullBatch || batch) });

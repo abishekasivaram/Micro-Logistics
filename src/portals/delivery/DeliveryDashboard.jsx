@@ -479,7 +479,7 @@ const DeliveryDashboard = () => {
                         <div className="waypoint-header-strip">
                           <div className="waypoint-radar-tag">
                             <span className="dl-live-dot" />
-                            <span>NEXT STOP TARGET • DROP #${dropNumber} OF ${totalStops}</span>
+                            <span>NEXT STOP TARGET • DROP #{dropNumber} OF {totalStops}</span>
                           </div>
                           <div className="waypoint-eta-badge">
                             <Clock size={13} />

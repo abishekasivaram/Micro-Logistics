@@ -25,7 +25,7 @@ export const useDelivery = () => {
 export const DeliveryProvider = ({ children }) => {
   const { 
     currentUser, setCurrentUser, 
-    deliveryBatches = [], orders: allAppOrders = [], 
+    deliveryBatches = [], setDeliveryBatches, orders: allAppOrders = [], 
     updateOrderStatus: appUpdateOrderStatus, 
     updateBatchStatus: appUpdateBatchStatus,
     respondToBatchAssignment: appRespondToBatchAssignment,
@@ -391,7 +391,7 @@ export const DeliveryProvider = ({ children }) => {
       batchId: bCode,
       status: uiStatus,
       rawStatus: rawBatchStatus,
-      zone: liveAssignedBatch.deliverySlot || 'Chennai Central Zone',
+      zone: liveAssignedBatch.currentArea || agentProfile?.currentArea || liveAssignedBatch.deliverySlot || 'Chennai Delivery Corridor',
       orders: liveBatchOrders,
       hubs: liveHubs,
       totalOrders: liveBatchOrders.length,
