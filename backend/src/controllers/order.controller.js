@@ -267,6 +267,9 @@ const updateOrderStatus = async (req, res) => {
             if (status === 'DELIVERED') {
                 return res.status(400).json({ success: false, message: 'Delivery completion requires OTP verification via /delivery/verify-otp' });
             }
+            if (['CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY', 'READY', 'HANDED_OVER', 'PICKED_UP'].includes(status)) {
+                return res.status(403).json({ success: false, message: 'Forbidden: Only the merchant can confirm order preparation and handover' });
+            }
         }
 
         if (userRole !== 'admin' && userRole !== 'vendor' && userRole !== 'delivery_partner') {
@@ -353,7 +356,7 @@ const updateOrderStatus = async (req, res) => {
             if (order.delivery_status !== 'PICKED_UP' && userRole !== 'admin') {
                 return res.status(400).json({
                     success: false,
-                    message: 'Cannot start transit: Vendor handover must be confirmed before the order can be marked out for delivery'
+                    message: 'Collection cannot be confirmed yet. Waiting for the merchant to confirm handover for all required packages.'
                 });
             }
             dbOrderStatus = 'OUT_FOR_DELIVERY';

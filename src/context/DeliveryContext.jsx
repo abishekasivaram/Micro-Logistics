@@ -725,6 +725,25 @@ export const DeliveryProvider = ({ children }) => {
     }
   };
 
+  const collectHub = async (batchId, hubId, vendorId, barcode) => {
+    try {
+      const targetBatchId = batchId || activeBatch?.batchId || activeBatch?.id;
+      const res = await api.post(`/delivery/batches/${targetBatchId}/collect-hub`, {
+        hubId,
+        vendorId,
+        barcode
+      });
+      if (res.data?.success) {
+        if (refreshDeliveryData) await refreshDeliveryData();
+        return { success: true, message: res.data.message };
+      }
+      return { success: false, message: res.data?.message || 'Failed to collect hub' };
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Collection verification failed';
+      return { success: false, message: msg };
+    }
+  };
+
   const rejectBatch = async (batchId) => {
     const targetId = batchId || activeBatch?.batchId || activeBatch?.id;
     if (!targetId) return;
@@ -790,6 +809,7 @@ export const DeliveryProvider = ({ children }) => {
         setHistoryOrders,
         refreshDeliveryData,
         updateBatchStatus,
+        collectHub,
         stats: INITIAL_DASHBOARD_STATS,
         shiftSummary: INITIAL_SHIFT_SUMMARY,
         notifications,

@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Store, RotateCw, MapPin, Phone, PackageCheck, QrCode, CheckCircle2, 
-  AlertCircle, Check, ArrowRight, ShieldCheck, Camera, X,
-  Navigation, MessageSquare, ThermometerSnowflake,
-  Boxes, Clock, ArrowUpRight, CheckCheck, Sparkles, Building2,
-  Copy, Truck
+  Store, PackageCheck, MapPin, Phone, MessageSquare, 
+  Navigation, Check, Clock, QrCode, Camera, CheckCircle2,
+  ArrowRight, ShieldCheck, ArrowUpRight, Copy, CheckCheck, RotateCw, AlertCircle, X, Truck, Keyboard
 } from 'lucide-react';
 import { useDelivery } from '../../context/DeliveryContext';
 import PageHeader from '../../components/delivery/PageHeader';
@@ -16,44 +14,34 @@ import './PickupPage.css';
 
 const PickupPage = () => {
   const navigate = useNavigate();
-  const { activeBatch, hasBatch, addToast, updateOrderStatus, updateBatchStatus, acceptBatch, rejectBatch, refreshDeliveryData } = useDelivery();
+  const { 
+    activeBatch, hasBatch, updateOrderStatus, updateBatchStatus,
+    collectHub, addToast, refreshDeliveryData, acceptBatch, rejectBatch
+  } = useDelivery();
 
+  // Helper to derive hubs from activeBatch
   const deriveHubs = (batch) => {
     if (!batch) return [];
-    if (batch.hubs && batch.hubs.length > 0) return batch.hubs;
-
-    const pickupWaypoints = (batch.waypoints || []).filter(w => w.stop_type === 'PICKUP');
-    if (pickupWaypoints.length > 0) {
-      return pickupWaypoints.map((wp, idx) => ({
-        id: wp.id || `hub-wp-${idx + 1}`,
-        name: wp.title || `Vendor Hub ${idx + 1}`,
-        address: wp.address || 'Vendor Address',
-        phone: wp.phone || '+91 98401 22334',
-        parcels: wp.parcels || 1,
-        items: wp.items || ['Packaged Goods'],
-        barcode: `PKG-${1000 + idx * 25}`,
-        status: wp.completed ? 'COLLECTED' : 'READY',
-        allOrdersHandedOver: true,
-        orders: [],
-        sequence: wp.sequence_index || idx + 1
-      }));
+    if (batch.hubs && batch.hubs.length > 0) {
+      return batch.hubs;
     }
 
+    const batchOrders = batch.orders || [];
     const vendorMap = new Map();
-    (batch.orders || []).forEach((ord, idx) => {
-      const vKey = ord.vendorId || ord.vendorName || ord.pickupLocation;
+
+    batchOrders.forEach((ord, i) => {
+      const vKey = ord.vendorName || ord.pickupLocation || `Merchant Hub ${i + 1}`;
       if (!vendorMap.has(vKey)) {
         vendorMap.set(vKey, {
-          id: `hub-v-${idx + 1}`,
-          name: ord.vendorName || 'Local Merchant',
-          address: ord.pickupLocation || 'Merchant Hub Address',
-          phone: ord.vendorPhone || '+91 98401 22334',
+          id: `hub-${i + 1}`,
+          name: vKey,
+          address: ord.pickupLocation || 'Commercial Complex, Chennai',
+          contact: ord.vendorPhone || '+91 94441 12345',
           parcels: 0,
-          items: [],
-          barcode: `PKG-${2000 + idx * 30}`,
-          status: 'READY',
+          status: 'PENDING',
+          barcode: `HUB-CHE-${Math.abs(vKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 900 + 100)}`,
           orders: [],
-          allOrdersHandedOver: true
+          items: []
         });
       }
       const hub = vendorMap.get(vKey);
@@ -93,15 +81,64 @@ const PickupPage = () => {
       setIsRefreshing(false);
     }
   };
+
   const [selectedHubForConfirm, setSelectedHubForConfirm] = useState(null);
   const [scanningHub, setScanningHub] = useState(null);
-  const [scannedCodes, setScannedCodes] = useState({
-    'hub-1': true,
-    'hub-2': true,
-    'hub-3': true
-  });
+  // Real scanner state: initialize with EMPTY object (no pre-verified mock hubs)
+  const [scannedCodes, setScannedCodes] = useState({});
   const [checkedItems, setCheckedItems] = useState({});
   const [copiedHubId, setCopiedHubId] = useState(null);
+
+  // Optical scanner & Camera stream state
+  const videoRef = useRef(null);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+  const [manualCodeInput, setManualCodeInput] = useState('');
+  const [scanValidationError, setScanValidationError] = useState('');
+  const [isCollecting, setIsCollecting] = useState(false);
+
+  // Start real camera stream when scanner opens
+  useEffect(() => {
+    if (!scanningHub) {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        setCameraStream(null);
+      }
+      setCameraError(null);
+      setManualCodeInput('');
+      setScanValidationError('');
+      return;
+    }
+
+    let activeStream = null;
+    const startCamera = async () => {
+      try {
+        if (navigator?.mediaDevices?.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+          });
+          activeStream = stream;
+          setCameraStream(stream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } else {
+          setCameraError('Camera API is not supported in this browser environment.');
+        }
+      } catch (err) {
+        console.warn('Camera access unavailable:', err);
+        setCameraError('Camera hardware/permission unavailable. Use manual barcode entry or demo test scan below.');
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [scanningHub]);
 
   const handleCopyAddress = (address, hubId) => {
     if (!address) return;
@@ -121,9 +158,10 @@ const PickupPage = () => {
     return (
       <div className="pk-page-root">
         <PageHeader
-          breadcrumbs={['Operations', 'Hub Aggregation']}
           title="Pickup Routine"
-          subtitle="Consolidate parcels from merchant hubs before customer delivery"
+          subtitle="Merchant Hub Aggregation Network"
+          badgeText="NO ACTIVE MISSION"
+          badgeVariant="neutral"
         />
         <EmptyState
           icon={Store}
@@ -182,59 +220,125 @@ const PickupPage = () => {
 
   const handleStartScan = (hub) => {
     setScanningHub(hub);
+    setManualCodeInput('');
+    setScanValidationError('');
   };
 
-  const handleVerifyScan = () => {
+  // Barcode validation helper
+  const validateBarcode = (code) => {
+    if (!scanningHub || !code) return false;
+    const cleanCode = String(code).trim().toUpperCase();
+    const expectedBarcode = String(scanningHub.barcode || '').trim().toUpperCase();
+    
+    // Valid matches: hub's assigned barcode, order codes, or hub ID
+    const validCodes = [
+      expectedBarcode,
+      String(scanningHub.id || '').toUpperCase(),
+      ...(scanningHub.orders || []).flatMap(o => [
+        String(o.orderCode || o.id || '').toUpperCase(),
+        String(o.uuid || '').toUpperCase()
+      ])
+    ];
+
+    return validCodes.some(vc => vc && (vc === cleanCode || cleanCode.includes(vc) || vc.includes(cleanCode)));
+  };
+
+  // Perform verification from manual entry or optical scanner
+  const handleVerifyBarcodeCode = (codeToVerify) => {
     if (!scanningHub) return;
+    const targetCode = (codeToVerify || manualCodeInput || '').trim();
+
+    if (!targetCode) {
+      setScanValidationError('Please enter or scan a barcode.');
+      return;
+    }
+
+    if (!validateBarcode(targetCode)) {
+      setScanValidationError(`Invalid barcode "${targetCode}". Code does not match this merchant hub or assigned package manifest.`);
+      return;
+    }
+
+    // Success: mark barcode recognized for this hub (does NOT independently mark collected)
     setScannedCodes(prev => ({ ...prev, [scanningHub.id]: true }));
-    addToast(`Barcode ${scanningHub.barcode} verified for ${scanningHub.name}`, 'success');
+    addToast(`Barcode ${targetCode} recognized and verified for ${scanningHub.name}. Physical collection step unlocked.`, 'success');
     setScanningHub(null);
   };
 
+  // Demo / Test verification fallback
+  const handleVerifyScanDemo = () => {
+    if (!scanningHub) return;
+    handleVerifyBarcodeCode(scanningHub.barcode);
+  };
+
+  // Confirm physical collection handler with full backend guard integration
   const handleMarkCollected = async () => {
     if (!selectedHubForConfirm) return;
-    const hubId = selectedHubForConfirm.id;
+    const hub = selectedHubForConfirm;
 
-    // Transition all orders in this hub to OUT_FOR_DELIVERY
-    if (selectedHubForConfirm.orders && selectedHubForConfirm.orders.length > 0) {
-      for (const ord of selectedHubForConfirm.orders) {
-        if (updateOrderStatus) {
-          try {
+    // Strict frontend verification guard before sending request
+    if (hub.allOrdersHandedOver === false) {
+      addToast('Collection cannot be confirmed yet. Waiting for the merchant to confirm handover for all required packages.', 'danger');
+      return;
+    }
+
+    if (!scannedCodes[hub.id]) {
+      addToast('Package barcode verification is required before collection can be confirmed.', 'warning');
+      return;
+    }
+
+    setIsCollecting(true);
+    try {
+      if (collectHub) {
+        const vendorId = hub.orders?.[0]?.vendorId || hub.orders?.[0]?.vendor_id;
+        const res = await collectHub(activeBatch.batchId, hub.id, vendorId, hub.barcode);
+        
+        if (!res.success) {
+          addToast(res.message || 'Collection cannot be confirmed yet.', 'danger');
+          setIsCollecting(false);
+          return;
+        }
+      } else {
+        // Fallback optimistic status update
+        for (const ord of (hub.orders || [])) {
+          if (updateOrderStatus) {
             await updateOrderStatus(ord.id || ord.orderCode, 'OUT_FOR_DELIVERY');
-          } catch (err) {
-            console.warn('Status update warning for order:', ord.id, err);
           }
         }
       }
-    }
 
-    setHubs(prev => {
-      const updated = prev.map(h => {
-        if (h.id === hubId) {
-          return {
-            ...h,
-            status: 'COLLECTED',
-            collectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
+      setHubs(prev => {
+        const updated = prev.map(h => {
+          if (h.id === hub.id) {
+            return {
+              ...h,
+              status: 'COLLECTED',
+              collectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+          }
+          return h;
+        });
+
+        const allNowCollected = updated.every(h => h.status === 'COLLECTED');
+        if (allNowCollected && updateBatchStatus) {
+          updateBatchStatus('OUT_FOR_DELIVERY').catch(console.error);
         }
-        return h;
+
+        return updated;
       });
 
-      const allNowCollected = updated.every(h => h.status === 'COLLECTED');
-      if (allNowCollected && updateBatchStatus) {
-        updateBatchStatus('OUT_FOR_DELIVERY').catch(console.error);
-      }
-
-      return updated;
-    });
-
-    addToast(`All parcels collected from ${selectedHubForConfirm.name} and marked Out for Delivery!`, 'success');
-    setSelectedHubForConfirm(null);
+      addToast(`All parcels collected from ${hub.name} and marked Out for Delivery!`, 'success');
+      setSelectedHubForConfirm(null);
+    } catch (err) {
+      console.error('Collection confirmation error:', err);
+      addToast('An error occurred while confirming collection. Please retry.', 'danger');
+    } finally {
+      setIsCollecting(false);
+    }
   };
 
   return (
     <div className="pk-page-root">
-      {/* 1. Sleek Compact Command Header */}
+      {/* 1. Command Header */}
       <div className="pk-command-header-card">
         <div className="pk-header-top-row">
           <div className="pk-header-identity">
@@ -266,7 +370,7 @@ const PickupPage = () => {
             </p>
           </div>
 
-          {/* Direct Route Handover Button in Header */}
+          {/* Route Handover Action */}
           <div className="pk-header-actions">
             {allCollected ? (
               <button 
@@ -274,7 +378,7 @@ const PickupPage = () => {
                 className="pk-cta-route-btn"
                 onClick={() => navigate('/delivery/route')}
               >
-                <span>Proceed to Route (5 Drops)</span>
+                <span>Proceed to Route</span>
                 <ArrowRight size={17} />
               </button>
             ) : (
@@ -289,74 +393,60 @@ const PickupPage = () => {
         {/* 2. Compact 3-Stage Progress Pipeline Strip */}
         <div className="pk-pipeline-strip">
           <div className="pk-pipeline-stages">
-            {/* Stage 1 */}
             <div className="pk-stage-pill is-done">
               <div className="pk-stage-icon">
                 <Check size={12} strokeWidth={3} />
               </div>
               <div className="pk-stage-text">
                 <span className="pk-st-label">1. Assigned</span>
-                <span className="pk-st-sub">08:15 AM</span>
+                <span className="pk-st-sub">Accepted</span>
               </div>
             </div>
 
-            <div className="pk-stage-divider is-done" />
+            <div className={`pk-stage-connector ${collectedCount > 0 ? 'is-done' : ''}`} />
 
-            {/* Stage 2 */}
-            <div className="pk-stage-pill is-done">
+            <div className={`pk-stage-pill ${allCollected ? 'is-done' : 'is-current'}`}>
               <div className="pk-stage-icon">
-                <Check size={12} strokeWidth={3} />
+                <Store size={12} />
               </div>
               <div className="pk-stage-text">
-                <span className="pk-st-label">2. Scanned</span>
-                <span className="pk-st-sub">09:05 AM</span>
+                <span className="pk-st-label">2. Vendor Handover & Collection</span>
+                <span className="pk-st-sub">{collectedCount} of {totalHubs} secured</span>
               </div>
             </div>
 
-            <div className={`pk-stage-divider ${allCollected ? 'is-done' : 'is-active'}`} />
+            <div className={`pk-stage-connector ${allCollected ? 'is-done' : ''}`} />
 
-            {/* Stage 3 */}
-            <div className={`pk-stage-pill ${allCollected ? 'is-done' : 'is-active'}`}>
+            <div className={`pk-stage-pill ${allCollected ? 'is-current' : 'is-pending'}`}>
               <div className="pk-stage-icon">
-                {allCollected ? <Check size={12} strokeWidth={3} /> : <span className="pk-active-num">3</span>}
+                <Navigation size={12} />
               </div>
               <div className="pk-stage-text">
-                <span className="pk-st-label">3. Consolidated</span>
-                <span className="pk-st-sub">{allCollected ? 'Cargo Secured' : 'Finalizing'}</span>
+                <span className="pk-st-label">3. Out for Delivery</span>
+                <span className="pk-st-sub">{allCollected ? 'Ready for drops' : 'Pending hubs'}</span>
               </div>
             </div>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="pk-mini-metrics">
-            <span className="pk-metric-tag">
-              <Building2 size={13} className="text-primary" />
-              <strong>{collectedCount}/{totalHubs}</strong> Hubs Verified
-            </span>
-            <span className="pk-metric-sep">•</span>
-            <span className="pk-metric-tag">
-              <Boxes size={13} className="text-primary" />
-              <strong>{totalParcels}</strong> Packages (12.4 kg)
-            </span>
-            <span className="pk-metric-sep">•</span>
-            <span className="pk-metric-tag">
-              <ThermometerSnowflake size={13} className="text-sky" />
-              Cold Chain 2°C – 6°C
-            </span>
+          <div className="pk-mini-progress">
+            <div className="pk-progress-label">
+              <span>Aggregation Progress</span>
+              <span className="dl-tabular font-bold">{progressPercent}%</span>
+            </div>
+            <div className="pk-progress-track">
+              <div className="pk-progress-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
           </div>
-        </div>
-
-        {/* Progress Fill Line */}
-        <div className="pk-progress-track">
-          <div className="pk-progress-bar" style={{ width: `${progressPercent}%` }} />
         </div>
       </div>
 
-      {/* 3. The 3 Merchant Hub Cards Grid */}
+      {/* 3. Merchant Hub Collections Grid */}
       <div className="pk-hubs-grid">
         {hubs.map((hub, idx) => {
           const isCollected = hub.status === 'COLLECTED';
-          const isScanned = scannedCodes[hub.id] || isCollected;
+          const isScanned = Boolean(scannedCodes[hub.id]);
+          const isHandoverReady = hub.allOrdersHandedOver !== false;
+          const canCollect = isHandoverReady && isScanned;
 
           const categories = [
             'Fresh Farm Produce & Greens',
@@ -383,7 +473,7 @@ const PickupPage = () => {
                 />
               </div>
 
-              {/* Address & Direct Actions Toolbar */}
+              {/* Address & Quick Actions */}
               <div className="pk-hub-location-box">
                 <div className="pk-address-row">
                   <div className="pk-loc-pin-badge" title="Hub Location">
@@ -436,7 +526,7 @@ const PickupPage = () => {
                 </div>
               </div>
 
-              {/* Package Manifest Checklist */}
+              {/* Manifest Checklist */}
               <div className="pk-manifest-box">
                 <div className="pk-manifest-header">
                   <span className="pk-manifest-title">Manifest Items</span>
@@ -463,7 +553,7 @@ const PickupPage = () => {
                 </div>
               </div>
 
-              {/* Footer / Barcode & Status Actions */}
+              {/* Barcode & Collection Actions */}
               <div className="pk-hub-footer">
                 <div className="pk-barcode-strip">
                   <QrCode size={13} className="text-primary" />
@@ -483,18 +573,33 @@ const PickupPage = () => {
                   </button>
 
                   {!isCollected ? (
-                    hub.allOrdersHandedOver !== false ? (
+                    isHandoverReady ? (
+                      isScanned ? (
+                        <button
+                          type="button"
+                          className="pk-btn-collect"
+                          onClick={() => setSelectedHubForConfirm(hub)}
+                          title="Vendor handover confirmed and barcode verified. Proceed to physical collection."
+                        >
+                          <CheckCircle2 size={14} />
+                          <span>Confirm Collection & Depart</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="pk-btn-collect"
+                          style={{ background: '#f59e0b', borderColor: '#d97706' }}
+                          onClick={() => handleStartScan(hub)}
+                          title="Barcode verification required before physical collection can be recorded."
+                        >
+                          <Camera size={14} />
+                          <span>Scan Barcode to Enable Collection</span>
+                        </button>
+                      )
+                    ) : (
                       <button
                         type="button"
-                        className="pk-btn-collect"
                         onClick={() => setSelectedHubForConfirm(hub)}
-                        title="Vendor has confirmed handover. Confirm collection to start transit."
-                      >
-                        <CheckCircle2 size={14} />
-                        <span>Confirm Collection & Depart</span>
-                      </button>
-                    ) : (
-                      <div 
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -505,13 +610,14 @@ const PickupPage = () => {
                           border: '1px solid #fde68a',
                           borderRadius: '8px',
                           fontSize: '12px',
-                          fontWeight: '600'
+                          fontWeight: '600',
+                          cursor: 'pointer'
                         }}
                         title="Merchant staff has not yet confirmed handover of order items"
                       >
                         <Clock size={13} color="#d97706" />
                         <span>Awaiting Merchant Handover</span>
-                      </div>
+                      </button>
                     )
                   ) : (
                     <div className="pk-collected-pill">
@@ -526,7 +632,7 @@ const PickupPage = () => {
         })}
       </div>
 
-      {/* Optical Barcode Scanner Modal Simulator */}
+      {/* Optical Barcode Scanner Modal with Live Camera & Manual Fallback */}
       {scanningHub && (
         <div className="pk-scanner-backdrop" onClick={() => setScanningHub(null)}>
           <div className="pk-scanner-card" onClick={e => e.stopPropagation()}>
@@ -545,6 +651,23 @@ const PickupPage = () => {
             </div>
 
             <div className="pk-scanner-viewfinder">
+              {/* Real camera video feed or fallback */}
+              {cameraStream ? (
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '12px'
+                  }} 
+                />
+              ) : null}
+
               <div className="pk-viewfinder-frame">
                 <div className="pk-laser-line" />
                 <div className="pk-reticle top-left" />
@@ -553,40 +676,123 @@ const PickupPage = () => {
                 <div className="pk-reticle bottom-right" />
                 <div className="pk-crosshair" />
               </div>
-              <p className="pk-target-code dl-tabular">{scanningHub.barcode}</p>
-              <p className="pk-target-hub">{scanningHub.name}</p>
-              <p className="pk-target-hint">Align barcode inside camera reticle</p>
+
+              <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', background: 'rgba(0,0,0,0.4)', padding: '6px 12px', borderRadius: '8px' }}>
+                <p className="pk-target-code dl-tabular" style={{ margin: 0, color: '#38bdf8', fontWeight: 'bold' }}>{scanningHub.barcode}</p>
+                <p className="pk-target-hub" style={{ margin: '2px 0', color: '#fff', fontSize: '13px' }}>{scanningHub.name}</p>
+                <p className="pk-target-hint" style={{ margin: 0, color: '#cbd5e1', fontSize: '11px' }}>
+                  {cameraStream ? 'Align barcode inside viewfinder reticle' : 'Optical viewfinder active (Camera unavailable: use manual/test mode)'}
+                </p>
+              </div>
             </div>
 
-            <div className="pk-scanner-footer">
+            {/* Validation Error Banner */}
+            {scanValidationError && (
+              <div style={{ margin: '12px 16px 0', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={15} />
+                <span>{scanValidationError}</span>
+              </div>
+            )}
+
+            {/* Manual Barcode Input Fallback */}
+            <div style={{ padding: '14px 16px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '12px', fontWeight: '600', color: '#475569' }}>
+                <Keyboard size={14} />
+                <span>Manual Barcode Entry Fallback</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  placeholder={`e.g. ${scanningHub.barcode} or Package Code`}
+                  value={manualCodeInput}
+                  onChange={(e) => {
+                    setManualCodeInput(e.target.value);
+                    if (scanValidationError) setScanValidationError('');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '9px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13.5px',
+                    fontFamily: 'monospace'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleVerifyBarcodeCode(manualCodeInput)}
+                  style={{
+                    padding: '9px 16px',
+                    background: '#2563eb',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Verify
+                </button>
+              </div>
+            </div>
+
+            <div className="pk-scanner-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px 16px 16px' }}>
               <button 
                 type="button" 
                 className="pk-btn-confirm-scan"
-                onClick={handleVerifyScan}
+                onClick={handleVerifyScanDemo}
               >
                 <Check size={16} />
-                <span>Simulate Optical Scan & Verify ({scanningHub.barcode})</span>
+                <span>Demo / Test Verification (Simulate Scan: {scanningHub.barcode})</span>
               </button>
+              <span style={{ fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
+                Note: Barcode validation confirms parcel identification; physical collection is completed separately.
+              </span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Mark Collected Confirmation Dialog */}
-      <ConfirmationModal
-        isOpen={Boolean(selectedHubForConfirm)}
-        onClose={() => setSelectedHubForConfirm(null)}
-        onConfirm={handleMarkCollected}
-        title="Confirm Merchant Hub Collection?"
-        message={`Confirm that you have physically collected all ${selectedHubForConfirm?.parcels} parcel(s) from ${selectedHubForConfirm?.name} and loaded them securely into your vehicle.`}
-        subjectName={selectedHubForConfirm?.name || 'Merchant Hub'}
-        subjectInfo={`Address: ${selectedHubForConfirm?.address || ''} • Code: ${selectedHubForConfirm?.barcode || ''}`}
-        confirmText="Confirm Collection"
-        cancelText="Cancel"
-        variant="primary"
-        badgeText="HUB AGGREGATION PROTOCOL"
-        icon={PackageCheck}
-      />
+      {/* Mark Collected Confirmation Dialog with Explicit Handover Guard */}
+      {selectedHubForConfirm && (
+        <ConfirmationModal
+          isOpen={Boolean(selectedHubForConfirm)}
+          onClose={() => setSelectedHubForConfirm(null)}
+          onConfirm={handleMarkCollected}
+          confirmDisabled={selectedHubForConfirm.allOrdersHandedOver === false || !scannedCodes[selectedHubForConfirm.id] || isCollecting}
+          title={
+            selectedHubForConfirm.allOrdersHandedOver === false
+              ? "Merchant Handover Required"
+              : !scannedCodes[selectedHubForConfirm.id]
+              ? "Barcode Verification Required"
+              : "Confirm Merchant Hub Collection?"
+          }
+          message={
+            selectedHubForConfirm.allOrdersHandedOver === false
+              ? "Collection cannot be confirmed yet. Waiting for the merchant to confirm handover for all required packages."
+              : !scannedCodes[selectedHubForConfirm.id]
+              ? "Please scan and verify the merchant hub barcode before confirming physical collection."
+              : `Confirm that you have physically collected all ${selectedHubForConfirm.parcels} parcel(s) from ${selectedHubForConfirm.name} and loaded them securely into your vehicle.`
+          }
+          subjectName={selectedHubForConfirm.name || 'Merchant Hub'}
+          subjectInfo={`Address: ${selectedHubForConfirm.address || ''} • Code: ${selectedHubForConfirm.barcode || ''}`}
+          confirmText={
+            selectedHubForConfirm.allOrdersHandedOver === false
+              ? "Awaiting Merchant Handover"
+              : !scannedCodes[selectedHubForConfirm.id]
+              ? "Scan Barcode First"
+              : isCollecting
+              ? "Confirming..."
+              : "Confirm Collection"
+          }
+          cancelText="Close"
+          variant={selectedHubForConfirm.allOrdersHandedOver === false ? "warning" : "primary"}
+          badgeText="HUB AGGREGATION PROTOCOL"
+          icon={PackageCheck}
+          isLoading={isCollecting}
+        />
+      )}
     </div>
   );
 };

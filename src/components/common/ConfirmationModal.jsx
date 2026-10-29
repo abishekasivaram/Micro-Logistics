@@ -20,6 +20,7 @@ const ConfirmationModal = ({
   variant = 'danger', // 'danger' | 'warning' | 'info'
   badgeText = 'CRITICAL ACTION',
   icon: CustomIcon = null,
+  confirmDisabled = false,
   isLoading = false
 }) => {
   // Handle ESC key
@@ -129,7 +130,7 @@ const ConfirmationModal = ({
               onConfirm();
               onClose();
             }}
-            disabled={isLoading}
+            disabled={isLoading || confirmDisabled}
           >
             {confirmText}
           </button>

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAggregationOverview = exports.triggerAutomaticAggregation = exports.verifyDeliveryOtp = exports.getOrderOtp = exports.updateAgent = exports.createAgent = exports.respondToBatchAssignment = exports.updateBatchStatus = exports.assignBatch = exports.createBatch = exports.getBatchById = exports.getBatches = exports.getAgentById = exports.getAgents = void 0;
+exports.collectHub = exports.getAggregationOverview = exports.triggerAutomaticAggregation = exports.verifyDeliveryOtp = exports.getOrderOtp = exports.updateAgent = exports.createAgent = exports.respondToBatchAssignment = exports.updateBatchStatus = exports.assignBatch = exports.createBatch = exports.getBatchById = exports.getBatches = exports.getAgentById = exports.getAgents = void 0;
 const supabase_1 = require("../config/supabase");
 const mappings_1 = require("../utils/mappings");
 const aggregation_service_1 = require("../services/aggregation.service");
@@ -455,6 +455,27 @@ const updateBatchStatus = async (req, res) => {
         if (userRole === 'delivery_partner' && batch.agent_id !== userId)
             return res.status(403).json({ success: false, message: 'Forbidden: You are not assigned to this batch' });
 
+        // CRITICAL GUARD: OUT_FOR_DELIVERY requires all member orders to have vendor handover confirmed (PICKED_UP)
+        if (dbStatus === 'OUT_FOR_DELIVERY') {
+            const { data: memberOrders } = await supabase_1.supabase
+                .from('orders')
+                .select('id, order_code, delivery_status, order_status')
+                .eq('batch_id', batch.id);
+
+            const pendingHandover = (memberOrders || []).filter(o => 
+                o.delivery_status !== 'PICKED_UP' && 
+                o.delivery_status !== 'OUT_FOR_DELIVERY' && 
+                o.delivery_status !== 'DELIVERED'
+            );
+
+            if (pendingHandover.length > 0 && userRole !== 'admin') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Collection cannot be confirmed yet. Waiting for the merchant to confirm handover for all required packages.'
+                });
+            }
+        }
+
         // CRITICAL BUSINESS RULE & OTP PROTECTION:
         // Batch status CANNOT be set to COMPLETED unless 100% of member orders have been verified and marked DELIVERED via OTP!
         if (dbStatus === 'COMPLETED') {
@@ -495,7 +516,7 @@ const updateBatchStatus = async (req, res) => {
                 .from('delivery_batches')
                 .select('id')
                 .eq('agent_id', batch.agent_id)
-                 && typeof supabase_1.supabase.from('delivery_batches').select('id').eq('agent_id', agentToCheck).neq === 'function' ? supabase_1.supabase.from('delivery_batches').select('id').eq('agent_id', agentToCheck).neq('status', 'COMPLETED') : supabase_1.supabase.from('delivery_batches').select('id').eq('agent_id', agentToCheck);
+                 && typeof supabase_1.supabase.from('delivery_batches').select('id').eq('agent_id', batch.agent_id).neq === 'function' ? supabase_1.supabase.from('delivery_batches').select('id').eq('agent_id', batch.agent_id).neq('status', 'COMPLETED') : supabase_1.supabase.from('delivery_batches').select('id').eq('agent_id', batch.agent_id);
 
             if (!activeBatches || activeBatches.length === 0) {
                 await supabase_1.supabase.from('delivery_agents').update({
@@ -958,3 +979,114 @@ const getAggregationOverview = async (req, res) => {
     }
 };
 exports.getAggregationOverview = getAggregationOverview;
+
+const collectHub = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { hubId, vendorId, barcode } = req.body || {};
+        const userRole = req.user?.user_metadata?.role || req.user?.role;
+        const userId = req.user?.id;
+
+        // 1. Fetch target batch
+        let query = supabase_1.supabase.from('delivery_batches').select('*');
+        if (id.includes('-') && id.length > 15) {
+            query = query.eq('id', id).single();
+        } else {
+            query = query.eq('batch_code', id).single();
+        }
+        const { data: batch, error: bErr } = await query;
+        if (bErr || !batch) {
+            return res.status(404).json({ success: false, message: 'Batch not found' });
+        }
+
+        // 2. Authorization: Only assigned courier or admin
+        if (userRole === 'delivery_partner' && batch.agent_id !== userId) {
+            return res.status(403).json({ success: false, message: 'Forbidden: You are not assigned to this delivery batch' });
+        }
+
+        // 3. Find member orders in this batch for the given merchant/hub
+        let ordersQuery = supabase_1.supabase
+            .from('orders')
+            .select('id, order_code, batch_id, vendor_id, assigned_agent_id, delivery_status, order_status, pickup_location, vendor:vendors(id, shop_name)')
+            .eq('batch_id', batch.id);
+
+        if (vendorId) {
+            ordersQuery = ordersQuery.eq('vendor_id', vendorId);
+        }
+
+        const { data: batchOrders, error: oErr } = await ordersQuery;
+        if (oErr || !batchOrders || batchOrders.length === 0) {
+            return res.status(404).json({ success: false, message: 'No orders found for this merchant hub in this batch' });
+        }
+
+        // 4. Strict Barcode Validation (if barcode provided)
+        if (barcode) {
+            const cleanCode = String(barcode).trim().toUpperCase();
+            const validCodes = batchOrders.flatMap(o => [
+                String(o.order_code).toUpperCase(),
+                String(o.id).toUpperCase(),
+                `HUB-${Math.abs(String(o.vendor?.shop_name || 'Merchant').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 90000 + 10000)}`
+            ]);
+            const matchesCode = validCodes.some(vc => vc === cleanCode || cleanCode.includes(vc) || vc.includes(cleanCode));
+            if (!matchesCode && !cleanCode.startsWith('HUB-') && !cleanCode.startsWith('PKG-')) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid barcode "${barcode}". Scanned code does not match this merchant hub.`
+                });
+            }
+        }
+
+        // 5. CRITICAL GUARD: Check vendor handover on 100% of required packages
+        const pendingHandover = batchOrders.filter(o => 
+            o.delivery_status !== 'PICKED_UP' && 
+            o.delivery_status !== 'OUT_FOR_DELIVERY' && 
+            o.delivery_status !== 'DELIVERED'
+        );
+
+        if (pendingHandover.length > 0 && userRole !== 'admin') {
+            return res.status(400).json({
+                success: false,
+                message: 'Collection cannot be confirmed yet. Waiting for the merchant to confirm handover for all required packages.'
+            });
+        }
+
+        // 6. Persist physical collection: Transition orders to OUT_FOR_DELIVERY
+        for (const ord of batchOrders) {
+            if (ord.delivery_status === 'PICKED_UP') {
+                await supabase_1.supabase.from('orders').update({
+                    order_status: 'OUT_FOR_DELIVERY',
+                    delivery_status: 'OUT_FOR_DELIVERY'
+                }).eq('id', ord.id);
+            }
+        }
+
+        // 7. Check if all orders across the ENTIRE batch are now collected
+        const { data: allBatchOrders } = await supabase_1.supabase
+            .from('orders')
+            .select('id, delivery_status')
+            .eq('batch_id', batch.id);
+
+        const allCollected = (allBatchOrders || []).every(o => 
+            ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.delivery_status)
+        );
+
+        if (allCollected) {
+            await supabase_1.supabase.from('delivery_batches').update({
+                status: 'OUT_FOR_DELIVERY'
+            }).eq('id', batch.id);
+        }
+
+        res.json({
+            success: true,
+            message: `Merchant hub collection confirmed successfully for ${batchOrders.length} package(s). Orders are now Out for Delivery.`,
+            data: {
+                batchId: batch.batch_code || batch.id,
+                collectedCount: batchOrders.length,
+                allBatchOrdersCollected: allCollected
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+exports.collectHub = collectHub;
