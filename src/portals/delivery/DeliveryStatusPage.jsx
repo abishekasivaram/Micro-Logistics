@@ -22,6 +22,8 @@ const DeliveryStatusPage = () => {
   const [podNotes, setPodNotes] = useState('');
   const [signatureDone, setSignatureDone] = useState(false);
   const [photoProof, setPhotoProof] = useState(null);
+  const [modalError, setModalError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Failed Modal Inputs
   const [failureReason, setFailureReason] = useState('Customer unavailable after calling');
@@ -38,6 +40,8 @@ const DeliveryStatusPage = () => {
     setPodNotes('');
     setSignatureDone(false);
     setPhotoProof(null);
+    setModalError(null);
+    setIsSubmitting(false);
   };
 
   const openFailedModal = (order) => {
@@ -45,30 +49,38 @@ const DeliveryStatusPage = () => {
     setModalType('failed');
     setFailureReason('Customer unavailable after calling');
     setFailureNotes('');
+    setModalError(null);
+    setIsSubmitting(false);
   };
 
   const handleConfirmDelivered = async () => {
     if (!selectedOrder) return;
-    if (!otpInput || otpInput.trim().length !== 4) {
-      setOtpError('Please enter the 4-digit customer delivery OTP');
+
+    const cleanOtp = otpInput.trim();
+    if (!/^\d{4}$/.test(cleanOtp)) {
+      setModalError('Please enter the mandatory 4-digit customer OTP provided at doorstep.');
       return;
     }
-    setIsVerifying(true);
-    setOtpError(null);
+
     try {
-      const res = await verifyOtp(selectedOrder.id || selectedOrder.orderCode, otpInput.trim());
-      if (res.success) {
-        setModalType(null);
-        setSelectedOrder(null);
-        setOtpInput('');
-      } else {
-        setOtpError(res.message || 'Invalid OTP code. Please re-check with recipient.');
-      }
+      setIsSubmitting(true);
+      setModalError(null);
+      await updateOrderStatus(selectedOrder.id || selectedOrder.orderCode, 'DELIVERED', {
+        otp: cleanOtp,
+        notes: podNotes,
+        photo: photoProof,
+        signature: signatureDone
+      });
+      setModalType(null);
+      setSelectedOrder(null);
+      setOtpInput('');
     } catch (err) {
-      setOtpError(err.message || 'Failed to verify OTP');
+      setModalError(err.message || 'OTP verification failed. Please verify with customer.');
     } finally {
-      setIsVerifying(false);
+      setIsSubmitting(false);
     }
+
+    
   };
 
   const handleConfirmFailed = () => {
@@ -206,6 +218,13 @@ const DeliveryStatusPage = () => {
             </div>
 
             <div className="status-modal-body">
+              {modalError && (
+                <div className="status-modal-error-banner" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c', fontSize: '13px', marginBottom: '14px' }}>
+                  <AlertTriangle size={16} />
+                  <span>{modalError}</span>
+                </div>
+              )}
+
               <div className="modal-order-summary">
                 <span className="sum-order-id">{selectedOrder.orderCode || selectedOrder.id}</span>
                 <span className="sum-customer">{selectedOrder?.customerName || "Customer"}</span>
@@ -214,11 +233,10 @@ const DeliveryStatusPage = () => {
                 </span>
               </div>
 
-              {/* 4-Digit OTP Input */}
+              {/* 4-Digit OTP Input (Strictly Mandatory) */}
               <div className="form-group-block">
                 <label className="input-label" htmlFor="otp-input-field">
-                  <Key size={14} /> Enter 4-Digit Customer Delivery OTP (Required)
-                </label>
+                  <Key size={14} /> Enter 4-Digit Customer OTP (Mandatory) *                </label>
                 <input
                   id="otp-input-field"
                   type="text"
@@ -230,22 +248,22 @@ const DeliveryStatusPage = () => {
                     setOtpError(null);
                   }}
                   className="dl-otp-input dl-tabular"
-                  style={otpError ? { borderColor: '#ef4444' } : {}}
                   autoFocus
+                  style={otpError ? { borderColor: '#ef4444' } : {}}
                 />
                 {otpError ? (
                   <span style={{ color: '#ef4444', fontSize: '13px', fontWeight: '600', marginTop: '4px', display: 'block' }}>
-                    ⚠️ {otpError}
+                    {otpError}
                   </span>
                 ) : (
                   <span className="input-hint">Customer views this secret 4-digit PIN in their order tracking screen</span>
                 )}
               </div>
 
-              {/* Digital Signature Pad Simulator */}
+              {/* Digital Signature Pad Simulator (Optional Proof of Delivery) */}
               <div className="form-group-block">
                 <label className="input-label">
-                  <Edit3 size={14} /> Or Collect Customer Signature
+                  <Edit3 size={14} /> Customer Signature (Optional Acknowledgment)
                 </label>
                 <div 
                   className={`signature-canvas-box ${signatureDone ? 'is-signed' : ''}`}
@@ -258,10 +276,11 @@ const DeliveryStatusPage = () => {
                     </div>
                   ) : (
                     <div className="signature-placeholder">
-                      <span>Click or tap to simulate digital signature</span>
+                      <span>Click or tap to capture digital signature (optional)</span>
                     </div>
                   )}
                 </div>
+                <span className="input-hint">Digital signature provides supplementary proof, but does not bypass mandatory OTP verification.</span>
               </div>
 
               {/* Optional Photo Proof Simulator */}
@@ -297,10 +316,10 @@ const DeliveryStatusPage = () => {
                 type="button"
                 className="dl-btn dl-btn-primary w-full"
                 onClick={handleConfirmDelivered}
-                disabled={isVerifying || otpInput.length !== 4}
-                style={isVerifying || otpInput.length !== 4 ? { opacity: 0.65 } : {}}
+                disabled={otpInput.trim().length !== 4 || isSubmitting}
+                style={otpInput.trim().length !== 4 || isSubmitting ? { opacity: 0.65 } : {}}
               >
-                <CheckCircle2 size={16} /> {isVerifying ? 'Verifying OTP...' : 'Verify OTP & Mark Delivered'}
+                <CheckCircle2 size={16} /> {isSubmitting ? 'Verifying OTP with Server...' : 'Verify OTP & Mark Delivered'}
               </button>
             </div>
           </div>

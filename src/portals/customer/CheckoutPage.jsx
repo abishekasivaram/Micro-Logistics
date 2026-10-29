@@ -13,8 +13,24 @@ const CheckoutPage = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
+  const CHENNAI_LOCALITIES = [
+    'Anna Nagar East',
+    'Anna Nagar West',
+    'T. Nagar',
+    'Adyar',
+    'Velachery',
+    'Mylapore',
+    'Besant Nagar',
+    'Guindy',
+    'Kodambakkam',
+    'Nungambakkam',
+    'Alwarpet',
+    'Thiruvanmiyur'
+  ];
+
   const defaultCustomer = getCustomerProfileByIdentifier(currentUser?.legacy_id || currentUser?.username || currentUser?.email);
   const [deliveryAddress, setDeliveryAddress] = useState(currentUser?.address || defaultCustomer.address);
+  const [selectedLocality, setSelectedLocality] = useState(currentUser?.area || 'Anna Nagar East');
   const [contactPhone, setContactPhone] = useState(currentUser?.phone || defaultCustomer.phone);
   const [deliveryDate, setDeliveryDate] = useState(todayStr);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(deliverySlots[1]); // 9:00 AM - 1:00 PM
@@ -37,11 +53,16 @@ const CheckoutPage = () => {
     setIsSubmitting(true);
 
     try {
+      // Ensure structured locality is explicitly preserved in the destination
+      const hasLocality = deliveryAddress.toLowerCase().includes(selectedLocality.toLowerCase());
+      const fullAddress = hasLocality ? deliveryAddress : `${deliveryAddress}, ${selectedLocality}, Chennai`;
+
       const created = await placeOrder({
-        deliveryAddress,
+        deliveryAddress: fullAddress,
         contactPhone,
         deliveryDate,
-        deliveryTimeSlot: selectedTimeSlot
+        deliveryTimeSlot: selectedTimeSlot,
+        locality: selectedLocality
       });
       setIsSubmitting(false);
       const ordersList = Array.isArray(created) ? created : created ? [created] : null;
@@ -88,7 +109,25 @@ const CheckoutPage = () => {
                 <h3 className="card-title"><MapPin size={20} color="#4f46e5" /> Delivery Destination</h3>
                 
                 <div className="form-group">
-                  <label htmlFor="chk-address">Delivery Address *</label>
+                  <label htmlFor="chk-locality">Delivery Neighborhood / Locality *</label>
+                  <select
+                    id="chk-locality"
+                    className="form-control"
+                    value={selectedLocality}
+                    onChange={e => setSelectedLocality(e.target.value)}
+                    required
+                  >
+                    {CHENNAI_LOCALITIES.map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', display: 'block' }}>
+                    Used for smart order aggregation with nearby local deliveries.
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="chk-address">Street Address / Door Number *</label>
                   <input 
                     type="text" 
                     id="chk-address"

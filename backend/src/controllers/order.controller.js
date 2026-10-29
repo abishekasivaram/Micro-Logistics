@@ -276,23 +276,80 @@ const updateOrderStatus = async (req, res) => {
         let deliveryStatus = order.delivery_status;
         let aggregationStatus = order.aggregation_status;
         let dbOrderStatus = status;
+        let batchIdToSet = order.batch_id;
 
-        if (status === 'CONFIRMED' || status === 'PREPARING') {
+        if (status === 'CANCELLED') {
+            if (order.order_status === 'DELIVERED' || order.delivery_status === 'DELIVERED') {
+                return res.status(400).json({ success: false, message: 'Cannot cancel an order that has already been delivered' });
+            }
+            if (order.order_status === 'OUT_FOR_DELIVERY' || order.delivery_status === 'OUT_FOR_DELIVERY') {
+                return res.status(400).json({ success: false, message: 'Cannot cancel an order that is currently out for delivery' });
+            }
+
+            dbOrderStatus = 'CANCELLED';
+            deliveryStatus = 'FAILED';
+            aggregationStatus = 'COMPLETED';
+            batchIdToSet = null;
+
+            // 1. Restore reserved inventory back to products catalog
+            try {
+                const { data: itemsToRestore } = await supabase_1.supabase
+                    .from('order_items')
+                    .select('product_id, qty')
+                    .eq('order_id', order.id);
+
+                if (itemsToRestore && itemsToRestore.length > 0) {
+                    for (const it of itemsToRestore) {
+                        const { data: pRec } = await supabase_1.supabase
+                            .from('products')
+                            .select('stock')
+                            .eq('id', it.product_id)
+                            .single();
+
+                        if (pRec) {
+                            const restoredStock = (pRec.stock || 0) + it.qty;
+                            const restoredStatus = restoredStock > 10 ? 'In Stock' : (restoredStock > 0 ? 'Low Stock' : 'Out of Stock');
+                            await supabase_1.supabase
+                                .from('products')
+                                .update({ stock: restoredStock, status: restoredStatus })
+                                .eq('id', it.product_id);
+                        }
+                    }
+                }
+            } catch (stockErr) {
+                console.error('Failed to restore stock on order cancellation:', stockErr);
+            }
+
+            // 2. Unlink from batch if order was already batched
+            if (order.batch_id) {
+                try {
+                    await supabase_1.supabase.from('delivery_batch_orders').delete().eq('order_id', order.id);
+                    const { data: bRec } = await supabase_1.supabase.from('delivery_batches').select('order_count').eq('id', order.batch_id).single();
+                    if (bRec) {
+                        const newCount = Math.max(0, (bRec.order_count || 1) - 1);
+                        await supabase_1.supabase.from('delivery_batches').update({ order_count: newCount }).eq('id', order.batch_id);
+                    }
+                } catch (bErr) {
+                    console.error('Failed to update batch on order cancellation:', bErr);
+                }
+            }
+        }
+        else if (status === 'CONFIRMED' || status === 'PREPARING') {
             dbOrderStatus = 'PREPARING';
             deliveryStatus = 'PENDING_ASSIGNMENT';
             if (!aggregationStatus) aggregationStatus = 'WAITING_FOR_AGGREGATION';
         }
-        if (status === 'READY_FOR_DELIVERY' || status === 'READY') {
+        else if (status === 'READY_FOR_DELIVERY' || status === 'READY') {
             dbOrderStatus = 'READY_FOR_DELIVERY';
             deliveryStatus = 'PENDING_ASSIGNMENT';
             aggregationStatus = 'WAITING_FOR_AGGREGATION';
         }
-        if (status === 'HANDED_OVER' || status === 'PICKED_UP') {
+        else if (status === 'HANDED_OVER' || status === 'PICKED_UP') {
             dbOrderStatus = (order.order_status === 'READY_FOR_DELIVERY' || order.order_status === 'PREPARING') ? 'ASSIGNED' : order.order_status;
             deliveryStatus = 'PICKED_UP';
         }
-        if (status === 'OUT_FOR_DELIVERY') {
-            // Requirement 6: An order must not become in transit before the required confirmations (vendor handover and delivery person collection) are complete.
+        else if (status === 'OUT_FOR_DELIVERY') {
+            // Require pickup confirmation before starting transit.
             if (order.delivery_status !== 'PICKED_UP' && userRole !== 'admin') {
                 return res.status(400).json({
                     success: false,
@@ -302,16 +359,27 @@ const updateOrderStatus = async (req, res) => {
             dbOrderStatus = 'OUT_FOR_DELIVERY';
             deliveryStatus = 'OUT_FOR_DELIVERY';
         }
-        if (status === 'DELIVERED') {
+        else if (status === 'DELIVERED') {
+            // Doorstep delivery requires OTP verification; direct status mutation is rejected unless admin override
+            if (userRole !== 'admin') {
+                return res.status(400).json({ success: false, message: 'Delivery completion requires OTP verification via /delivery/verify-otp' });
+            }
             dbOrderStatus = 'DELIVERED';
             deliveryStatus = 'DELIVERED';
             aggregationStatus = 'COMPLETED';
         }
-        const { data, error } = await supabase_1.supabase.from('orders').update({
+
+        const updatePayload = {
             order_status: dbOrderStatus,
             delivery_status: deliveryStatus,
             aggregation_status: aggregationStatus
-        }).eq('id', order.id).select(`
+        };
+        if (status === 'CANCELLED') {
+            updatePayload.batch_id = null;
+        }
+
+        const { data, error } = await supabase_1.supabase.from('orders').update(updatePayload).eq('id', order.id).select(`
+
       *,
       customer:customer_profiles(id, legacy_id, profile:profiles(username, email)),
       vendor:vendors(id, legacy_id, shop_name),

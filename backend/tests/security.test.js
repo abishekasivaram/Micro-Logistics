@@ -63,6 +63,13 @@ const { mockDatabase, mockSupabaseInstance } = vi.hoisted(() => {
             });
             return { data: found || null, error: found ? null : { message: 'Not found', code: 'PGRST116' } };
           },
+          maybeSingle: async () => {
+  const tableData = mockDatabase[table] || [];
+  const found = tableData.find(item =>
+    Object.entries(currentFilter).every(([field, value]) => item[field] === value)
+  );
+  return { data: found || null, error: null };
+},
           insert: (data) => {
             const item = Array.isArray(data) ? data[0] : data;
             const created = { id: `new-${Date.now()}`, ...item };

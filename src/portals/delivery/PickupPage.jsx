@@ -16,16 +16,58 @@ import './PickupPage.css';
 
 const PickupPage = () => {
   const navigate = useNavigate();
-  const { activeBatch, hasBatch, addToast, updateOrderStatus } = useDelivery();
 
-  const [hubs, setHubs] = useState(() => activeBatch?.hubs || []);
+  const { activeBatch, hasBatch, addToast, updateBatchStatus } = useDelivery();
+
+  const deriveHubs = (batch) => {
+    if (!batch) return [];
+    if (batch.hubs && batch.hubs.length > 0) return batch.hubs;
+
+    const pickupWaypoints = (batch.waypoints || []).filter(w => w.stop_type === 'PICKUP');
+    if (pickupWaypoints.length > 0) {
+      return pickupWaypoints.map((wp, idx) => ({
+        id: wp.id || `hub-wp-${idx + 1}`,
+        name: wp.title || `Vendor Hub ${idx + 1}`,
+        address: wp.address || 'Vendor Address',
+        phone: wp.phone || '+91 98401 22334',
+        parcels: wp.parcels || 1,
+        items: wp.items || ['Packaged Goods'],
+        barcode: `PKG-${1000 + idx * 25}`,
+        status: wp.completed ? 'COLLECTED' : 'READY',
+        sequence: wp.sequence_index || idx + 1
+      }));
+    }
+
+    const vendorMap = new Map();
+    (batch.orders || []).forEach((ord, idx) => {
+      const vKey = ord.vendorId || ord.vendorName || ord.pickupLocation;
+      if (!vendorMap.has(vKey)) {
+        vendorMap.set(vKey, {
+          id: `hub-v-${idx + 1}`,
+          name: ord.vendorName || 'Local Merchant',
+          address: ord.pickupLocation || 'Merchant Hub Address',
+          phone: ord.vendorPhone || '+91 98401 22334',
+          parcels: 0,
+          items: [],
+          barcode: `PKG-${2000 + idx * 30}`,
+          status: 'READY'
+        });
+      }
+      const hub = vendorMap.get(vKey);
+      hub.parcels += (ord.items?.length || 1);
+      (ord.items || []).forEach(it => {
+        if (it.name) hub.items.push(it.name);
+      });
+    });
+
+    return Array.from(vendorMap.values());
+  };
+
+  const [hubs, setHubs] = useState(() => deriveHubs(activeBatch));
 
   useEffect(() => {
-    if (activeBatch?.hubs && activeBatch.hubs.length > 0) {
-      setHubs(activeBatch.hubs);
-    }
-  }, [activeBatch?.hubs]);
-
+    setHubs(deriveHubs(activeBatch));
+  }, [activeBatch]);
   const [selectedHubForConfirm, setSelectedHubForConfirm] = useState(null);
   const [scanningHub, setScanningHub] = useState(null);
   const [scannedCodes, setScannedCodes] = useState({
@@ -34,7 +76,13 @@ const PickupPage = () => {
     'hub-3': true
   });
   const [checkedItems, setCheckedItems] = useState({});
-  const [copiedHubId, setCopiedHubId] = useState(null);
+  React.useEffect(() => {
+    setHubs(deriveHubs(activeBatch));
+  }, [activeBatch]);
+
+  React.useEffect(() => {
+    setHubs(deriveHubs(activeBatch));
+  }, [activeBatch]);
 
   const handleCopyAddress = (address, hubId) => {
     if (!address) return;

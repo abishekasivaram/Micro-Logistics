@@ -13,9 +13,27 @@ import './RoutePage.css';
 const RoutePage = () => {
   const { activeBatch, orders, hasBatch, setSelectedOrderForDrawer, addToast } = useDelivery();
 
-  // Initial sequence generator: Hub Pickups first, then Deliveries
+  // Initial sequence generator: Waypoints from batch, or Hub Pickups first, then Deliveries
   const generateInitialStops = () => {
-    if (!activeBatch || !orders) return [];
+    if (!activeBatch) return [];
+
+    // 1. Prefer database waypoints stored for this batch
+    if (activeBatch.waypoints && activeBatch.waypoints.length > 0) {
+      return activeBatch.waypoints.map((wp, idx) => ({
+        id: wp.id || `stop-${idx}`,
+        type: wp.stop_type === 'PICKUP' ? 'pickup' : 'delivery',
+        title: wp.title || (wp.stop_type === 'PICKUP' ? 'Vendor Pickup' : 'Customer Drop-off'),
+        address: wp.address || 'Address',
+        eta: wp.estimated_arrival || `${9 + Math.floor(idx * 0.5)}:${(idx % 2) * 30 || '00'} AM`,
+        distanceKm: wp.estimated_distance_km ? String(wp.estimated_distance_km) : (1.2 + idx * 0.7).toFixed(1),
+        status: wp.completed ? 'COMPLETED' : 'PENDING',
+        parcels: wp.parcels || 1,
+        lat: wp.lat || (13.0418 + idx * 0.005),
+        lng: wp.lng || (80.2341 + idx * 0.005),
+        isEstimated: true,
+        orderRef: (orders || []).find(o => o.uuid === wp.order_id || o.id === wp.order_id)
+      }));
+    }
 
     const hubStops = (activeBatch.hubs || []).map((h, idx) => ({
       id: `stop-hub-${h.id}`,
@@ -30,11 +48,11 @@ const RoutePage = () => {
       lng: 80.2341 + idx * 0.005
     }));
 
-    const deliveryStops = orders.map((o, idx) => ({
+    const deliveryStops = (orders || []).map((o, idx) => ({
       id: `stop-deliv-${o.id}`,
       type: 'delivery',
       title: o.customerName,
-      address: o.address,
+      address: o.address || o.deliveryLocation,
       eta: o.eta || `11:${15 + idx * 20} AM`,
       distanceKm: (2.1 + idx * 0.7).toFixed(1),
       status: o.status,
@@ -48,7 +66,11 @@ const RoutePage = () => {
   };
 
   const [stops, setStops] = useState(generateInitialStops);
-  const [activeStopIndex, setActiveStopIndex] = useState(2); // Current Stop index
+  const [activeStopIndex, setActiveStopIndex] = useState(0);
+
+  React.useEffect(() => {
+    setStops(generateInitialStops());
+  }, [activeBatch, orders]);
 
   if (!hasBatch || !activeBatch || stops.length === 0) {
     return (
