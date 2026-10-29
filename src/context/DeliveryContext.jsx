@@ -556,7 +556,7 @@ export const DeliveryProvider = ({ children }) => {
         throw new Error(msg);
       }
     } else {
-      setActiveBatch(prev => ({ ...prev, rawStatus: newStatus, status: newStatus }));
+      setActiveBatch(prev => ({ ...(prev || activeBatch || {}), rawStatus: newStatus, status: newStatus }));
       addToast(`Batch status updated to ${newStatus.replace(/_/g, ' ')}`, 'success');
     }
   };
@@ -599,20 +599,37 @@ export const DeliveryProvider = ({ children }) => {
             otp: cleanOtp
           });
 
-          // Optimistically update order to delivered
-          setOrders(prev => prev.map(o => {
-            if (o.id === orderId || o.uuid === orderId || o.orderCode === orderId) {
-              return {
-                ...o,
-                status: 'DELIVERED',
-                rawDeliveryStatus: 'DELIVERED',
-                deliveredAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                otpVerified: true,
-                podNotes: details.notes || o.podNotes
-              };
-            }
-            return o;
-          }));
+          // Optimistically update order to delivered (null-safe)
+          setOrders(prev => {
+            const baseOrders = prev || orders || [];
+            return baseOrders.map(o => {
+              if (o.id === orderId || o.uuid === orderId || o.orderCode === orderId) {
+                return {
+                  ...o,
+                  status: 'DELIVERED',
+                  rawDeliveryStatus: 'DELIVERED',
+                  deliveredAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  otpVerified: true,
+                  podNotes: details.notes || o.podNotes
+                };
+              }
+              return o;
+            });
+          });
+
+          if (setAppOrders) {
+            setAppOrders(prev => (prev || []).map(o => {
+              if (o.id === orderId || o.uuid === orderId || o.orderCode === orderId) {
+                return {
+                  ...o,
+                  status: 'DELIVERED',
+                  order_status: 'DELIVERED',
+                  delivery_status: 'DELIVERED'
+                };
+              }
+              return o;
+            }));
+          }
 
           // Add to timeline
           const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -641,20 +658,23 @@ export const DeliveryProvider = ({ children }) => {
       }
     }
 
-    // Non-delivered or Demo transitions
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId || o.uuid === orderId || o.orderCode === orderId) {
-        return {
-          ...o,
-          status: newStatus,
-          deliveredAt: newStatus === 'DELIVERED' ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : o.deliveredAt,
-          otpVerified: newStatus === 'DELIVERED' ? true : o.otpVerified,
-          failureReason: details.failureReason || o.failureReason,
-          podNotes: details.notes || o.podNotes
-        };
-      }
-      return o;
-    }));
+    // Non-delivered or Demo transitions (null-safe)
+    setOrders(prev => {
+      const baseOrders = prev || orders || [];
+      return baseOrders.map(o => {
+        if (o.id === orderId || o.uuid === orderId || o.orderCode === orderId) {
+          return {
+            ...o,
+            status: newStatus,
+            deliveredAt: newStatus === 'DELIVERED' ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : o.deliveredAt,
+            otpVerified: newStatus === 'DELIVERED' ? true : o.otpVerified,
+            failureReason: details.failureReason || o.failureReason,
+            podNotes: details.notes || o.podNotes
+          };
+        }
+        return o;
+      });
+    });
 
     if (!currentUser?.isDemo && targetOrder.uuid) {
       try {
