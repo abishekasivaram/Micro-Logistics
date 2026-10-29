@@ -227,6 +227,14 @@ export const getDeliveryAgentProfile = (identifier) => {
   const key = String(identifier).toLowerCase().trim();
   if (DELIVERY_AGENTS_CATALOG[key]) return DELIVERY_AGENTS_CATALOG[key];
 
+  const UUID_AGENT_MAP = {
+    '5804937f-9d4a-4f97-91cd-71c1207bb77c': 'da1',
+    'ffeed74b-d4ab-4402-8c35-b7cae469f5f9': 'da2',
+    'bfafb64e-6c92-4512-8c64-ad89b2163f2f': 'da3',
+    'f8664b6a-5388-499a-beb1-12145d543c49': 'da4'
+  };
+  if (UUID_AGENT_MAP[key]) return DELIVERY_AGENTS_CATALOG[UUID_AGENT_MAP[key]];
+
   for (const agent of Object.values(DELIVERY_AGENTS_CATALOG)) {
     if (
       agent.id === key || 

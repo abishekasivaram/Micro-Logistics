@@ -21,6 +21,10 @@ const DeliveryDashboard = () => {
     setSelectedOrderForDrawer, acceptBatch, rejectBatch
   } = useDelivery();
 
+  React.useEffect(() => {
+    document.title = "MicroLogi Control Tower | Live Delivery Dashboard";
+  }, []);
+
   // Compute Greeting by time of day
   const hour = new Date().getHours();
   let timeGreeting = 'Good morning';
@@ -72,7 +76,7 @@ const DeliveryDashboard = () => {
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 ) : (
-                  <span>{String(agentDisplayName || 'DA').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                  <span>{String(agentDisplayName || 'DA').trim().split(/\s+/).map(n => n ? n[0] : '').join('').slice(0, 2).toUpperCase() || 'DA'}</span>
                 )}
               </div>
               <span className={`pilot-status-beacon ${availability === 'Available' ? 'is-live' : availability === 'On Break' ? 'is-break' : 'is-offline'}`} />
@@ -490,7 +494,7 @@ const DeliveryDashboard = () => {
                         <div className="waypoint-content-grid">
                           <div className="waypoint-customer-details">
                             <div className="customer-avatar-box">
-                              <span>{String(nextStopOrder.customerName || 'Customer').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                              <span>{String(nextStopOrder?.customerName || 'Customer').trim().split(/\s+/).map(n => n ? n[0] : '').join('').slice(0, 2).toUpperCase() || 'CU'}</span>
                             </div>
                             <div className="customer-text-meta">
                               <h3 className="customer-name-heading">{nextStopOrder.customerName || 'Customer'}</h3>

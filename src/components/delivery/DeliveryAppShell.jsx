@@ -93,9 +93,11 @@ const DeliveryAppShellContent = ({ children }) => {
 const DeliveryAppShell = ({ children }) => {
   return (
     <DeliveryProvider>
-      <DeliveryAppShellContent>
-        {children}
-      </DeliveryAppShellContent>
+      <ErrorBoundary>
+        <DeliveryAppShellContent>
+          {children}
+        </DeliveryAppShellContent>
+      </ErrorBoundary>
     </DeliveryProvider>
   );
 };

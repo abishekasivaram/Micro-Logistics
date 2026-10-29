@@ -93,11 +93,29 @@ const CustomerDashboard = () => {
   const customerId = currentUser?.id || null;
   const customerOrders = orders.filter(o => o.customerId === customerId || o.customerName === currentUser?.name);
 
-  // Active Live Order Check
+  // Active Live Order Check (Strict Priority: in-flight > collected > assigned > preparing)
   const activeOrder = useMemo(() => {
-    return customerOrders.find(o => 
-      ['pending', 'confirmed', 'assigned', 'picked_up', 'in_transit'].includes(o.status?.toLowerCase())
-    );
+    const statusPriority = {
+      'out_for_delivery': 1,
+      'in_transit': 2,
+      'picked_up': 3,
+      'assigned': 4,
+      'ready_for_delivery': 5,
+      'ready': 6,
+      'preparing': 7,
+      'confirmed': 8,
+      'pending': 9
+    };
+    const activeList = (customerOrders || []).filter(o => {
+      const st = (o.status || o.orderStatus || '').toLowerCase();
+      return statusPriority[st] !== undefined;
+    });
+    activeList.sort((a, b) => {
+      const stA = (a.status || a.orderStatus || '').toLowerCase();
+      const stB = (b.status || b.orderStatus || '').toLowerCase();
+      return (statusPriority[stA] || 99) - (statusPriority[stB] || 99);
+    });
+    return activeList[0] || null;
   }, [customerOrders]);
 
   // Categories matching active local stores
@@ -244,7 +262,7 @@ const CustomerDashboard = () => {
 
       {/* 2. ACTIVE LIVE ORDER TRACKER (Displayed when active order exists) */}
       {activeOrder && (
-        <div className="live-order-tracker-card" onClick={() => navigate('/track-delivery')}>
+        <div className="live-order-tracker-card" onClick={() => navigate('/track-delivery', { state: { orderId: activeOrder.id || activeOrder.orderId || activeOrder.orderCode } })}>
           <div className="live-order-left">
             <div className="live-order-pulse-badge">
               <Truck size={18} className="live-truck-icon" />

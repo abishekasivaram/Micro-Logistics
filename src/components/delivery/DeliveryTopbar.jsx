@@ -152,13 +152,13 @@ const DeliveryTopbar = ({ onOpenMobileMenu }) => {
                 </div>
 
                 <div className="notif-dropdown-list">
-                  {notifications.length === 0 ? (
+                  {(!notifications || notifications.length === 0) ? (
                     <div className="notif-dropdown-empty">
                       <Check size={20} className="empty-check text-success" />
                       <p>You're all caught up!</p>
                     </div>
                   ) : (
-                    notifications.slice(0, 5).map(item => (
+                    (notifications || []).slice(0, 5).map(item => (
                       <div
                         key={item.id}
                         className={`notif-dropdown-item ${!item.isRead ? 'is-unread' : ''}`}

@@ -4,7 +4,8 @@ import { useAppContext } from '../../context/AppContext';
 import api from '../../services/api';
 import MapPlaceholder from '../../components/common/MapPlaceholder';
 import StatusBadge from '../../components/common/StatusBadge';
-import { Navigation, Clock, MapPin, User, Phone, CheckCircle, Package, Calendar, Sparkles, Key } from 'lucide-react';
+import { Navigation, Clock, MapPin, User, Phone, CheckCircle, Package, Calendar, Sparkles, Key, ShieldCheck } from 'lucide-react';
+import { getDeliveryAgentProfile } from '../../lib/deliveryData';
 import './TrackDeliveryPage.css';
 
 const TrackDeliveryPage = () => {
@@ -14,13 +15,27 @@ const TrackDeliveryPage = () => {
   // Find customer's active or recent orders
   const customerOrders = orders.filter(o => o.customerId === currentUser?.id || o.customerName === currentUser?.name || currentUser?.role === 'admin' || currentUser?.role === 'vendor');
   
+  const getOrderPriority = (o) => {
+    const st = (o.orderStatus || o.status || '').toUpperCase();
+    if (st === 'OUT_FOR_DELIVERY') return 1;
+    if (st === 'PICKED_UP') return 2;
+    if (st === 'ASSIGNED') return 3;
+    if (st === 'READY_FOR_DELIVERY' || st === 'READY') return 4;
+    if (st === 'PREPARING') return 5;
+    if (st === 'CONFIRMED') return 6;
+    if (st === 'PLACED') return 7;
+    return 8; // DELIVERED, CANCELLED
+  };
+
+  const prioritizedOrders = [...customerOrders].sort((a, b) => getOrderPriority(a) - getOrderPriority(b));
+
   const targetId = location?.state?.orderId || location?.state?.batchId;
   const initialOrder = targetId 
-    ? (orders.find(o => o.id === targetId || o.batchId === targetId || o.orderId === targetId || (o.batchId && targetId.includes(o.batchId))) || customerOrders[0])
-    : customerOrders[0];
+    ? (orders.find(o => o.id === targetId || o.batchId === targetId || o.orderId === targetId || (o.batchId && targetId.includes(o.batchId))) || prioritizedOrders[0])
+    : prioritizedOrders[0];
 
   const [selectedOrderId, setSelectedOrderId] = useState(
-    initialOrder?.id || initialOrder?.orderId || customerOrders[0]?.id || customerOrders[0]?.orderId || ''
+    initialOrder?.id || initialOrder?.orderId || prioritizedOrders[0]?.id || prioritizedOrders[0]?.orderId || ''
   );
 
   useEffect(() => {
@@ -33,7 +48,7 @@ const TrackDeliveryPage = () => {
     }
   }, [location?.state?.batchId, location?.state?.orderId, orders]);
 
-  const activeOrder = customerOrders.find(o => (o.id === selectedOrderId || o.orderId === selectedOrderId)) || customerOrders[0];
+  const activeOrder = customerOrders.find(o => (o.id === selectedOrderId || o.orderId === selectedOrderId)) || prioritizedOrders[0] || customerOrders[0];
 
   const status = (activeOrder?.orderStatus || activeOrder?.status || 'PLACED').toUpperCase();
 
@@ -53,7 +68,18 @@ const TrackDeliveryPage = () => {
           setOrderOtp('1234');
         });
     }
-  }, [activeOrder]);
+  }, [activeOrder?.id, activeOrder?.orderId, activeOrder?.orderCode]);
+
+  // Dynamic Courier Resolution
+  const agentIdentifier = activeOrder?.assignedAgentId || activeOrder?.assigned_agent_id || activeOrder?.assignedAgent;
+  const isAgentAssigned = Boolean(agentIdentifier && agentIdentifier !== 'Unassigned' && !String(agentIdentifier).toLowerCase().includes('pending'));
+  const courierProfile = isAgentAssigned ? getDeliveryAgentProfile(agentIdentifier) : null;
+  const courierDisplayName = isAgentAssigned 
+    ? (courierProfile?.name || activeOrder?.assignedAgent || 'Fleet Courier')
+    : 'Delivery partner not assigned yet';
+  const courierPhone = isAgentAssigned 
+    ? (courierProfile?.phone || '+91 99887 76655')
+    : 'Assignment pending from central dispatch';
 
   const rawDelivSt = (activeOrder?.rawDeliveryStatus || activeOrder?.delivery_status || '').toUpperCase();
   const isPickedUp = rawDelivSt === 'PICKED_UP' || rawDelivSt.includes('PICKED') || rawDelivSt.includes('HANDED');
@@ -101,11 +127,14 @@ const TrackDeliveryPage = () => {
               value={selectedOrderId} 
               onChange={e => setSelectedOrderId(e.target.value)}
             >
-              {customerOrders.map(o => (
-                <option key={o.id} value={o.id || o.orderId}>
-                  {o.id || o.orderId} - {o.vendorName} (₹{o.total?.toFixed(2)})
-                </option>
-              ))}
+              {prioritizedOrders.map(o => {
+                const stLabel = (o.orderStatus || o.status || 'PLACED').replace(/_/g, ' ');
+                return (
+                  <option key={o.id} value={o.id || o.orderId}>
+                    {o.id || o.orderId} — {o.vendorName || 'Seller'} (₹{Number(o.total || 0).toFixed(2)}) • {stLabel}
+                  </option>
+                );
+              })}
             </select>
           </div>
         )}
@@ -132,7 +161,7 @@ const TrackDeliveryPage = () => {
             <MapPlaceholder 
               pickupLocation={activeOrder.pickupLocation || "Seller Hub, Chennai"}
               deliveryLocation={activeOrder.deliveryLocation || "Customer Address, Chennai"}
-              agentName={activeOrder.assignedAgent || "Muthu Vel"}
+              agentName={isAgentAssigned ? courierDisplayName : "Delivery Partner"}
               status={status}
               estimatedTime={status === 'DELIVERED' ? 'Delivered' : '20-25 mins'}
             />
@@ -231,7 +260,7 @@ const TrackDeliveryPage = () => {
                     <Key size={13} /> Delivery Handover PIN
                   </span>
                   <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-                    Provide this code to your courier at doorstep
+                    Provide this code to {isAgentAssigned ? courierDisplayName : 'your delivery partner'} at doorstep
                   </p>
                 </div>
                 <div style={{
@@ -250,14 +279,25 @@ const TrackDeliveryPage = () => {
             )}
 
             {/* Assigned Delivery Agent */}
-            <div className="agent-card-box">
-              <div className="agent-avatar">
+            <div className="agent-card-box" style={{ background: isAgentAssigned ? '#f8fafc' : '#fefce8', border: isAgentAssigned ? '1px solid #e2e8f0' : '1px dashed #fde047' }}>
+              <div className="agent-avatar" style={{ background: isAgentAssigned ? '#eef2ff' : '#fef3c7', color: isAgentAssigned ? '#4f46e5' : '#b45309' }}>
                 <User size={24} />
               </div>
               <div className="agent-info">
-                <span className="agent-role-tag">Assigned Delivery Partner</span>
-                <strong className="agent-name">{activeOrder.assignedAgent || 'Muthu Vel'}</strong>
-                <span className="agent-phone"><Phone size={14} /> +91 99887 76655</span>
+                <span className="agent-role-tag">
+                  {isAgentAssigned ? 'Assigned Delivery Partner' : 'Courier Status'}
+                </span>
+                <strong className="agent-name" style={{ color: isAgentAssigned ? '#0f172a' : '#92400e' }}>
+                  {courierDisplayName}
+                </strong>
+                <span className="agent-phone">
+                  <Phone size={14} /> {courierPhone}
+                </span>
+                {isAgentAssigned && courierProfile?.currentArea && (
+                  <span style={{ fontSize: '11px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
+                    <ShieldCheck size={12} /> Corridor: {courierProfile.currentArea}
+                  </span>
+                )}
               </div>
             </div>
 
