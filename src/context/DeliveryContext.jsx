@@ -137,10 +137,6 @@ export const DeliveryProvider = ({ children }) => {
   const [overrideActiveBatch, setActiveBatch] = useState(null);
   const [overrideOrders, setOrders] = useState(null);
   const [hasBatchOverride, setHasBatch] = useState(null);
-  const [timeline, setTimeline] = useState(INITIAL_TODAY_TIMELINE);
-  const [historyOrders, setHistoryOrders] = useState(INITIAL_HISTORICAL_ORDERS);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-
   // 6. Timeline, History Orders & Notifications State
   const [timeline, setTimeline] = useState(INITIAL_TODAY_TIMELINE);
   const [historyOrders, setHistoryOrders] = useState(INITIAL_HISTORICAL_ORDERS);
