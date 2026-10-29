@@ -653,7 +653,8 @@ While the system is robust and fully functional, the following limitations are n
 | **Removal of "Boomi"** | Verified in `AppContext.jsx` | Purged from memory, state, and localStorage |
 | **Customer Order History** | Verified in `AdminCustomersPage.jsx` | Displays complete order manifests for `c1`–`c4` |
 | **Sidebar Logout Spacing** | Verified in `DeliverySidebar.css` | 10px flex gap with left alignment |
-| **Remote Git Push** | Verified | Rebased and pushed to `origin/main` (`c32802c`) |
+| **Remote Git Push** | Verified | Rebased and pushed to `origin/main` (`bd9cbd9`) |
 
 ---
-*Report compiled and verified against codebase commit `c32802c`.*
+*Report compiled and verified against codebase commit `bd9cbd9`.*
+
