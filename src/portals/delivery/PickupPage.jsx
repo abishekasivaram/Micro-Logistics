@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Store, MapPin, Phone, PackageCheck, QrCode, CheckCircle2, 
+  Store, RotateCw, MapPin, Phone, PackageCheck, QrCode, CheckCircle2, 
   AlertCircle, Check, ArrowRight, ShieldCheck, Camera, X,
   Navigation, MessageSquare, ThermometerSnowflake,
   Boxes, Clock, ArrowUpRight, CheckCheck, Sparkles, Building2,
@@ -16,7 +16,7 @@ import './PickupPage.css';
 
 const PickupPage = () => {
   const navigate = useNavigate();
-  const { activeBatch, hasBatch, addToast, updateOrderStatus, updateBatchStatus, acceptBatch, rejectBatch } = useDelivery();
+  const { activeBatch, hasBatch, addToast, updateOrderStatus, updateBatchStatus, acceptBatch, rejectBatch, refreshDeliveryData } = useDelivery();
 
   const deriveHubs = (batch) => {
     if (!batch) return [];
@@ -33,6 +33,8 @@ const PickupPage = () => {
         items: wp.items || ['Packaged Goods'],
         barcode: `PKG-${1000 + idx * 25}`,
         status: wp.completed ? 'COLLECTED' : 'READY',
+        allOrdersHandedOver: true,
+        orders: [],
         sequence: wp.sequence_index || idx + 1
       }));
     }
@@ -49,17 +51,24 @@ const PickupPage = () => {
           parcels: 0,
           items: [],
           barcode: `PKG-${2000 + idx * 30}`,
-          status: 'READY'
+          status: 'READY',
+          orders: [],
+          allOrdersHandedOver: true
         });
       }
       const hub = vendorMap.get(vKey);
       hub.parcels += (ord.items?.length || 1);
+      hub.orders.push(ord);
       (ord.items || []).forEach(it => {
         if (it.name) hub.items.push(it.name);
       });
     });
 
-    return Array.from(vendorMap.values());
+    const result = Array.from(vendorMap.values());
+    result.forEach(hub => {
+      hub.allOrdersHandedOver = hub.orders.length > 0 ? hub.orders.every(o => o.vendorHandoverConfirmed) : true;
+    });
+    return result;
   };
 
   const [hubs, setHubs] = useState(() => deriveHubs(activeBatch));
@@ -67,6 +76,23 @@ const PickupPage = () => {
   useEffect(() => {
     setHubs(deriveHubs(activeBatch));
   }, [activeBatch]);
+
+  useEffect(() => {
+    if (refreshDeliveryData) {
+      refreshDeliveryData();
+    }
+  }, [refreshDeliveryData]);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      if (refreshDeliveryData) await refreshDeliveryData();
+      addToast('Handover status synced with server', 'info');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   const [selectedHubForConfirm, setSelectedHubForConfirm] = useState(null);
   const [scanningHub, setScanningHub] = useState(null);
   const [scannedCodes, setScannedCodes] = useState({
@@ -165,29 +191,42 @@ const PickupPage = () => {
     setScanningHub(null);
   };
 
-  const handleMarkCollected = () => {
+  const handleMarkCollected = async () => {
     if (!selectedHubForConfirm) return;
     const hubId = selectedHubForConfirm.id;
 
     // Transition all orders in this hub to OUT_FOR_DELIVERY
     if (selectedHubForConfirm.orders && selectedHubForConfirm.orders.length > 0) {
-      selectedHubForConfirm.orders.forEach(ord => {
+      for (const ord of selectedHubForConfirm.orders) {
         if (updateOrderStatus) {
-          updateOrderStatus(ord.id, 'OUT_FOR_DELIVERY');
+          try {
+            await updateOrderStatus(ord.id || ord.orderCode, 'OUT_FOR_DELIVERY');
+          } catch (err) {
+            console.warn('Status update warning for order:', ord.id, err);
+          }
         }
-      });
+      }
     }
 
-    setHubs(prev => prev.map(h => {
-      if (h.id === hubId) {
-        return {
-          ...h,
-          status: 'COLLECTED',
-          collectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
+    setHubs(prev => {
+      const updated = prev.map(h => {
+        if (h.id === hubId) {
+          return {
+            ...h,
+            status: 'COLLECTED',
+            collectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+        }
+        return h;
+      });
+
+      const allNowCollected = updated.every(h => h.status === 'COLLECTED');
+      if (allNowCollected && updateBatchStatus) {
+        updateBatchStatus('OUT_FOR_DELIVERY').catch(console.error);
       }
-      return h;
-    }));
+
+      return updated;
+    });
 
     addToast(`All parcels collected from ${selectedHubForConfirm.name} and marked Out for Delivery!`, 'success');
     setSelectedHubForConfirm(null);
@@ -203,6 +242,16 @@ const PickupPage = () => {
               <span>Operations</span>
               <span className="pk-bread-sep">/</span>
               <span className="pk-bread-current">Merchant Hub Aggregation</span>
+              <button 
+                type="button" 
+                onClick={handleManualRefresh} 
+                disabled={isRefreshing}
+                style={{ marginLeft: '12px', background: 'none', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '2px 8px', fontSize: '12px', color: '#475569', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                title="Refresh vendor handover status"
+              >
+                <RotateCw size={12} className={isRefreshing ? 'spin-icon' : ''} />
+                <span>{isRefreshing ? 'Checking...' : 'Check Handover'}</span>
+              </button>
             </div>
             <div className="pk-title-row">
               <h1 className="pk-main-heading dl-heading">Pickup Routine</h1>

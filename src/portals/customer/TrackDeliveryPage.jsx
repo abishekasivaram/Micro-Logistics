@@ -55,20 +55,34 @@ const TrackDeliveryPage = () => {
     }
   }, [activeOrder]);
 
-  const getProgressPercentage = (st) => {
-    switch (st) {
-      case 'PLACED': return 15;
-      case 'CONFIRMED': return 35;
-      case 'PREPARING': return 50;
-      case 'READY_FOR_DELIVERY': return 70;
-      case 'ASSIGNED': return 80;
-      case 'OUT_FOR_DELIVERY': return 90;
-      case 'DELIVERED': return 100;
-      default: return 10;
-    }
+  const rawDelivSt = (activeOrder?.rawDeliveryStatus || activeOrder?.delivery_status || '').toUpperCase();
+  const isPickedUp = rawDelivSt === 'PICKED_UP' || rawDelivSt.includes('PICKED') || rawDelivSt.includes('HANDED');
+
+  const getMilestoneIndex = (st, isPick) => {
+    if (st === 'DELIVERED') return 8;
+    if (st === 'OUT_FOR_DELIVERY') return 7;
+    if (isPick) return 6;
+    if (st === 'ASSIGNED') return 5;
+    if (st === 'READY_FOR_DELIVERY' || st === 'READY') return 4;
+    if (st === 'PREPARING') return 3;
+    if (st === 'CONFIRMED') return 2;
+    if (st === 'PLACED') return 1;
+    return 1;
   };
 
-  const progressPct = getProgressPercentage(status);
+  const milestoneIndex = getMilestoneIndex(status, isPickedUp);
+  const progressPct = Math.round((milestoneIndex / 8) * 100);
+
+  const MILESTONES = [
+    { step: 1, label: 'Order Placed' },
+    { step: 2, label: 'Vendor Confirmed' },
+    { step: 3, label: 'Preparing' },
+    { step: 4, label: 'Ready for Handover' },
+    { step: 5, label: 'Delivery Assigned' },
+    { step: 6, label: 'Picked Up' },
+    { step: 7, label: 'Out for Delivery' },
+    { step: 8, label: 'Delivered' }
+  ];
 
   return (
     <div className="customer-track-page page-container">
@@ -141,12 +155,19 @@ const TrackDeliveryPage = () => {
               <div className="progress-bar-fill" style={{ width: `${progressPct}%` }}></div>
             </div>
 
-            <div className="progress-steps-labels">
-              <span style={{ color: progressPct >= 15 ? '#4f46e5' : '#94a3b8' }}>Placed</span>
-              <span style={{ color: progressPct >= 50 ? '#4f46e5' : '#94a3b8' }}>Prepared</span>
-              <span style={{ color: progressPct >= 70 ? '#4f46e5' : '#94a3b8' }}>Grouped</span>
-              <span style={{ color: progressPct >= 90 ? '#4f46e5' : '#94a3b8' }}>Out for Delivery</span>
-              <span style={{ color: progressPct >= 100 ? '#10b981' : '#94a3b8' }}>Delivered</span>
+            <div className="progress-steps-labels" style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '4px', textAlign: 'center', marginTop: '10px' }}>
+              {MILESTONES.map(m => (
+                <div key={m.step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: milestoneIndex >= m.step ? '700' : '500', 
+                    color: milestoneIndex >= m.step ? (m.step === 8 ? '#10b981' : '#4f46e5') : '#94a3b8',
+                    lineHeight: '1.2'
+                  }}>
+                    {m.label}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -114,6 +114,7 @@ const mapOrderToFrontend = (dbOrder) => {
         total: Number(dbOrder.total),
         orderStatus: dbOrder.order_status,
         status: dbOrder.order_status,
+        delivery_status: dbOrder.delivery_status,
         rawDeliveryStatus: dbOrder.delivery_status,
         deliveryStatus: dbOrder.delivery_status === 'PICKED_UP'
             ? 'Handed Over to Courier'

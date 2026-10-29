@@ -25,7 +25,8 @@ export const useDelivery = () => {
 export const DeliveryProvider = ({ children }) => {
   const { 
     currentUser, setCurrentUser, 
-    deliveryBatches = [], setDeliveryBatches, orders: allAppOrders = [], 
+    deliveryBatches = [], setDeliveryBatches,
+    orders: allAppOrders = [], setOrders: setAppOrders, 
     updateOrderStatus: appUpdateOrderStatus, 
     updateBatchStatus: appUpdateBatchStatus,
     respondToBatchAssignment: appRespondToBatchAssignment,
@@ -175,11 +176,22 @@ export const DeliveryProvider = ({ children }) => {
     
     // Search in deliveryBatches where agentId or agentName matches this driver and status is not COMPLETED
     const found = deliveryBatches.find(b => {
+      if (!b) return false;
       const isAssigned = (
         b.agentId === userId || 
         b.agentId === legacyId || 
         b.agent_id === userId ||
-        (username && (b.agentName === username || b.agentId === username))
+        b.agent_id === legacyId ||
+        (username && (
+          b.agentName === username || 
+          b.agentId === username || 
+          String(b.agentName || '').toLowerCase() === String(username).toLowerCase()
+        )) ||
+        (legacyId && (
+          b.agentName === legacyId || 
+          b.agentId === legacyId ||
+          String(b.agentName || '').toLowerCase() === String(legacyId).toLowerCase()
+        ))
       );
       const isNotDone = (b.status !== 'COMPLETED' && b.status !== 'Completed');
       return isAssigned && isNotDone;
@@ -189,7 +201,7 @@ export const DeliveryProvider = ({ children }) => {
 
     if (currentUser?.role === 'admin') {
       return deliveryBatches.find(
-        b => b.status !== 'COMPLETED' && b.status !== 'Completed'
+        b => b && b.status !== 'COMPLETED' && b.status !== 'Completed'
       ) || null;
     }
 
@@ -207,10 +219,11 @@ export const DeliveryProvider = ({ children }) => {
       liveAssignedBatch.batchId ||
       liveAssignedBatch.id;
 
-    const batchDbId = liveAssignedBatch.id;
+    const batchDbId = liveAssignedBatch.uuid || liveAssignedBatch.id;
     const orderIds = liveAssignedBatch.orderIds || [];
 
-    const matched = allAppOrders.filter(o => {
+    let matched = (allAppOrders || []).filter(o => {
+      if (!o) return false;
       if (batchDbId && (o.batch_id === batchDbId || o.batchId === batchDbId)) {
         return true;
       }
@@ -222,17 +235,23 @@ export const DeliveryProvider = ({ children }) => {
       return (
         orderIds.includes(o.id) ||
         orderIds.includes(o.orderId) ||
-        orderIds.includes(o.orderCode)
+        orderIds.includes(o.orderCode) ||
+        orderIds.includes(o.uuid)
       );
     });
+
+    // Fallback: If allAppOrders doesn't contain the orders yet, use liveAssignedBatch.orders directly
+    if (matched.length === 0 && Array.isArray(liveAssignedBatch.orders) && liveAssignedBatch.orders.length > 0) {
+      matched = liveAssignedBatch.orders;
+    }
 
     return matched.map(o => {
       const orderSt = (
         o.order_status || o.orderStatus || o.status || 'PLACED'
       ).toUpperCase();
 
-      const delivSt = (
-        o.delivery_status || o.deliveryStatus || ''
+      const rawDeliv = (
+        o.rawDeliveryStatus || o.delivery_status || o.deliveryStatus || ''
       ).toUpperCase();
 
       let mappedUiStatus = 'ASSIGNED';
@@ -241,22 +260,29 @@ export const DeliveryProvider = ({ children }) => {
         mappedUiStatus = 'DELIVERED';
       } else if (orderSt === 'OUT_FOR_DELIVERY') {
         mappedUiStatus = 'OUT_FOR_DELIVERY';
-      } else if (delivSt === 'PICKED_UP' || delivSt.includes('PICKED')) {
+      } else if (
+        rawDeliv === 'PICKED_UP' ||
+        rawDeliv.includes('PICKED') ||
+        rawDeliv.includes('HANDED')
+      ) {
         mappedUiStatus = 'PICKED_UP';
       }
 
       const vendorHandoverConfirmed =
-        delivSt === 'PICKED_UP' ||
-        delivSt.includes('PICKED') ||
+        rawDeliv === 'PICKED_UP' ||
+        rawDeliv.includes('PICKED') ||
+        rawDeliv.includes('HANDED') ||
         orderSt === 'OUT_FOR_DELIVERY' ||
         orderSt === 'DELIVERED';
 
       return {
-        id: o.id || o.orderCode || o.orderId,
+        id: o.id || o.orderCode || o.orderId || o.uuid,
+        uuid: o.uuid || o.id,
         orderCode: o.orderCode || o.id || o.orderId,
         status: mappedUiStatus,
         rawOrderStatus: orderSt,
-        rawDeliveryStatus: delivSt,
+        rawDeliveryStatus: rawDeliv,
+        delivery_status: o.delivery_status || (rawDeliv === 'PICKED_UP' || rawDeliv.includes('PICKED') || rawDeliv.includes('HANDED') ? 'PICKED_UP' : rawDeliv),
         vendorHandoverConfirmed,
         customerName:
           o.customerName || o.customer?.profile?.username || 'Customer',
@@ -391,7 +417,7 @@ export const DeliveryProvider = ({ children }) => {
       batchId: bCode,
       status: uiStatus,
       rawStatus: rawBatchStatus,
-      zone: liveAssignedBatch.currentArea || agentProfile?.currentArea || liveAssignedBatch.deliverySlot || 'Chennai Delivery Corridor',
+      zone: liveAssignedBatch.deliverySlot || 'Chennai Central Zone',
       orders: liveBatchOrders,
       hubs: liveHubs,
       totalOrders: liveBatchOrders.length,
@@ -415,9 +441,17 @@ export const DeliveryProvider = ({ children }) => {
       setIsLoading(true);
       setDeliveryError(null);
 
-      const res = await api.get('/delivery/batches');
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        const completedBatches = res.data.data.filter(
+      const [batchRes, ordRes] = await Promise.allSettled([
+        api.get('/delivery/batches'),
+        api.get('/orders')
+      ]);
+
+      if (batchRes.status === 'fulfilled' && batchRes.value.data?.success && Array.isArray(batchRes.value.data.data)) {
+        const fetchedBatches = batchRes.value.data.data;
+        if (setDeliveryBatches) {
+          setDeliveryBatches(fetchedBatches);
+        }
+        const completedBatches = fetchedBatches.filter(
           b => b.rawStatus === 'COMPLETED' || b.status === 'Completed'
         );
         const historical = completedBatches.flatMap(b => b.orders || []);
@@ -426,10 +460,16 @@ export const DeliveryProvider = ({ children }) => {
         }
       }
 
+      if (ordRes.status === 'fulfilled' && ordRes.value.data?.success && Array.isArray(ordRes.value.data.data)) {
+        if (setAppOrders) {
+          setAppOrders(ordRes.value.data.data);
+        }
+      }
+
       const agentId = currentUser?.id;
       if (agentId) {
         try {
-          const agentRes = await api.get(`/delivery/agents/${agentId}`);
+          const agentRes = await api.get('/delivery/agents/' + agentId);
           if (agentRes.data?.success && agentRes.data.data) {
             const remoteAgent = agentRes.data.data;
             setAgentProfile(prev => ({
@@ -455,10 +495,14 @@ export const DeliveryProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, setDeliveryBatches, setAppOrders]);
 
   useEffect(() => {
     refreshDeliveryData();
+    const interval = setInterval(() => {
+      refreshDeliveryData();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [refreshDeliveryData]);
 
   // Update Agent Availability with backend synchronization
