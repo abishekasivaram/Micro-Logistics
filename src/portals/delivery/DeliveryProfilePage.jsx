@@ -39,17 +39,17 @@ const DeliveryProfilePage = () => {
 
   // Editable Form State
   const initialForm = {
-    name: agentProfile?.name || 'David Anand',
+    name: agentProfile?.fullName || agentProfile?.name || 'Fleet Captain',
     phone: agentProfile?.phone || '+91 98401 23456',
-    email: agentProfile?.email || 'david.anand@micrologi.com',
-    emergencyContact: '+91 94440 99887 (Brother)',
-    currentArea: agentProfile?.currentArea || 'T. Nagar & Central Chennai',
-    bloodGroup: 'O+ Positive',
-    residentialAddress: 'No. 42, 3rd Cross Street, Kodambakkam, Chennai - 600024',
+    email: agentProfile?.email || 'agent@micrologi.com',
+    emergencyContact: agentProfile?.emergencyContact || '+91 94440 99887 (Family)',
+    currentArea: agentProfile?.currentArea || 'Chennai Delivery Area',
+    bloodGroup: agentProfile?.bloodGroup || 'O+ Positive',
+    residentialAddress: agentProfile?.residentialAddress || 'Chennai, Tamil Nadu',
     vehicleType: agentProfile?.vehicle?.type || 'Electric Cargo Scooter',
     vehicleModel: agentProfile?.vehicle?.model || 'Ather 450X Logistics Pro',
-    vehiclePlate: agentProfile?.vehicle?.plateNumber || 'TN-01-AB-1234',
-    depotHub: 'Central Chennai Hub (Depot 04)',
+    vehiclePlate: agentProfile?.vehicle?.plateNumber || 'TN-07-CB-2041',
+    depotHub: agentProfile?.depotHub || 'South Chennai Hub (Depot 01)',
     defaultMapApp: agentProfile?.preferences?.defaultMapApp || 'Google Maps',
     language: agentProfile?.preferences?.language || 'English (IN)',
     voiceGuidance: true,
@@ -61,18 +61,42 @@ const DeliveryProfilePage = () => {
   const [form, setForm] = useState(initialForm);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Sync with context if agentProfile changes externally
+  // Sync with context if agentProfile changes externally or new driver logs in
   useEffect(() => {
-    if (agentProfile?.name && agentProfile.name !== form.name) {
-      setForm(prev => ({
-        ...prev,
-        name: agentProfile.name,
-        phone: agentProfile.phone || prev.phone,
-        email: agentProfile.email || prev.email,
-        currentArea: agentProfile.currentArea || prev.currentArea
-      }));
+    if (agentProfile) {
+      setForm({
+        name: agentProfile.fullName || agentProfile.name || '',
+        phone: agentProfile.phone || '',
+        email: agentProfile.email || '',
+        emergencyContact: agentProfile.emergencyContact || '+91 94440 99887 (Family)',
+        currentArea: agentProfile.currentArea || 'Chennai Area',
+        bloodGroup: agentProfile.bloodGroup || 'O+ Positive',
+        residentialAddress: agentProfile.residentialAddress || '',
+        vehicleType: agentProfile.vehicle?.type || 'Electric Cargo Scooter',
+        vehicleModel: agentProfile.vehicle?.model || 'Cargo EV',
+        vehiclePlate: agentProfile.vehicle?.plateNumber || '',
+        depotHub: agentProfile.depotHub || 'Logistics Depot',
+        defaultMapApp: agentProfile.preferences?.defaultMapApp || 'Google Maps',
+        language: agentProfile.preferences?.language || 'English (IN)',
+        voiceGuidance: true,
+        autoAcceptBatch: false,
+        batterySaverMode: false,
+        offlineCaching: true
+      });
+      setIsDirty(false);
     }
-  }, [agentProfile?.name, agentProfile?.phone]);
+  }, [
+    agentProfile?.id,
+    agentProfile?.username,
+    agentProfile?.agentCode,
+    agentProfile?.residentialAddress,
+    agentProfile?.currentArea,
+    agentProfile?.depotHub,
+    agentProfile?.emergencyContact,
+    agentProfile?.bloodGroup,
+    agentProfile?.phone,
+    agentProfile?.name
+  ]);
 
   const handleFieldChange = (key, val) => {
     setForm(prev => {
@@ -99,6 +123,10 @@ const DeliveryProfilePage = () => {
         phone: form.phone,
         email: form.email,
         currentArea: form.currentArea,
+        residentialAddress: form.residentialAddress,
+        depotHub: form.depotHub,
+        emergencyContact: form.emergencyContact,
+        bloodGroup: form.bloodGroup,
         vehicle: {
           ...agentProfile?.vehicle,
           type: form.vehicleType,
@@ -165,7 +193,7 @@ const DeliveryProfilePage = () => {
               </span>
             </div>
             <div className="dl-telemetry-value">4h 35m Active</div>
-            <div className="dl-telemetry-sub">Shift started at 08:30 AM · Central Depot</div>
+            <div className="dl-telemetry-sub">Shift started at 08:30 AM · {agentProfile?.depotHub || 'Logistics Hub'}</div>
           </div>
         </div>
 
@@ -183,7 +211,7 @@ const DeliveryProfilePage = () => {
             <div className="dl-telemetry-progress-bar">
               <div className="dl-telemetry-progress-fill" style={{ width: '87.5%' }} />
             </div>
-            <div className="dl-telemetry-sub">2 pending drops remaining in T. Nagar</div>
+            <div className="dl-telemetry-sub">2 pending drops remaining in {agentProfile?.currentArea || form.currentArea || 'assigned zone'}</div>
           </div>
         </div>
 
@@ -211,7 +239,7 @@ const DeliveryProfilePage = () => {
           </div>
           <div className="dl-telemetry-meta">
             <div className="dl-telemetry-top">
-              <span className="dl-telemetry-label">Ather 450X Pro</span>
+              <span className="dl-telemetry-label">{form.vehicleModel || agentProfile?.vehicle?.model || 'Cargo EV'}</span>
               <span className="dl-battery-badge">82% EV</span>
             </div>
             <div className="dl-telemetry-value">46 km Est. Range</div>
@@ -229,7 +257,7 @@ const DeliveryProfilePage = () => {
           <div className="dl-cover-top-controls">
             <div className="dl-fleet-cluster-tag">
               <Radio size={14} className="dl-radio-blinking" />
-              <span>CONNECTED: CHENNAI CENTRAL DISPATCH CLUSTER 04</span>
+              <span>{agentProfile?.clusterTag || 'CONNECTED: CHENNAI DISPATCH CLUSTER'}</span>
             </div>
 
             {/* Quick Shift Availability Switcher */}
@@ -270,7 +298,7 @@ const DeliveryProfilePage = () => {
                 />
               ) : (
                 <div className="dl-avatar-initials">
-                  {(agentProfile?.name || 'David Anand').charAt(0)}
+                  {(agentProfile?.fullName || agentProfile?.name || 'Fleet Captain').charAt(0)}
                 </div>
               )}
               <span className={`dl-avatar-status-dot ${availability.toLowerCase() === 'available' ? 'is-active' : ''}`} />
@@ -330,7 +358,7 @@ const DeliveryProfilePage = () => {
           {/* Identity Meta */}
           <div className="dl-identity-details">
             <div className="dl-identity-title-row">
-              <h2 className="dl-driver-name">{agentProfile?.name || 'David Anand'}</h2>
+              <h2 className="dl-driver-name">{agentProfile?.fullName || agentProfile?.name || 'Fleet Captain'}</h2>
               
               <button 
                 type="button" 
@@ -351,7 +379,7 @@ const DeliveryProfilePage = () => {
             </div>
 
             <p className="dl-driver-subtitle">
-              Commercial Delivery Operations • Central Logistics Hub (Depot 04)
+              Commercial Delivery Operations • {agentProfile?.depotHub || form.depotHub || 'Logistics Depot'}
             </p>
 
             {/* Quick Meta Chips */}
@@ -371,7 +399,7 @@ const DeliveryProfilePage = () => {
               </div>
               <div className="dl-chip-item">
                 <MapPin size={14} />
-                <span>{form.currentArea || 'T. Nagar Hub'}</span>
+                <span>{form.currentArea || agentProfile?.currentArea || 'Assigned Corridor'}</span>
               </div>
             </div>
           </div>
@@ -674,7 +702,7 @@ const DeliveryProfilePage = () => {
                   <div className="dl-sensor-bar">
                     <div className="dl-sensor-bar-fill bg-success" style={{ width: '82%' }} />
                   </div>
-                  <span className="dl-sensor-footnote">Fast Charger at Depot 04 (Available)</span>
+                  <span className="dl-sensor-footnote">Fast Charger at {agentProfile?.depotHub || 'Depot'} (Available)</span>
                 </div>
 
                 {/* Sensor 2: Cargo Payload */}
@@ -1328,7 +1356,7 @@ const DeliveryProfilePage = () => {
             {/* Active Device Sessions */}
             <div className="dl-card dl-content-card">
               <h3 className="dl-card-title">Active Fleet Device Sessions</h3>
-              <p className="dl-card-desc">Devices currently authenticated to David Anand's agent account</p>
+              <p className="dl-card-desc">Devices currently authenticated to {agentProfile?.name || 'this driver'}'s agent account</p>
 
               <div className="dl-sessions-list mt-3">
                 <div className="dl-session-item is-current">

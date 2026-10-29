@@ -3,54 +3,258 @@
  * Provides rich, realistic data for local multi-seller delivery dispatch.
  */
 
-export const INITIAL_DELIVERY_AGENT = {
-  id: 'da1',
-  agentCode: 'DA-4091',
-  name: 'David Anand',
-  username: 'da1',
-  email: 'david.anand@micrologi.com',
-  phone: '+91 98401 23456',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
-  currentArea: 'T. Nagar & Central Chennai',
-  availability: 'Available', // 'Available' | 'On Break' | 'Offline'
-  role: 'delivery_partner',
-  roleTitle: 'Delivery Fleet Agent',
-  rating: 4.95,
-  ratingsCount: 382,
-  joinedDate: 'March 2024',
-  vehicle: {
-    type: 'Electric Cargo Scooter',
-    model: 'Ather 450X Logistics Pro',
-    plateNumber: 'TN-01-AB-1234',
-    batteryLevel: '82%',
-    capacityWeight: '65 kg',
-    capacityParcels: '6 medium parcels'
+export const DELIVERY_AGENTS_CATALOG = {
+  da1: {
+    id: 'da1',
+    agentCode: '#FL-DA1',
+    name: 'David Anand',
+    fullName: 'David Anand',
+    username: 'da1',
+    email: 'agent1_auth@example.com',
+    phone: '+91 99887 76655',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+    currentArea: 'Adyar & Mylapore Corridor',
+    residentialAddress: 'No. 14, 2nd Main Road, Gandhi Nagar, Adyar, Chennai - 600020',
+    depotHub: 'South Chennai Hub (Depot 01 - Adyar)',
+    clusterTag: 'CONNECTED: CHENNAI SOUTH DISPATCH CLUSTER 01 (ADYAR & MYLAPORE)',
+    emergencyContact: '+91 94440 11223 (Father)',
+    bloodGroup: 'O+ Positive',
+    availability: 'Available',
+    role: 'delivery_partner',
+    roleTitle: 'Delivery Fleet Captain',
+    rating: 4.96,
+    ratingsCount: 382,
+    joinedDate: 'March 2024',
+    vehicle: {
+      type: 'TVS XL 100 Cargo',
+      model: 'TVS Heavy Duty Cargo 100',
+      plateNumber: 'TN-07-CB-2041',
+      batteryLevel: '88%',
+      capacityWeight: '75 kg',
+      capacityParcels: '5 parcels'
+    },
+    documents: {
+      licenseNumber: 'DL-TN07-2020-112233',
+      licenseExpiry: '2028-11-30',
+      licenseVerified: true,
+      insurancePolicy: 'ICICI-LOMB-882910-E',
+      insuranceExpiry: '2026-11-15',
+      insuranceVerified: true,
+      pancardNumber: 'ABCDE1234F',
+      pancardVerified: true
+    },
+    preferences: {
+      theme: 'system',
+      language: 'English (IN)',
+      soundAlerts: true,
+      pushNotifications: true,
+      defaultMapApp: 'Google Maps'
+    },
+    performance: {
+      completedOrders: 428,
+      onTimeRate: 98.4,
+      totalDistanceKm: 1420,
+      avgDeliveryMins: 22.4,
+      payoutBalance: '₹3,450'
+    }
   },
-  documents: {
-    licenseNumber: 'DL-TN01-2021-998822',
-    licenseExpiry: '2028-11-30',
-    licenseVerified: true,
-    insurancePolicy: 'ICICI-LOMB-882910-E',
-    insuranceExpiry: '2026-11-15', // Warning status soon
-    insuranceVerified: true,
-    pancardNumber: 'ABCDE1234F',
-    pancardVerified: true
+  da2: {
+    id: 'da2',
+    agentCode: '#FL-DA2',
+    name: 'Karthik V',
+    fullName: 'Karthik V',
+    username: 'da2',
+    email: 'da2@example.com',
+    phone: '+91 99887 76656',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
+    currentArea: 'Velachery & OMR IT Corridor',
+    residentialAddress: 'No. 58, 1st Cross Street, Vijaya Nagar, Velachery, Chennai - 600042',
+    depotHub: 'OMR Logistics Terminal (Depot 02 - Thoraipakkam)',
+    clusterTag: 'CONNECTED: CHENNAI SOUTH-EAST DISPATCH CLUSTER 02 (VELACHERY & OMR)',
+    emergencyContact: '+91 94441 22334 (Brother)',
+    bloodGroup: 'B+ Positive',
+    availability: 'Available',
+    role: 'delivery_partner',
+    roleTitle: 'Delivery Fleet Captain',
+    rating: 4.92,
+    ratingsCount: 294,
+    joinedDate: 'May 2024',
+    vehicle: {
+      type: 'Electric Cargo Scooter',
+      model: 'Ather 450X Logistics EV',
+      plateNumber: 'TN-09-EV-5512',
+      batteryLevel: '91%',
+      capacityWeight: '65 kg',
+      capacityParcels: '5 parcels'
+    },
+    documents: {
+      licenseNumber: 'DL-TN09-2021-445566',
+      licenseExpiry: '2029-04-15',
+      licenseVerified: true,
+      insurancePolicy: 'HDFC-ERGO-449102-V',
+      insuranceExpiry: '2027-03-20',
+      insuranceVerified: true,
+      pancardNumber: 'BCDEF2345G',
+      pancardVerified: true
+    },
+    preferences: {
+      theme: 'system',
+      language: 'English (IN)',
+      soundAlerts: true,
+      pushNotifications: true,
+      defaultMapApp: 'Google Maps'
+    },
+    performance: {
+      completedOrders: 312,
+      onTimeRate: 97.8,
+      totalDistanceKm: 1180,
+      avgDeliveryMins: 24.1,
+      payoutBalance: '₹2,890'
+    }
   },
-  preferences: {
-    theme: 'system', // 'light' | 'dark' | 'system'
-    language: 'English (IN)',
-    soundAlerts: true,
-    pushNotifications: true,
-    defaultMapApp: 'Google Maps'
+  da3: {
+    id: 'da3',
+    agentCode: '#FL-DA3',
+    name: 'Suresh Kumar',
+    fullName: 'Suresh Kumar',
+    username: 'da3',
+    email: 'da3@example.com',
+    phone: '+91 99887 76657',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=250',
+    currentArea: 'Anna Nagar & Kilpauk Corridor',
+    residentialAddress: 'No. 26, 4th Avenue, Shanthi Colony, Anna Nagar, Chennai - 600040',
+    depotHub: 'North-West Hub (Depot 03 - Anna Nagar East)',
+    clusterTag: 'CONNECTED: CHENNAI NORTH-WEST DISPATCH CLUSTER 03 (ANNA NAGAR & KILPAUK)',
+    emergencyContact: '+91 94442 33445 (Spouse)',
+    bloodGroup: 'A+ Positive',
+    availability: 'Available',
+    role: 'delivery_partner',
+    roleTitle: 'Delivery Fleet Captain',
+    rating: 4.98,
+    ratingsCount: 412,
+    joinedDate: 'January 2024',
+    vehicle: {
+      type: 'Commercial EV Cargo',
+      model: 'Euler Motors HiLoad EV',
+      plateNumber: 'TN-02-CD-8891',
+      batteryLevel: '84%',
+      capacityWeight: '120 kg',
+      capacityParcels: '5 parcels'
+    },
+    documents: {
+      licenseNumber: 'DL-TN02-2019-778899',
+      licenseExpiry: '2027-08-10',
+      licenseVerified: true,
+      insurancePolicy: 'BAJAJ-ALL-992101-C',
+      insuranceExpiry: '2027-01-12',
+      insuranceVerified: true,
+      pancardNumber: 'CDEFG3456H',
+      pancardVerified: true
+    },
+    preferences: {
+      theme: 'system',
+      language: 'English (IN)',
+      soundAlerts: true,
+      pushNotifications: true,
+      defaultMapApp: 'Google Maps'
+    },
+    performance: {
+      completedOrders: 540,
+      onTimeRate: 99.1,
+      totalDistanceKm: 1890,
+      avgDeliveryMins: 20.8,
+      payoutBalance: '₹4,120'
+    }
   },
-  performance: {
-    completedOrders: 428,
-    onTimeRate: 98.4,
-    totalDistanceKm: 1420,
-    avgDeliveryMins: 22.4,
-    payoutBalance: '₹3,450'
+  da4: {
+    id: 'da4',
+    agentCode: '#FL-DA4',
+    name: 'Manoj Rajan',
+    fullName: 'Manoj Rajan',
+    username: 'da4',
+    email: 'da4@example.com',
+    phone: '+91 99887 76658',
+    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=250',
+    currentArea: 'T. Nagar & Kodambakkam Corridor',
+    residentialAddress: 'No. 42, 3rd Cross Street, Trustpuram, Kodambakkam, Chennai - 600024',
+    depotHub: 'Central Logistics Hub (Depot 04 - Panagal Park)',
+    clusterTag: 'CONNECTED: CHENNAI CENTRAL DISPATCH CLUSTER 04 (T. NAGAR & KODAMBAKKAM)',
+    emergencyContact: '+91 94443 44556 (Brother)',
+    bloodGroup: 'AB+ Positive',
+    availability: 'Available',
+    role: 'delivery_partner',
+    roleTitle: 'Delivery Fleet Captain',
+    rating: 4.89,
+    ratingsCount: 310,
+    joinedDate: 'July 2024',
+    vehicle: {
+      type: 'Electric Cargo Scooter',
+      model: 'Hero Electric Nyx Pro',
+      plateNumber: 'TN-01-AB-1234',
+      batteryLevel: '79%',
+      capacityWeight: '70 kg',
+      capacityParcels: '5 parcels'
+    },
+    documents: {
+      licenseNumber: 'DL-TN01-2022-334411',
+      licenseExpiry: '2030-05-22',
+      licenseVerified: true,
+      insurancePolicy: 'TATA-AIG-112299-E',
+      insuranceExpiry: '2026-12-30',
+      insuranceVerified: true,
+      pancardNumber: 'DEFGH4567I',
+      pancardVerified: true
+    },
+    preferences: {
+      theme: 'system',
+      language: 'English (IN)',
+      soundAlerts: true,
+      pushNotifications: true,
+      defaultMapApp: 'Google Maps'
+    },
+    performance: {
+      completedOrders: 280,
+      onTimeRate: 96.9,
+      totalDistanceKm: 980,
+      avgDeliveryMins: 25.2,
+      payoutBalance: '₹2,450'
+    }
   }
 };
+
+export const getDeliveryAgentProfile = (identifier) => {
+  if (!identifier) return DELIVERY_AGENTS_CATALOG.da1;
+  const key = String(identifier).toLowerCase().trim();
+  if (DELIVERY_AGENTS_CATALOG[key]) return DELIVERY_AGENTS_CATALOG[key];
+
+  for (const agent of Object.values(DELIVERY_AGENTS_CATALOG)) {
+    if (
+      agent.id === key || 
+      agent.username === key || 
+      agent.agentCode.toLowerCase().replace('#', '') === key.replace('#', '') ||
+      (agent.fullName && agent.fullName.toLowerCase() === key)
+    ) {
+      return agent;
+    }
+  }
+
+  // Dynamic Chennai area matching
+  if (/adyar|mylapore/i.test(key)) return DELIVERY_AGENTS_CATALOG.da1;
+  if (/velachery|omr|thoraipakkam/i.test(key)) return DELIVERY_AGENTS_CATALOG.da2;
+  if (/anna nagar|kilpauk|shenoy/i.test(key)) return DELIVERY_AGENTS_CATALOG.da3;
+  if (/t\.?\s*nagar|kodambakkam/i.test(key)) return DELIVERY_AGENTS_CATALOG.da4;
+
+  return {
+    ...DELIVERY_AGENTS_CATALOG.da1,
+    id: identifier,
+    agentCode: `#FL-${identifier.toUpperCase()}`,
+    name: `Fleet Captain (${identifier.toUpperCase()})`,
+    username: identifier
+  };
+};
+
+export const INITIAL_DELIVERY_AGENT = DELIVERY_AGENTS_CATALOG.da1;
+
 
 export const INITIAL_DASHBOARD_STATS = {
   completedToday: {

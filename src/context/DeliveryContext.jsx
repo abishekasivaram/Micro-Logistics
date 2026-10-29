@@ -8,7 +8,8 @@ import {
   INITIAL_TODAY_TIMELINE,
   INITIAL_SHIFT_SUMMARY,
   INITIAL_HISTORICAL_ORDERS,
-  INITIAL_NOTIFICATIONS
+  INITIAL_NOTIFICATIONS,
+  getDeliveryAgentProfile
 } from '../lib/deliveryData';
 
 const DeliveryContext = createContext();
@@ -76,52 +77,75 @@ export const DeliveryProvider = ({ children }) => {
   // 2. Agent Profile & Availability
   const [agentProfile, setAgentProfile] = useState(() => {
     const agentUname = currentUser?.username || currentUser?.legacy_id || 'da1';
-    const agentDisplay = currentUser?.name || `${agentUname.toUpperCase()} (Fleet Captain)`;
+    const catalogProfile = getDeliveryAgentProfile(agentUname);
+    const agentDisplay = currentUser?.name || catalogProfile?.name || `${agentUname.toUpperCase()} (Fleet Captain)`;
     try {
-      const saved = localStorage.getItem('micrologi_agent_profile');
+      const storageKey = `micrologi_agent_profile_${agentUname}`;
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (!currentUser || parsed.agentId === agentUname || parsed.username === agentUname) {
-          return parsed;
+          return { ...catalogProfile, ...parsed };
         }
       }
     } catch (e) {
       console.error(e);
     }
     return {
-      ...INITIAL_DELIVERY_AGENT,
+      ...catalogProfile,
       id: agentUname,
       agentId: agentUname,
-      agentCode: `#FL-${agentUname.toUpperCase()}`,
+      agentCode: catalogProfile?.agentCode || `#FL-${agentUname.toUpperCase()}`,
       username: agentUname,
       name: agentDisplay,
-      phone: currentUser?.phone || INITIAL_DELIVERY_AGENT.phone,
-      availability: currentUser?.availability || 'Available'
+      phone: currentUser?.phone || catalogProfile?.phone,
+      availability: currentUser?.availability || catalogProfile?.availability || 'Available'
     };
   });
 
   useEffect(() => {
     if (currentUser) {
       const agentUname = currentUser.username || currentUser.legacy_id || currentUser.id?.slice(0, 4) || 'da1';
-      const agentDisplay = currentUser.name || `${agentUname.toUpperCase()} (Fleet Captain)`;
+      const catalogProfile = getDeliveryAgentProfile(agentUname);
+      const agentDisplay = currentUser.name || catalogProfile?.name || `${agentUname.toUpperCase()} (Fleet Captain)`;
+      const storageKey = `micrologi_agent_profile_${agentUname}`;
+      let saved = null;
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) saved = JSON.parse(raw);
+      } catch (e) {
+        console.error(e);
+      }
       setAgentProfile(prev => ({
+        ...catalogProfile,
+        ...(saved || {}),
         ...prev,
         id: agentUname,
         agentId: agentUname,
-        agentCode: `#FL-${agentUname.toUpperCase()}`,
+        agentCode: catalogProfile?.agentCode || `#FL-${agentUname.toUpperCase()}`,
         username: agentUname,
         name: agentDisplay,
-        phone: currentUser.phone || prev.phone,
-        availability: currentUser.availability || prev.availability || 'Available'
+        phone: currentUser.phone || saved?.phone || catalogProfile?.phone || prev.phone,
+        availability: currentUser.availability || saved?.availability || prev.availability || 'Available',
+        currentArea: saved?.currentArea || catalogProfile?.currentArea || prev.currentArea,
+        residentialAddress: saved?.residentialAddress || catalogProfile?.residentialAddress || prev.residentialAddress,
+        depotHub: saved?.depotHub || catalogProfile?.depotHub || prev.depotHub,
+        clusterTag: saved?.clusterTag || catalogProfile?.clusterTag || prev.clusterTag,
+        emergencyContact: saved?.emergencyContact || catalogProfile?.emergencyContact || prev.emergencyContact,
+        bloodGroup: saved?.bloodGroup || catalogProfile?.bloodGroup || prev.bloodGroup,
+        vehicle: saved?.vehicle || catalogProfile?.vehicle || prev.vehicle
       }));
     }
   }, [currentUser]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('micrologi_agent_profile', JSON.stringify(agentProfile));
-    } catch (e) {
-      console.error(e);
+    if (agentProfile?.username || agentProfile?.id) {
+      const agentUname = agentProfile.username || agentProfile.id;
+      try {
+        localStorage.setItem(`micrologi_agent_profile_${agentUname}`, JSON.stringify(agentProfile));
+      } catch (e) {
+        console.error(e);
+      }
     }
   }, [agentProfile]);
 
@@ -407,12 +431,20 @@ export const DeliveryProvider = ({ children }) => {
         try {
           const agentRes = await api.get(`/delivery/agents/${agentId}`);
           if (agentRes.data?.success && agentRes.data.data) {
+            const remoteAgent = agentRes.data.data;
             setAgentProfile(prev => ({
               ...prev,
-              ...agentRes.data.data,
-              name: agentRes.data.data.name || prev.name,
-              phone: agentRes.data.data.phone || prev.phone,
-              availability: agentRes.data.data.availability || prev.availability
+              ...remoteAgent,
+              name: remoteAgent.name || prev.name,
+              phone: remoteAgent.phone || prev.phone,
+              availability: remoteAgent.availability || prev.availability,
+              currentArea: remoteAgent.currentArea || prev.currentArea,
+              assignedArea: remoteAgent.assignedArea || prev.assignedArea,
+              residentialAddress: remoteAgent.residentialAddress || prev.residentialAddress,
+              depotHub: remoteAgent.depotHub || prev.depotHub,
+              clusterTag: remoteAgent.clusterTag || prev.clusterTag,
+              emergencyContact: remoteAgent.emergencyContact || prev.emergencyContact,
+              bloodGroup: remoteAgent.bloodGroup || prev.bloodGroup
             }));
           }
         } catch {}

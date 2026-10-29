@@ -217,7 +217,7 @@ const DeliveryTopbar = ({ onOpenMobileMenu }) => {
               </div>
 
               <div className="user-meta-column">
-                <span className="user-name-text">{agentProfile?.name || 'David Anand (Da1)'}</span>
+                <span className="user-name-text">{agentProfile?.name || (agentProfile?.username ? agentProfile.username.toUpperCase() + ' (Fleet Captain)' : 'Fleet Captain')}</span>
                 <span className="user-fleet-role">Delivery Fleet • {availability}</span>
               </div>
 
@@ -227,7 +227,7 @@ const DeliveryTopbar = ({ onOpenMobileMenu }) => {
             {showUserDropdown && (
               <div className="topbar-dropdown-menu user-dropdown-menu">
                 <div className="user-menu-header">
-                  <div className="menu-agent-name">{agentProfile?.name || 'David Anand'}</div>
+                  <div className="menu-agent-name">{agentProfile?.name || (agentProfile?.username ? agentProfile.username.toUpperCase() + ' (Fleet Captain)' : 'Fleet Captain')}</div>
                   <div className="menu-agent-code">{agentProfile?.agentCode || 'DA-4091'} • {agentProfile?.email}</div>
                 </div>
 
@@ -297,7 +297,7 @@ const DeliveryTopbar = ({ onOpenMobileMenu }) => {
         onConfirm={handleLogout}
         title="Log Out of Delivery Fleet?"
         message="Are you sure you want to end your active shift? Make sure all pending cash and parcel updates are recorded."
-        subjectName={agentProfile?.name || 'David Anand (Da1)'}
+        subjectName={agentProfile?.name || agentProfile?.username || 'Fleet Captain'}
         subjectInfo={`Active Agent: ${agentProfile?.agentCode || 'DA-4091'} • Role: DELIVERY FLEET`}
         confirmText="Confirm Logout"
         cancelText="Stay on Shift"

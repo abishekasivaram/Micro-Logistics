@@ -591,13 +591,16 @@ const updateAgent = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions to update delivery agent' });
         }
         
-        const payload = {
-            current_area: updates.currentArea,
-            vehicle: updates.vehicle,
-            capacity: updates.capacity,
-            status: updates.status,
-            availability: updates.availability
-        };
+        const payload = {};
+        if (updates.currentArea !== undefined) payload.current_area = updates.currentArea;
+        if (updates.vehicle !== undefined) {
+            payload.vehicle = typeof updates.vehicle === 'object' && updates.vehicle !== null
+                ? (updates.vehicle.model ? `${updates.vehicle.model} (${updates.vehicle.plateNumber || ''})`.trim() : JSON.stringify(updates.vehicle))
+                : updates.vehicle;
+        }
+        if (updates.capacity !== undefined) payload.capacity = updates.capacity;
+        if (updates.status !== undefined) payload.status = updates.status;
+        if (updates.availability !== undefined) payload.availability = updates.availability;
         
         const { data, error } = await supabase_1.supabase.from('delivery_agents')
             .update(payload)
