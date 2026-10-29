@@ -27,7 +27,7 @@ const DeliveryDashboard = () => {
   if (hour >= 12 && hour < 17) timeGreeting = 'Good afternoon';
   else if (hour >= 17) timeGreeting = 'Good evening';
 
-  const agentDisplayName = agentProfile?.name || 'David Anand';
+  const agentDisplayName = agentProfile?.name || 'Fleet Captain';
   const todayDateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'short',
@@ -42,10 +42,17 @@ const DeliveryDashboard = () => {
   const completedCount = (orders || []).filter(o => o.status === 'DELIVERED').length;
   const progressPercent = totalStops > 0 ? Math.round((completedCount / totalStops) * 100) : 0;
 
-  // Next stop calculation
-  const nextStopOrder = (orders || []).find(o => o.status === 'OUT_FOR_DELIVERY') || 
-                        (orders || []).find(o => o.status === 'PICKED_UP' || o.status === 'PENDING') || 
-                        (orders || [])[0];
+  // Hubs computations
+  const totalHubs = (activeBatch?.hubs || []).length || 1;
+  const collectedHubs = (activeBatch?.hubs || []).filter(h => h.status === 'COLLECTED').length;
+  const isAllHubsCollected = totalHubs > 0 && collectedHubs >= totalHubs;
+  const nextHub = (activeBatch?.hubs || []).find(h => h.status !== 'COLLECTED') || (activeBatch?.hubs || [])[0];
+
+  // Dynamic next stop calculation (never hardcoded)
+  const pendingOrders = (orders || []).filter(o => o.status !== 'DELIVERED');
+  const nextStopOrder = pendingOrders[0] || (orders || [])[0];
+  const currentDropIndex = (orders || []).findIndex(o => o.id === nextStopOrder?.id);
+  const dropNumber = currentDropIndex >= 0 ? currentDropIndex + 1 : 1;
 
   return (
     <div className="dl-dashboard-page">
@@ -87,10 +94,10 @@ const DeliveryDashboard = () => {
               </h1>
 
               <div className="pilot-id-row">
-                <span className="pilot-badge-id">ID: {agentProfile?.agentId || 'Da1'}</span>
+                <span className="pilot-badge-id">ID: {agentProfile?.agentId || 'DA'}</span>
                 <span className="pilot-role-tag">
                   <ShieldCheck size={13} className="text-emerald" />
-                  <span>Fleet Captain • #FL-8820</span>
+                  <span>Fleet Courier • {agentProfile?.agentCode || '#FL-FLEET'}</span>
                 </span>
                 <span className="pilot-rating-tag">
                   <Award size={13} className="text-amber" />
@@ -195,16 +202,17 @@ const DeliveryDashboard = () => {
             <div className="section-title-row">
               <div className="title-with-pill">
                 <h2 className="section-heading dl-heading">Current Active Batch</h2>
-                {hasBatch && (
+                {hasBatch && activeBatch && (
                   <span className="batch-live-indicator-pill">
-                    <span className="dl-live-dot" /> IN FLIGHT
+                    <span className="dl-live-dot" /> 
+                    {activeBatch.status === 'ASSIGNED' ? 'NEW ASSIGNMENT' : activeBatch.status === 'PICKUP_IN_PROGRESS' ? 'PICKUP ROUTINE' : 'IN FLIGHT'}
                   </span>
                 )}
               </div>
-              {hasBatch && (
+              {hasBatch && activeBatch && (
                 <div className="batch-eta-timer-pill">
                   <Clock size={13} className="text-primary" />
-                  <span>ETA 12:15 PM • <strong>38 mins remaining</strong></span>
+                  <span>ETA {activeBatch.deliverySlot || '12:15 PM'} • <strong>{activeBatch.status === 'ASSIGNED' ? 'Awaiting Acceptance' : activeBatch.status === 'PICKUP_IN_PROGRESS' ? 'Pickup Routine' : 'In Flight'}</strong></span>
                 </div>
               )}
             </div>
@@ -226,260 +234,380 @@ const DeliveryDashboard = () => {
                   <DeliveryStatusBadge status={activeBatch.status} size="md" />
                 </div>
 
-                {/* Assignment Acceptance Gate (Step 4 of Delivery Workflow) */}
-                {activeBatch.status === 'ASSIGNED' && (
+                {/* State 1: Clean Assignment Acceptance Invitation (Step 4 of Delivery Workflow) */}
+                {(activeBatch.status === 'ASSIGNED' || activeBatch.status === 'PENDING_ASSIGNMENT') ? (
                   <div style={{
                     margin: '16px 0',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(234, 88, 12, 0.08) 100%)',
-                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    padding: '20px',
+                    borderRadius: '14px',
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.09) 0%, rgba(234, 88, 12, 0.05) 100%)',
+                    border: '1.5px solid rgba(245, 158, 11, 0.35)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px'
+                    gap: '16px'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <AlertCircle size={20} color="#d97706" />
-                      <div>
-                        <strong style={{ fontSize: '15px', color: '#b45309' }}>New Batch Assignment Received</strong>
-                        <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#78350f' }}>
-                          Batch #{activeBatch.batchId} contains {totalStops} order(s). Please accept this assignment before starting merchant pickups.
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '10px',
+                        background: '#FEF3C7',
+                        color: '#D97706',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Truck size={22} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: '#B45309', background: '#FDE68A', padding: '2px 8px', borderRadius: '999px' }}>
+                            DISPATCH INVITATION
+                          </span>
+                          <span style={{ fontSize: '12px', color: '#92400E' }}>Slot: {activeBatch.deliverySlot}</span>
+                        </div>
+                        <h3 style={{ margin: '6px 0 2px', fontSize: '17px', fontWeight: '700', color: '#78350F' }}>
+                          Batch #{activeBatch.batchId} Ready for Acceptance
+                        </h3>
+                        <p style={{ margin: 0, fontSize: '13.5px', color: '#92400E', lineHeight: '1.4' }}>
+                          Contains {totalStops} aggregated order(s) across {totalHubs} merchant hub(s). Please accept this assignment before visiting vendors for collection.
                         </p>
                       </div>
                     </div>
+
+                    {/* Quick Trip Metrics */}
+                    <div className="mission-metrics-matrix">
+                      <div className="m-metric-card">
+                        <span className="m-metric-label">Total Cargo</span>
+                        <span className="m-metric-val dl-tabular">{totalStops} Parcels</span>
+                      </div>
+                      <div className="m-metric-card">
+                        <span className="m-metric-label">Route Corridor</span>
+                        <span className="m-metric-val dl-tabular">{activeBatch?.totalDistanceKm || 3.8} km total</span>
+                      </div>
+                      <div className="m-metric-card">
+                        <span className="m-metric-label">Est. Mission Time</span>
+                        <span className="m-metric-val dl-tabular">{activeBatch?.estimatedTimeMins || 36} mins</span>
+                      </div>
+                      <div className="m-metric-card">
+                        <span className="m-metric-label">Merchant Hubs</span>
+                        <span className="m-metric-val dl-tabular">{totalHubs} Hub(s)</span>
+                      </div>
+                    </div>
+
+                    {/* Single Focused Action Row */}
                     <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
                       <button
                         type="button"
-                        onClick={() => acceptBatch(activeBatch.batchId)}
+                        onClick={async () => {
+                          const res = await acceptBatch(activeBatch.batchId);
+                          if (res?.success !== false) {
+                            navigate('/delivery/pickup');
+                          }
+                        }}
                         style={{
-                          flex: 1,
-                          padding: '10px 16px',
+                          flex: 2,
+                          padding: '13px 18px',
                           background: '#16a34a',
                           color: '#fff',
                           border: 'none',
-                          borderRadius: '8px',
+                          borderRadius: '9px',
                           fontWeight: '700',
-                          fontSize: '14px',
+                          fontSize: '14.5px',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '8px'
+                          gap: '8px',
+                          boxShadow: '0 4px 10px rgba(22, 163, 74, 0.25)'
                         }}
                       >
-                        <Check size={16} strokeWidth={2.5} /> Accept Assignment
+                        <Check size={18} strokeWidth={2.5} /> Accept Assignment & Start Pickups
                       </button>
                       <button
                         type="button"
                         onClick={() => rejectBatch(activeBatch.batchId)}
                         style={{
                           flex: 1,
-                          padding: '10px 16px',
+                          padding: '13px 16px',
                           background: '#fff',
                           color: '#dc2626',
                           border: '1px solid #fca5a5',
-                          borderRadius: '8px',
+                          borderRadius: '9px',
                           fontWeight: '600',
-                          fontSize: '14px',
+                          fontSize: '13.5px',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '8px'
+                          gap: '6px'
                         }}
                       >
                         <X size={16} /> Decline / Reassign
                       </button>
                     </div>
                   </div>
-                )}
-
-                {/* 3-Stage Visual Pipeline Progress */}
-                <div className="mission-pipeline-tracker">
-                  <div className="pipeline-stages-row">
-                    <div className="pipeline-stage is-completed">
-                      <div className="stage-icon-circle">
-                        <Check size={12} strokeWidth={2.5} />
-                      </div>
-                      <div className="stage-text">
-                        <span className="stage-name">Hub Pickups</span>
-                        <span className="stage-detail">3 of 3 Hubs Secured</span>
-                      </div>
-                    </div>
-
-                    <div className="pipeline-connector is-active" />
-
-                    <div className="pipeline-stage is-active">
-                      <div className="stage-icon-circle pulse-stage">
-                        <Navigation size={12} />
-                      </div>
-                      <div className="stage-text">
-                        <span className="stage-name">In Transit</span>
-                        <span className="stage-detail">14.2 km Corridor</span>
-                      </div>
-                    </div>
-
-                    <div className="pipeline-connector" />
-
-                    <div className="pipeline-stage is-pending">
-                      <div className="stage-icon-circle">
-                        <span className="stage-number dl-tabular">{completedCount}/{totalStops}</span>
-                      </div>
-                      <div className="stage-text">
-                        <span className="stage-name">Doorstep Drops</span>
-                        <span className="stage-detail">{completedCount} of {totalStops} Delivered ({progressPercent}%)</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mission-progress-bar-track">
-                    <div 
-                      className="mission-progress-bar-fill" 
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Tactical Waypoint Target Card (Next Stop) */}
-                {nextStopOrder && (
-                  <div className="tactical-waypoint-card">
-                    <div className="waypoint-header-strip">
-                      <div className="waypoint-radar-tag">
-                        <span className="dl-live-dot" />
-                        <span>NEXT STOP TARGET • DROP #3 OF {totalStops}</span>
-                      </div>
-                      <div className="waypoint-eta-badge">
-                        <Clock size={13} />
-                        <span>ETA: {nextStopOrder.eta || '11:15 AM'} (6 min away)</span>
-                      </div>
-                    </div>
-
-                    <div className="waypoint-content-grid">
-                      <div className="waypoint-customer-details">
-                        <div className="customer-avatar-box">
-                          <span>{String(nextStopOrder.customerName || 'Customer').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                ) : (
+                  <>
+                    {/* State 2 & 3: Dynamic Visual Pipeline Progress */}
+                    <div className="mission-pipeline-tracker">
+                      <div className="pipeline-stages-row">
+                        <div className={`pipeline-stage ${isAllHubsCollected ? 'is-completed' : 'is-active'}`}>
+                          <div className="stage-icon-circle">
+                            {isAllHubsCollected ? <Check size={12} strokeWidth={2.5} /> : <Boxes size={12} />}
+                          </div>
+                          <div className="stage-text">
+                            <span className="stage-name">Hub Pickups</span>
+                            <span className="stage-detail">{collectedHubs} of {totalHubs} Hubs Secured</span>
+                          </div>
                         </div>
-                        <div className="customer-text-meta">
-                          <h3 className="customer-name-heading">{nextStopOrder.customerName || 'Customer'}</h3>
-                          <p className="customer-destination-addr">
-                            <MapPin size={14} className="text-primary inline-icon" />
-                            <span>{nextStopOrder.address || 'Chennai'}</span>
-                          </p>
-                          {nextStopOrder.notes && (
-                            <span className="customer-note-pill">
-                              <AlertCircle size={12} /> {nextStopOrder.notes}
-                            </span>
-                          )}
+
+                        <div className={`pipeline-connector ${isAllHubsCollected ? 'is-active' : ''}`} />
+
+                        <div className={`pipeline-stage ${isAllHubsCollected && completedCount < totalStops ? 'is-active' : completedCount >= totalStops ? 'is-completed' : 'is-pending'}`}>
+                          <div className="stage-icon-circle pulse-stage">
+                            <Navigation size={12} />
+                          </div>
+                          <div className="stage-text">
+                            <span className="stage-name">In Transit</span>
+                            <span className="stage-detail">{activeBatch?.totalDistanceKm || 3.8} km Corridor</span>
+                          </div>
+                        </div>
+
+                        <div className={`pipeline-connector ${completedCount > 0 ? 'is-active' : ''}`} />
+
+                        <div className={`pipeline-stage ${completedCount >= totalStops ? 'is-completed' : completedCount > 0 ? 'is-active' : 'is-pending'}`}>
+                          <div className="stage-icon-circle">
+                            <span className="stage-number dl-tabular">{completedCount}/{totalStops}</span>
+                          </div>
+                          <div className="stage-text">
+                            <span className="stage-name">Doorstep Drops</span>
+                            <span className="stage-detail">{completedCount} of {totalStops} Delivered ({progressPercent}%)</span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="waypoint-payment-box">
-                        {nextStopOrder.codAmount > 0 ? (
-                          <div className="waypoint-cod-pill">
-                            <span className="cod-label">Cash on Delivery</span>
-                            <span className="cod-amount dl-tabular">₹{nextStopOrder.codAmount}</span>
-                          </div>
-                        ) : (
-                          <div className="waypoint-prepaid-pill">
-                            <CheckCircle2 size={13} className="text-emerald" />
-                            <span>Prepaid (UPI)</span>
-                          </div>
-                        )}
-                        <span className="items-count-tag">{nextStopOrder.items?.length || 2} package items</span>
+                      <div className="mission-progress-bar-track">
+                        <div 
+                          className="mission-progress-bar-fill" 
+                          style={{ width: `${progressPercent}%` }}
+                        />
                       </div>
                     </div>
 
-                    {/* Quick Tactical Actions inside Waypoint */}
-                    <div className="waypoint-quick-action-bar">
-                      <a href={`tel:${nextStopOrder.customerPhone || '+919840233441'}`} className="wp-action-btn btn-call" title="Call customer">
-                        <Phone size={14} />
-                        <span>Call</span>
-                      </a>
-                      <a 
-                        href={`https://wa.me/${String(nextStopOrder.customerPhone || '919840233441').replace(/[^0-9]/g, '')}`} 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="wp-action-btn btn-wa"
-                        title="Chat on WhatsApp"
-                      >
-                        <MessageSquare size={14} />
-                        <span>WhatsApp</span>
-                      </a>
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nextStopOrder.address || 'Chennai')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="wp-action-btn btn-nav"
-                        title="Start Google Maps navigation"
-                      >
-                        <Navigation size={14} />
-                        <span>Start Maps</span>
-                        <ArrowUpRight size={13} />
-                      </a>
+                    {/* Tactical Waypoint Target Card */}
+                    {activeBatch.status === 'PICKUP_IN_PROGRESS' && nextHub ? (
+                      /* Hub Pickup Target */
+                      <div className="tactical-waypoint-card">
+                        <div className="waypoint-header-strip">
+                          <div className="waypoint-radar-tag">
+                            <span className="dl-live-dot" />
+                            <span>NEXT STOP TARGET • MERCHANT HUB PICKUP</span>
+                          </div>
+                          <div className="waypoint-eta-badge">
+                            <Boxes size={13} />
+                            <span>{nextHub.parcels || 1} package(s) to collect</span>
+                          </div>
+                        </div>
+
+                        <div className="waypoint-content-grid">
+                          <div className="waypoint-customer-details">
+                            <div className="customer-avatar-box" style={{ background: '#EEF2FF', color: '#4F46E5' }}>
+                              <Store size={20} />
+                            </div>
+                            <div className="customer-text-meta">
+                              <h3 className="customer-name-heading">{nextHub.name}</h3>
+                              <p className="customer-destination-addr">
+                                <MapPin size={14} className="text-primary inline-icon" />
+                                <span>{nextHub.address}</span>
+                              </p>
+                              <span className="customer-note-pill">
+                                <AlertCircle size={12} /> Collect manifest packages from seller counter
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="waypoint-payment-box">
+                            <div className="waypoint-prepaid-pill">
+                              <CheckCircle2 size={13} className="text-emerald" />
+                              <span>Hub Pickup Routine</span>
+                            </div>
+                            <span className="items-count-tag">{nextHub.parcels || 1} parcel(s) assigned</span>
+                          </div>
+                        </div>
+
+                        <div className="waypoint-quick-action-bar">
+                          <a href={`tel:${nextHub.phone || '+919840122334'}`} className="wp-action-btn btn-call" title="Call Merchant">
+                            <Phone size={14} />
+                            <span>Call Seller</span>
+                          </a>
+                          <a 
+                            href={`https://wa.me/${String(nextHub.phone || '919840122334').replace(/[^0-9]/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="wp-action-btn btn-wa"
+                            title="Chat on WhatsApp"
+                          >
+                            <MessageSquare size={14} />
+                            <span>WhatsApp</span>
+                          </a>
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nextHub.address || 'Chennai')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="wp-action-btn btn-nav"
+                            title="Navigate to merchant"
+                          >
+                            <Navigation size={14} />
+                            <span>Start Maps</span>
+                            <ArrowUpRight size={13} />
+                          </a>
+                          <button 
+                            type="button" 
+                            className="wp-action-btn btn-details"
+                            onClick={() => navigate('/delivery/pickup')}
+                          >
+                            <Boxes size={14} />
+                            <span>Open Pickup Routine</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : nextStopOrder ? (
+                      /* Doorstep Drop Target */
+                      <div className="tactical-waypoint-card">
+                        <div className="waypoint-header-strip">
+                          <div className="waypoint-radar-tag">
+                            <span className="dl-live-dot" />
+                            <span>NEXT STOP TARGET • DROP #${dropNumber} OF ${totalStops}</span>
+                          </div>
+                          <div className="waypoint-eta-badge">
+                            <Clock size={13} />
+                            <span>ETA: {nextStopOrder.eta || '11:15 AM'} (6 min away)</span>
+                          </div>
+                        </div>
+
+                        <div className="waypoint-content-grid">
+                          <div className="waypoint-customer-details">
+                            <div className="customer-avatar-box">
+                              <span>{String(nextStopOrder.customerName || 'Customer').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                            </div>
+                            <div className="customer-text-meta">
+                              <h3 className="customer-name-heading">{nextStopOrder.customerName || 'Customer'}</h3>
+                              <p className="customer-destination-addr">
+                                <MapPin size={14} className="text-primary inline-icon" />
+                                <span>{nextStopOrder.address || 'Chennai'}</span>
+                              </p>
+                              {nextStopOrder.notes && (
+                                <span className="customer-note-pill">
+                                  <AlertCircle size={12} /> {nextStopOrder.notes}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="waypoint-payment-box">
+                            {nextStopOrder.codAmount > 0 ? (
+                              <div className="waypoint-cod-pill">
+                                <span className="cod-label">Cash on Delivery</span>
+                                <span className="cod-amount dl-tabular">₹{nextStopOrder.codAmount}</span>
+                              </div>
+                            ) : (
+                              <div className="waypoint-prepaid-pill">
+                                <CheckCircle2 size={13} className="text-emerald" />
+                                <span>Prepaid (UPI)</span>
+                              </div>
+                            )}
+                            <span className="items-count-tag">{nextStopOrder.items?.length || 1} package items</span>
+                          </div>
+                        </div>
+
+                        {/* Quick Tactical Actions inside Waypoint */}
+                        <div className="waypoint-quick-action-bar">
+                          <a href={`tel:${nextStopOrder.customerPhone || '+919840233441'}`} className="wp-action-btn btn-call" title="Call customer">
+                            <Phone size={14} />
+                            <span>Call</span>
+                          </a>
+                          <a 
+                            href={`https://wa.me/${String(nextStopOrder.customerPhone || '919840233441').replace(/[^0-9]/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="wp-action-btn btn-wa"
+                            title="Chat on WhatsApp"
+                          >
+                            <MessageSquare size={14} />
+                            <span>WhatsApp</span>
+                          </a>
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nextStopOrder.address || 'Chennai')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="wp-action-btn btn-nav"
+                            title="Start Google Maps navigation"
+                          >
+                            <Navigation size={14} />
+                            <span>Start Maps</span>
+                            <ArrowUpRight size={13} />
+                          </a>
+                          <button 
+                            type="button" 
+                            className="wp-action-btn btn-details"
+                            onClick={() => setSelectedOrderForDrawer(nextStopOrder)}
+                          >
+                            <Eye size={14} />
+                            <span>Full Details</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Batch Metrics Matrix */}
+                    <div className="mission-metrics-matrix">
+                      <div className="m-metric-card">
+                        <span className="m-metric-label">Total Cargo</span>
+                        <span className="m-metric-val dl-tabular">{totalStops} Parcels</span>
+                      </div>
+                      <div className="m-metric-card">
+                        <span className="m-metric-label">Route Corridor</span>
+                        <span className="m-metric-val dl-tabular">{activeBatch?.totalDistanceKm || 3.8} km total</span>
+                      </div>
+                      <div className="m-metric-card">
+                        <span className="m-metric-label">Est. Mission Time</span>
+                        <span className="m-metric-val dl-tabular">{activeBatch?.estimatedTimeMins || 36} mins</span>
+                      </div>
+                      <div className="m-metric-card">
+                        <span className="m-metric-label">Remaining Drops</span>
+                        <span className="m-metric-val dl-tabular">{Math.max(0, totalStops - completedCount)} pending</span>
+                      </div>
+                    </div>
+
+                    {/* Primary Mission Action Footer */}
+                    <div className="mission-footer-action-row">
                       <button 
                         type="button" 
-                        className="wp-action-btn btn-details"
-                        onClick={() => setSelectedOrderForDrawer(nextStopOrder)}
+                        className="mission-cta-primary continue-mission-btn"
+                        onClick={() => navigate(isAllHubsCollected ? '/delivery/status' : '/delivery/pickup')}
                       >
-                        <Eye size={14} />
-                        <span>Full Details</span>
+                        <PackageCheck size={18} />
+                        <span>
+                          {isAllHubsCollected 
+                            ? `Complete Doorstep Drops (${totalStops - completedCount} pending)`
+                            : `Open Merchant Pickups (${totalHubs - collectedHubs} hubs pending)`
+                          }
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="mission-cta-secondary"
+                        onClick={() => navigate('/delivery/status')}
+                      >
+                        <ShieldCheck size={16} />
+                        <span>Delivery Status & OTP</span>
                       </button>
                     </div>
-                  </div>
+                  </>
                 )}
-
-                {/* Batch Metrics Matrix */}
-                <div className="mission-metrics-matrix">
-                  <div className="m-metric-card">
-                    <span className="m-metric-label">Total Cargo</span>
-                    <span className="m-metric-val dl-tabular">{totalStops} Parcels</span>
-                  </div>
-                  <div className="m-metric-card">
-                    <span className="m-metric-label">Route Corridor</span>
-                    <span className="m-metric-val dl-tabular">{activeBatch?.totalDistanceKm || 0} km total</span>
-                  </div>
-                  <div className="m-metric-card">
-                    <span className="m-metric-label">Est. Mission Time</span>
-                    <span className="m-metric-val dl-tabular">{activeBatch?.estimatedTimeMins || 0} mins</span>
-                  </div>
-                  <div className="m-metric-card">
-                    <span className="m-metric-label">Remaining Drops</span>
-                    <span className="m-metric-val dl-tabular">{Math.max(0, totalStops - completedCount)} pending</span>
-                  </div>
-                </div>
-
-                {/* Primary Mission Action Footer */}
-                <div className="mission-footer-action-row">
-                  {activeBatch.status === 'ASSIGNED' ? (
-                    <button 
-                      type="button" 
-                      className="mission-cta-primary continue-mission-btn"
-                      onClick={() => acceptBatch(activeBatch.batchId)}
-                      style={{ background: '#16a34a' }}
-                    >
-                      <Check size={18} strokeWidth={2.5} />
-                      <span>Accept Assignment & Start Pickups</span>
-                    </button>
-                  ) : (
-                    <button 
-                      type="button" 
-                      className="mission-cta-primary continue-mission-btn"
-                      onClick={() => navigate('/delivery/pickup')}
-                    >
-                      <PackageCheck size={18} />
-                      <span>Open Merchant Pickups ({(orders || []).filter(o => !['OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)).length} pending)</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    className="mission-cta-secondary"
-                    onClick={() => navigate('/delivery/status')}
-                  >
-                    <ShieldCheck size={16} />
-                    <span>Delivery Status & OTP</span>
-                  </button>
-                </div>
               </div>
             ) : (
               /* Rich Empty State when no batch is assigned */

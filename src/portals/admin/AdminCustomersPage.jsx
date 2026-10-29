@@ -40,9 +40,55 @@ const AdminCustomersPage = () => {
     };
   }, [selectedCustomer]);
 
-  const areas = Array.from(new Set(customers.map(c => c.area))).filter(Boolean);
+  const CUSTOMER_NAMES = {
+    c1: 'Priya Rajan',
+    c2: 'Ramesh Kumar',
+    c3: 'Ananya Sharma',
+    c4: 'Karthik V'
+  };
 
-  const filteredCustomers = customers.filter(c => {
+  const cleanCustomers = (customers || [])
+    .filter(c => {
+      if (!c) return false;
+      const name = String(c.name || '').toLowerCase();
+      const uname = String(c.username || '').toLowerCase();
+      const email = String(c.email || '').toLowerCase();
+      return !name.includes('boomi') && !uname.includes('boomi') && !email.includes('boomi');
+    })
+    .map(c => {
+      const legId = c.legacy_id || c.legacyId || c.username;
+      const fullName = (legId && CUSTOMER_NAMES[legId]) || c.name || 'Customer';
+      return {
+        ...c,
+        legacy_id: legId,
+        name: fullName
+      };
+    });
+
+  const getCustomerOrders = (customer) => {
+    if (!customer) return [];
+    const cUuid = customer.uuid || customer.id;
+    const cLegacy = customer.legacy_id || customer.legacyId || customer.username;
+    const cName = (customer.name || '').toLowerCase().trim();
+    const cUser = (customer.username || '').toLowerCase().trim();
+
+    return (orders || []).filter(o => {
+      if (!o) return false;
+      if (o.customerId && (o.customerId === cUuid || o.customerId === customer.id || o.customerId === cLegacy)) return true;
+      if (o.customerLegacyId && (o.customerLegacyId === cLegacy || o.customerLegacyId === cUser)) return true;
+      if (o.customerName) {
+        const oName = String(o.customerName).toLowerCase().trim();
+        if (cName && oName === cName) return true;
+        if (cUser && oName === cUser) return true;
+        if (cLegacy && oName === cLegacy.toLowerCase()) return true;
+      }
+      return false;
+    });
+  };
+
+  const areas = Array.from(new Set(cleanCustomers.map(c => c.area))).filter(Boolean);
+
+  const filteredCustomers = cleanCustomers.filter(c => {
     const matchesSearch = (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (c.phone || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -140,12 +186,12 @@ const AdminCustomersPage = () => {
               </tr>
             ) : (
               filteredCustomers.map(c => {
-                const custOrders = orders.filter(o => o.customerId === c.id || o.customerName === c.name);
+                const custOrders = getCustomerOrders(c);
                 const custStatus = c.status || 'Active';
                 return (
                   <tr key={c.id}>
                     <td>
-                      <span className="order-id-chip">{c.id}</span>
+                      <span className="order-id-chip">{c.legacy_id || c.username || c.id?.slice(0, 8)}</span>
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -233,7 +279,7 @@ const AdminCustomersPage = () => {
 
       {/* Premium Customer Inspect Modal */}
       {selectedCustomer && (() => {
-        const custOrders = orders.filter(o => o.customerId === selectedCustomer.id || o.customerName === selectedCustomer.name);
+        const custOrders = getCustomerOrders(selectedCustomer);
         const custTotalSpend = custOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
         const custActiveOrders = custOrders.filter(o => !['DELIVERED', 'CANCELLED'].includes(o.status || o.orderStatus)).length;
 
@@ -275,7 +321,7 @@ const AdminCustomersPage = () => {
                   <div className="customer-title-block">
                     <h2 id="customer-inspect-title">{selectedCustomer.name}</h2>
                     <div className="customer-subtitle-meta">
-                      <span className="order-id-chip">{selectedCustomer.id}</span>
+                      <span className="order-id-chip">{selectedCustomer.legacy_id || selectedCustomer.username || selectedCustomer.id}</span>
                       <span>•</span>
                       <span>@{selectedCustomer.username || 'customer'}</span>
                       <span>•</span>
@@ -397,13 +443,32 @@ const AdminCustomersPage = () => {
                           </thead>
                           <tbody>
                             {custOrders.map(o => (
-                              <tr key={o.id}>
-                                <td><span className="order-id-chip">{o.orderId || o.id}</span></td>
+                              <tr key={o.id || o.orderId || o.orderCode}>
+                                <td>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                    <span className="order-id-chip">{o.orderCode || o.orderId || o.id}</span>
+                                    {o.batchId && (
+                                      <span style={{ fontSize: '11px', color: '#4F46E5', fontWeight: 600 }}>
+                                        Batch #{o.batchId}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
                                 <td><strong>{o.vendorName || o.sellerName || 'Local Seller'}</strong></td>
-                                <td>{o.items?.length || 1} items</td>
-                                <td><span className="monetary-amount">₹{Number(o.total || 0).toFixed(2)}</span></td>
+                                <td>
+                                  <div style={{ fontSize: '12.5px', color: '#334155', maxWidth: '240px' }}>
+                                    {o.items && o.items.length > 0 
+                                      ? o.items.map(it => `${it.name || 'Item'} (x${it.qty || it.quantity || 1})`).join(', ')
+                                      : 'Assorted Package'}
+                                  </div>
+                                </td>
+                                <td><span className="monetary-amount" style={{ fontWeight: 700, color: '#0F172A' }}>₹{Number(o.total || 0).toFixed(2)}</span></td>
                                 <td><StatusBadge status={o.status || o.orderStatus} /></td>
-                                <td>{o.deliveryTimeSlot || o.deliveryDate || 'Today'}</td>
+                                <td>
+                                  <span style={{ fontSize: '12px', color: '#64748B' }}>
+                                    {o.deliveryTimeSlot || o.deliveryDate || 'Scheduled Today'}
+                                  </span>
+                                </td>
                               </tr>
                             ))}
                           </tbody>

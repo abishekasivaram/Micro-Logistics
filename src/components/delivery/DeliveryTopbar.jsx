@@ -281,7 +281,7 @@ const DeliveryTopbar = ({ onOpenMobileMenu }) => {
                     }}
                   >
                     <LogOut size={16} />
-                    <span>Sign Out</span>
+                    <span>Logout</span>
                   </button>
                 </div>
               </div>
@@ -295,11 +295,11 @@ const DeliveryTopbar = ({ onOpenMobileMenu }) => {
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
-        title="Sign Out of Delivery Fleet?"
+        title="Log Out of Delivery Fleet?"
         message="Are you sure you want to end your active shift? Make sure all pending cash and parcel updates are recorded."
         subjectName={agentProfile?.name || 'David Anand (Da1)'}
         subjectInfo={`Active Agent: ${agentProfile?.agentCode || 'DA-4091'} • Role: DELIVERY FLEET`}
-        confirmText="Confirm Sign Out"
+        confirmText="Confirm Logout"
         cancelText="Stay on Shift"
         variant="danger"
         badgeText="CONTROL TOWER SECURITY"

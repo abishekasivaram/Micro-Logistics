@@ -6,6 +6,8 @@ const STATUS_CONFIGS = {
   COMPLETED: { label: 'Completed', variant: 'success', pulse: false },
   OUT_FOR_DELIVERY: { label: 'Out for Delivery', variant: 'primary', pulse: true },
   IN_PROGRESS: { label: 'In Progress', variant: 'primary', pulse: true },
+  PICKUP_IN_PROGRESS: { label: 'Pickup in Progress', variant: 'primary', pulse: true },
+  'PICKUP IN PROGRESS': { label: 'Pickup in Progress', variant: 'primary', pulse: true },
   PICKED_UP: { label: 'Picked Up', variant: 'info', pulse: false },
   COLLECTED: { label: 'Collected', variant: 'info', pulse: false },
   PENDING: { label: 'Pending Drop', variant: 'warning', pulse: false },

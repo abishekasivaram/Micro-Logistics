@@ -83,13 +83,26 @@ const getBatchHumanReadableStatus = (batchStatus) => {
     }
 };
 exports.getBatchHumanReadableStatus = getBatchHumanReadableStatus;
+const CUSTOMER_NAMES = {
+    c1: 'Priya Rajan',
+    c2: 'Ramesh Kumar',
+    c3: 'Ananya Sharma',
+    c4: 'Karthik V'
+};
+
 const mapOrderToFrontend = (dbOrder) => {
+    const custLegacyId = dbOrder.customer?.legacy_id || dbOrder.customer?.profile?.username;
+    const custFullName = (custLegacyId && CUSTOMER_NAMES[custLegacyId]) || dbOrder.customer?.profile?.username || 'Customer';
     return {
         uuid: dbOrder.id,
-        id: dbOrder.order_code,
-        orderId: dbOrder.order_code,
+        id: dbOrder.order_code || dbOrder.id,
+        orderId: dbOrder.order_code || dbOrder.id,
+        orderCode: dbOrder.order_code || dbOrder.id,
         customerId: dbOrder.customer_id,
-        customerName: dbOrder.customer?.profile?.username || 'Customer',
+        customerLegacyId: custLegacyId,
+        customerName: custFullName,
+        customerPhone: dbOrder.customer?.profile?.phone,
+        customerAddress: dbOrder.delivery_location,
         vendorId: dbOrder.vendor_id,
         vendorName: dbOrder.vendor?.shop_name || 'Vendor',
         items: (dbOrder.order_items || []).map((item) => ({
@@ -164,6 +177,7 @@ const mapBatchToFrontend = (dbBatch) => {
         orderCount: dbBatch.order_count,
         estimatedDistance: dbBatch.estimated_distance,
         estimatedTime: dbBatch.estimated_time,
+        rawStatus: dbBatch.status,
         status: (0, exports.getBatchHumanReadableStatus)(dbBatch.status),
         rawStatus: dbBatch.status,
         aggregationStatus: (0, exports.getHumanReadableAggregationStatus)(dbBatch.aggregation_status),
@@ -174,17 +188,21 @@ exports.mapBatchToFrontend = mapBatchToFrontend;
 
 
 const mapCustomerToFrontend = (dbCustomer) => {
+    const legacyId = dbCustomer.legacy_id || dbCustomer.profile?.username || 'c1';
+    const fullName = CUSTOMER_NAMES[legacyId] || dbCustomer.profile?.username || 'Customer';
     return {
         uuid: dbCustomer.id,
         id: dbCustomer.id,
-        name: dbCustomer.profile?.username, // or full_name if available, using username
-        username: dbCustomer.profile?.username,
+        legacy_id: legacyId,
+        legacyId: legacyId,
+        name: fullName,
+        username: dbCustomer.profile?.username || legacyId,
         email: dbCustomer.profile?.email,
-        phone: dbCustomer.profile?.phone,
+        phone: dbCustomer.profile?.phone ? (dbCustomer.profile.phone.startsWith('+91') ? dbCustomer.profile.phone : `+91 ${dbCustomer.profile.phone}`) : '+91 98765 43210',
         role: dbCustomer.profile?.role || 'customer',
         address: dbCustomer.address,
         area: dbCustomer.area,
-        status: dbCustomer.status,
+        status: dbCustomer.status || 'Active',
         totalOrders: dbCustomer.total_orders,
         activeOrders: dbCustomer.active_orders,
         lat: dbCustomer.lat,

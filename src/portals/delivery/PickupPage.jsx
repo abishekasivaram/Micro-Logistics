@@ -5,7 +5,7 @@ import {
   AlertCircle, Check, ArrowRight, ShieldCheck, Camera, X,
   Navigation, MessageSquare, ThermometerSnowflake,
   Boxes, Clock, ArrowUpRight, CheckCheck, Sparkles, Building2,
-  Copy
+  Copy, Truck
 } from 'lucide-react';
 import { useDelivery } from '../../context/DeliveryContext';
 import PageHeader from '../../components/delivery/PageHeader';
@@ -16,8 +16,7 @@ import './PickupPage.css';
 
 const PickupPage = () => {
   const navigate = useNavigate();
-
-  const { activeBatch, hasBatch, addToast, updateBatchStatus } = useDelivery();
+  const { activeBatch, hasBatch, addToast, updateOrderStatus, updateBatchStatus, acceptBatch, rejectBatch } = useDelivery();
 
   const deriveHubs = (batch) => {
     if (!batch) return [];
@@ -115,6 +114,39 @@ const PickupPage = () => {
     );
   }
 
+  if (activeBatch.status === 'ASSIGNED' || activeBatch.status === 'PENDING_ASSIGNMENT') {
+    return (
+      <div className="pk-page-root">
+        <PageHeader
+          title="Pickup Routine"
+          subtitle={`Batch #${activeBatch.batchId} • Assignment Acceptance Required`}
+          badgeText="STAGE 1: ACCEPTANCE"
+          badgeVariant="warning"
+        />
+        <EmptyState
+          icon={Truck}
+          title={`Batch #${activeBatch.batchId} Assigned – Please Accept`}
+          description="You must accept this dispatch assignment before you can start visiting vendor hubs to collect packages."
+          primaryAction={{
+            label: "Accept Assignment & Start Routine",
+            icon: Check,
+            onClick: async () => {
+              await acceptBatch(activeBatch.batchId);
+            }
+          }}
+          secondaryAction={{
+            label: "Decline / Reassign",
+            icon: X,
+            onClick: async () => {
+              await rejectBatch(activeBatch.batchId);
+              navigate('/delivery');
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
   const collectedCount = hubs.filter(h => h.status === 'COLLECTED').length;
   const totalHubs = hubs.length;
   const totalParcels = hubs.reduce((acc, h) => acc + (h.parcels || 0), 0);
@@ -183,7 +215,7 @@ const PickupPage = () => {
               <span className="pk-batch-pill">Batch {activeBatch.batchId}</span>
               <span className={`pk-status-chip ${allCollected ? 'is-complete' : 'is-progress'}`}>
                 <span className="pk-pulse-dot" />
-                {allCollected ? 'All 3 Hubs Collected' : `${collectedCount}/${totalHubs} Hubs Collected`}
+                {allCollected ? `All ${totalHubs} Hubs Collected` : `${collectedCount}/${totalHubs} Hubs Collected`}
               </span>
             </div>
             <p className="pk-subtitle">

@@ -375,7 +375,7 @@ const Header = ({ onMenuClick }) => {
                   }}
                 >
                   <LogOut size={16} strokeWidth={1.75} />
-                  <span>Sign Out</span>
+                  <span>Logout</span>
                 </button>
               </div>
             </div>
@@ -388,11 +388,11 @@ const Header = ({ onMenuClick }) => {
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
-        title="Sign Out of Control Tower?"
+        title="Log Out of Control Tower?"
         message="Are you sure you want to end your active session? You will be returned to the secure login gateway."
         subjectName={userGreetingName}
         subjectInfo={`Active Account: ${currentUser?.email || 'admin@micrologi.com'} | Role: ${roleLabel}`}
-        confirmText="Confirm Sign Out"
+        confirmText="Confirm Logout"
         cancelText="Stay Logged In"
         variant="danger"
         badgeText="SECURITY PROTOCOL"

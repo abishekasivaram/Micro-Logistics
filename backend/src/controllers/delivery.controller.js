@@ -344,14 +344,32 @@ const respondToBatchAssignment = async (req, res) => {
 
         const userRole = req.user?.user_metadata?.role || req.user?.role;
         const userId = req.user?.id;
-        if (userRole === 'delivery_partner' && batch.agent_id !== userId) {
-            return res.status(403).json({ success: false, message: 'Forbidden: You are not assigned to this batch' });
+        if (userRole === 'delivery_partner') {
+            const isDirectMatch = batch.agent_id === userId;
+            if (!isDirectMatch && batch.agent_id) {
+                const { data: agentRec } = await supabase_1.supabase
+                    .from('delivery_agents')
+                    .select('id, legacy_id')
+                    .or(`id.eq.${userId},legacy_id.eq.${userId}`)
+                    .maybeSingle();
+
+                const isLegacyMatch = agentRec && (batch.agent_id === agentRec.id || batch.agent_id === agentRec.legacy_id);
+                if (!isLegacyMatch) {
+                    return res.status(403).json({ success: false, message: 'Forbidden: You are not assigned to this batch' });
+                }
+            }
         }
 
         if (action === 'ACCEPT' || action === 'accept') {
             await supabase_1.supabase.from('delivery_batches').update({
-                status: 'PICKUP_IN_PROGRESS'
+                status: 'PICKUP_IN_PROGRESS',
+                agent_id: userId
             }).eq('id', batch.id);
+
+            await supabase_1.supabase.from('orders').update({
+                assigned_agent_id: userId,
+                order_status: 'ASSIGNED'
+            }).eq('batch_id', batch.id);
 
             const { data: fullBatch } = await supabase_1.supabase.from('delivery_batches').select(`
                 *,

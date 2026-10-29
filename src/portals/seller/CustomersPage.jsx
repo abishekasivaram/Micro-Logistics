@@ -103,13 +103,53 @@ const CustomersPage = () => {
     };
   }, [selectedCustomer]);
 
+  const CUSTOMER_NAMES = {
+    c1: 'Priya Rajan',
+    c2: 'Ramesh Kumar',
+    c3: 'Ananya Sharma',
+    c4: 'Karthik V'
+  };
+
   // Enrich customer profiles with real order history and metrics
   const enrichedCustomers = useMemo(() => {
-    return customers.map((customer, idx) => {
-      const customerOrders = orders.filter(o => 
-        (o.customerId === customer.id || o.customerName === customer.name) &&
-        (currentUser?.role === 'admin' || o.vendorId === sellerId || !o.vendorId)
-      );
+    const cleanList = (customers || [])
+      .filter(c => {
+        if (!c) return false;
+        const name = String(c.name || '').toLowerCase();
+        const uname = String(c.username || '').toLowerCase();
+        const email = String(c.email || '').toLowerCase();
+        return !name.includes('boomi') && !uname.includes('boomi') && !email.includes('boomi');
+      })
+      .map(c => {
+        const legId = c.legacy_id || c.legacyId || c.username;
+        const fullName = (legId && CUSTOMER_NAMES[legId]) || c.name || 'Customer';
+        return {
+          ...c,
+          legacy_id: legId,
+          name: fullName
+        };
+      });
+
+    return cleanList.map((customer, idx) => {
+      const cUuid = customer.uuid || customer.id;
+      const cLegacy = customer.legacy_id || customer.legacyId || customer.username;
+      const cName = (customer.name || '').toLowerCase().trim();
+      const cUser = (customer.username || '').toLowerCase().trim();
+
+      const customerOrders = orders.filter(o => {
+        if (!o) return false;
+        const matchesCustomer = (
+          (o.customerId && (o.customerId === cUuid || o.customerId === customer.id || o.customerId === cLegacy)) ||
+          (o.customerLegacyId && (o.customerLegacyId === cLegacy || o.customerLegacyId === cUser)) ||
+          (o.customerName && (
+            (cName && o.customerName.toLowerCase().trim() === cName) ||
+            (cUser && o.customerName.toLowerCase().trim() === cUser) ||
+            (cLegacy && o.customerName.toLowerCase().trim() === cLegacy.toLowerCase())
+          ))
+        );
+        const matchesSeller = (currentUser?.role === 'admin' || o.vendorId === sellerId || !sellerId);
+        return matchesCustomer && matchesSeller;
+      });
 
       const totalSpent = customerOrders.reduce((sum, o) => sum + (o.total || 0), 0);
       const fallbackAddress = sampleAddresses[idx % sampleAddresses.length];

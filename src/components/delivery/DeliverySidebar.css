@@ -116,6 +116,7 @@
 .dl-nav-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 12px;
   padding: 0.625rem 0.75rem;
   border-radius: var(--dl-radius-sm);
@@ -186,6 +187,7 @@
 .nav-item-label {
   white-space: nowrap;
   flex: 1;
+  text-align: left;
 }
 
 .nav-badge-counter {
@@ -212,11 +214,49 @@
 
 .nav-logout-btn {
   font-family: inherit;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  gap: 10px !important;
+  color: #DC2626 !important;
+  width: 100% !important;
+  padding: 0.625rem 0.75rem !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+}
+
+.nav-logout-btn .nav-item-icon {
+  color: #DC2626 !important;
+  flex-shrink: 0 !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.nav-logout-btn .nav-item-label {
+  flex: 0 1 auto !important;
+  text-align: left !important;
+  color: #DC2626 !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .nav-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.12);
-  color: #F87171;
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #B91C1C !important;
+}
+
+.nav-logout-btn:hover .nav-item-icon,
+.nav-logout-btn:hover .nav-item-label {
+  color: #B91C1C !important;
 }
 
 /* Collapse Toggle Button in Footer */

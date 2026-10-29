@@ -4,7 +4,7 @@ const express_1 = require("express");
 const customer_controller_1 = require("../controllers/customer.controller");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.get('/', auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(['admin']), customer_controller_1.getCustomers);
+router.get('/', auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(['admin', 'vendor']), customer_controller_1.getCustomers);
 router.get('/:id', auth_middleware_1.requireAuth, customer_controller_1.getCustomerById);
 router.put('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(['admin', 'customer']), customer_controller_1.updateCustomer);
 exports.default = router;

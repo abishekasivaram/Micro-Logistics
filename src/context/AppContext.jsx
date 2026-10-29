@@ -13,6 +13,36 @@ const AppContext = createContext();
 
 export const useAppContext = () => useContext(AppContext);
 
+const CUSTOMER_FULL_NAMES = {
+  c1: 'Priya Rajan',
+  c2: 'Ramesh Kumar',
+  c3: 'Ananya Sharma',
+  c4: 'Karthik V'
+};
+
+const cleanCustomerList = (list) => {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter(c => {
+      if (!c) return false;
+      const name = String(c.name || '').toLowerCase();
+      const uname = String(c.username || '').toLowerCase();
+      const email = String(c.email || '').toLowerCase();
+      if (name.includes('boomi') || uname.includes('boomi') || email.includes('boomi')) return false;
+      return true;
+    })
+    .map(c => {
+      const legId = c.legacy_id || c.legacyId || c.username;
+      const fullName = (legId && CUSTOMER_FULL_NAMES[legId]) || c.name || 'Customer';
+      return {
+        ...c,
+        legacy_id: legId,
+        legacyId: legId,
+        name: fullName
+      };
+    });
+};
+
 // Helper for local storage persistence
 const getStorageItem = (key, defaultValue) => {
   try {
@@ -30,7 +60,17 @@ export const AppProvider = ({ children }) => {
     const saved = getStorageItem('vendors', []);
     return (saved || []).filter(v => v.id !== 'f2eca577-884b-4907-8d7d-0827d5f49ebb');
   });
-  const [customers, setCustomers] = useState(() => getStorageItem('customers', []));
+  const [customers, setCustomersRaw] = useState(() => {
+    const saved = getStorageItem('customers', []);
+    const initial = saved && saved.length > 0 ? saved : demoCustomers;
+    return cleanCustomerList(initial);
+  });
+  const setCustomers = (val) => {
+    setCustomersRaw(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      return cleanCustomerList(next);
+    });
+  };
   const [deliveryAgents, setDeliveryAgents] = useState(() => getStorageItem('deliveryAgents', []));
   const [deliveryBatches, setDeliveryBatches] = useState(() => getStorageItem('deliveryBatches', []));
   const [products, setProducts] = useState(() => {
@@ -49,6 +89,14 @@ export const AppProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true);
   const [currentUser, setCurrentUserRaw] = useState(() => {
     const saved = getStorageItem('currentUser', null);
+    if (saved) {
+      const name = String(saved.name || '').toLowerCase();
+      const uname = String(saved.username || '').toLowerCase();
+      if (name.includes('boomi') || uname.includes('boomi')) {
+        try { localStorage.removeItem('micrologi_currentUser'); } catch {}
+        return null;
+      }
+    }
     return saved ? rectifyCustomerUser(saved) : null;
   });
 
@@ -224,7 +272,8 @@ export const AppProvider = ({ children }) => {
           );
         } else if (role === 'vendor') {
           promises.push(
-            api.get('/orders').then(res => { if (res.data?.success) setOrders(res.data.data) })
+            api.get('/orders').then(res => { if (res.data?.success) setOrders(res.data.data) }),
+            api.get('/customers').then(res => { if (res.data?.success) setCustomers(res.data.data) }).catch(() => {})
           );
         } else if (role === 'customer') {
           promises.push(
@@ -831,20 +880,31 @@ export const AppProvider = ({ children }) => {
   };
 
   const respondToBatchAssignment = async (batchId, action) => {
+    const isAccept = (action || '').toUpperCase().startsWith('ACC');
+
+    // Optimistically update deliveryBatches in local state for instantaneous feedback
+    setDeliveryBatches(prev => (prev || []).map(b => {
+      const isMatch = b.id === batchId || b.batchId === batchId || b.batch_code === batchId;
+      if (!isMatch) return b;
+      if (isAccept) {
+        return { ...b, status: 'Pickup in Progress', rawStatus: 'PICKUP_IN_PROGRESS' };
+      } else {
+        return { ...b, agentId: null, agentName: null, status: 'Pending Assignment', rawStatus: 'PENDING_ASSIGNMENT' };
+      }
+    }));
+
     if (currentUser?.isDemo || offlineMode) {
-      if (action === 'ACCEPT') {
-        setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, status: 'Pickup in Progress' } : b));
+      if (isAccept) {
         addNotification(`Batch ${batchId} accepted. You may start pickups.`, 'delivery');
         return { success: true };
       } else {
-        setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, agentId: null, agentName: null, status: 'Pending Assignment' } : b));
         addNotification(`Assignment declined. Reassigning batch...`, 'delivery');
         return { success: true };
       }
     }
 
     try {
-      const res = await api.post(`/delivery/batches/${batchId}/respond`, { action });
+      const res = await api.post(`/delivery/batches/${batchId}/respond`, { action: isAccept ? 'ACCEPT' : 'REJECT' });
       if (res.data?.success) {
         const [batchRes, ordRes] = await Promise.all([
           api.get('/delivery/batches'),

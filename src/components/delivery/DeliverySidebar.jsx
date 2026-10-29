@@ -175,12 +175,12 @@ const DeliverySidebar = ({ isCollapsed, toggleCollapse, isOpenMobile, setIsOpenM
               type="button"
               className="dl-nav-item nav-logout-btn"
               onClick={() => setShowLogoutModal(true)}
-              title={isCollapsed ? 'Sign Out' : undefined}
+              title={isCollapsed ? 'Logout' : undefined}
             >
               <div className="nav-item-icon text-danger">
                 <LogOut size={19} strokeWidth={1.75} />
               </div>
-              {!isCollapsed && <span className="nav-item-label text-danger">Sign Out</span>}
+              {!isCollapsed && <span className="nav-item-label text-danger">Logout</span>}
             </button>
           </div>
         </nav>
@@ -209,11 +209,11 @@ const DeliverySidebar = ({ isCollapsed, toggleCollapse, isOpenMobile, setIsOpenM
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleConfirmLogout}
-        title="Sign Out of Delivery Fleet?"
+        title="Log Out of Delivery Fleet?"
         message="Are you sure you want to end your active shift? Make sure all pending cash and parcel updates are recorded."
         subjectName={agentProfile?.name || 'David Anand (Da1)'}
         subjectInfo={`Active Agent: ${agentProfile?.agentCode || 'DA-4091'} • Vehicle: ${agentProfile?.vehicle?.plateNumber || 'TN-01-AB-1234'}`}
-        confirmText="Confirm Sign Out"
+        confirmText="Confirm Logout"
         cancelText="Stay on Shift"
         variant="danger"
         badgeText="CONTROL TOWER SECURITY"

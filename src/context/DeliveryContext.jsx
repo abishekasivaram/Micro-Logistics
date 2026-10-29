@@ -75,28 +75,44 @@ export const DeliveryProvider = ({ children }) => {
 
   // 2. Agent Profile & Availability
   const [agentProfile, setAgentProfile] = useState(() => {
+    const agentUname = currentUser?.username || currentUser?.legacy_id || 'da1';
+    const agentDisplay = currentUser?.name || `${agentUname.toUpperCase()} (Fleet Captain)`;
     try {
       const saved = localStorage.getItem('micrologi_agent_profile');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!currentUser || parsed.agentId === agentUname || parsed.username === agentUname) {
+          return parsed;
+        }
+      }
     } catch (e) {
       console.error(e);
     }
     return {
       ...INITIAL_DELIVERY_AGENT,
-      name: currentUser?.name || currentUser?.full_name || INITIAL_DELIVERY_AGENT.name,
+      id: agentUname,
+      agentId: agentUname,
+      agentCode: `#FL-${agentUname.toUpperCase()}`,
+      username: agentUname,
+      name: agentDisplay,
       phone: currentUser?.phone || INITIAL_DELIVERY_AGENT.phone,
       availability: currentUser?.availability || 'Available'
     };
   });
 
   useEffect(() => {
-    if (currentUser?.name) {
+    if (currentUser) {
+      const agentUname = currentUser.username || currentUser.legacy_id || currentUser.id?.slice(0, 4) || 'da1';
+      const agentDisplay = currentUser.name || `${agentUname.toUpperCase()} (Fleet Captain)`;
       setAgentProfile(prev => ({
         ...prev,
-        name: currentUser.name || prev.name,
+        id: agentUname,
+        agentId: agentUname,
+        agentCode: `#FL-${agentUname.toUpperCase()}`,
+        username: agentUname,
+        name: agentDisplay,
         phone: currentUser.phone || prev.phone,
-        agentId: currentUser.legacy_id || currentUser.id || prev.agentId,
-        availability: currentUser.availability || prev.availability
+        availability: currentUser.availability || prev.availability || 'Available'
       }));
     }
   }, [currentUser]);
@@ -118,25 +134,26 @@ export const DeliveryProvider = ({ children }) => {
 
   // 5. Live Active Batch & Orders Resolution
   const [simulationMode, setSimulationMode] = useState(false);
-  const [activeBatch, setActiveBatch] = useState(INITIAL_ACTIVE_BATCH);
-  const [orders, setOrders] = useState(INITIAL_ACTIVE_BATCH.orders || []);
-  const [hasBatch, setHasBatch] = useState(true);
+  const [overrideActiveBatch, setActiveBatch] = useState(null);
+  const [overrideOrders, setOrders] = useState(null);
+  const [hasBatchOverride, setHasBatch] = useState(null);
 
   const liveAssignedBatch = useMemo(() => {
     if (currentUser?.isDemo) return null;
 
     const userId = currentUser?.id;
     const legacyId = currentUser?.legacy_id;
-
+    const username = currentUser?.username;
+    
+    // Search in deliveryBatches where agentId or agentName matches this driver and status is not COMPLETED
     const found = deliveryBatches.find(b => {
-      const isAssigned =
-        b.agentId === userId ||
-        b.agentId === legacyId ||
-        b.agent_id === userId;
-
-      const isNotDone =
-        b.status !== 'COMPLETED' && b.status !== 'Completed';
-
+      const isAssigned = (
+        b.agentId === userId || 
+        b.agentId === legacyId || 
+        b.agent_id === userId ||
+        (username && (b.agentName === username || b.agentId === username))
+      );
+      const isNotDone = (b.status !== 'COMPLETED' && b.status !== 'Completed');
       return isAssigned && isNotDone;
     });
 
@@ -301,12 +318,67 @@ export const DeliveryProvider = ({ children }) => {
   }, [liveBatchOrders]);
 
    
-        // 8. Fetch Real Backend Delivery Data
+  const hasBatch = hasBatchOverride !== null ? hasBatchOverride : (simulationMode ? true : hasLiveBatch);
+
+  // Active batch object exposed to delivery portal
+  const activeBatch = useMemo(() => {
+    if (overrideActiveBatch) return overrideActiveBatch;
+    if (!hasLiveBatch && (currentUser?.isDemo || simulationMode)) {
+      return INITIAL_ACTIVE_BATCH;
+    }
+    if (!liveAssignedBatch) return null;
+
+    const bCode = liveAssignedBatch.batchCode || liveAssignedBatch.batchId || liveAssignedBatch.id;
+    const rawBatchStatus = String(liveAssignedBatch.rawStatus || liveAssignedBatch.status || 'ASSIGNED')
+      .toUpperCase()
+      .replace(/[\s\-]+/g, '_');
+
+    // Map DB status to UI status
+    let uiStatus = 'ASSIGNED';
+    if (rawBatchStatus === 'PICKUP_IN_PROGRESS' || rawBatchStatus === 'PICKED_UP') {
+      uiStatus = 'PICKUP_IN_PROGRESS';
+    } else if (rawBatchStatus === 'OUT_FOR_DELIVERY') {
+      uiStatus = 'OUT_FOR_DELIVERY';
+    } else if (rawBatchStatus === 'COMPLETED' || rawBatchStatus === 'DELIVERED') {
+      uiStatus = 'COMPLETED';
+    } else if (rawBatchStatus === 'PENDING_ASSIGNMENT') {
+      uiStatus = 'PENDING_ASSIGNMENT';
+    } else {
+      uiStatus = 'ASSIGNED';
+    }
+
+    // Auto-advance if all orders in batch are already in transit or delivered
+    if (liveBatchOrders.length > 0) {
+      const allDelivered = liveBatchOrders.every(o => o.status === 'DELIVERED');
+      const allOutOrDelivered = liveBatchOrders.every(o => ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status));
+      if (allDelivered) {
+        uiStatus = 'COMPLETED';
+      } else if (allOutOrDelivered && uiStatus === 'ASSIGNED') {
+        uiStatus = 'OUT_FOR_DELIVERY';
+      }
+    }
+
+    return {
+      id: liveAssignedBatch.id,
+      batchId: bCode,
+      status: uiStatus,
+      rawStatus: rawBatchStatus,
+      zone: liveAssignedBatch.deliverySlot || 'Chennai Central Zone',
+      orders: liveBatchOrders,
+      hubs: liveHubs,
+      totalOrders: liveBatchOrders.length,
+      totalDistanceKm: liveAssignedBatch.estimatedDistance || 4.2,
+      estimatedTimeMins: liveAssignedBatch.estimatedTime || 35,
+      deliverySlot: liveAssignedBatch.deliverySlot || '9:00 AM – 1:00 PM',
+      deliveryDate: liveAssignedBatch.deliveryDate || new Date().toISOString().split('T')[0]
+    };
+  }, [hasLiveBatch, simulationMode, currentUser, liveAssignedBatch, liveBatchOrders, liveHubs]);
+
+  const orders = overrideOrders || activeBatch?.orders || (simulationMode ? INITIAL_ACTIVE_BATCH.orders : []);
+
+  // 8. Fetch Real Backend Delivery Data
   const refreshDeliveryData = useCallback(async () => {
     if (currentUser?.isDemo) {
-      setActiveBatch(INITIAL_ACTIVE_BATCH);
-      setOrders(INITIAL_ACTIVE_BATCH.orders || []);
-      setHasBatch(true);
       setHistoryOrders(INITIAL_HISTORICAL_ORDERS);
       return;
     }
@@ -316,39 +388,20 @@ export const DeliveryProvider = ({ children }) => {
       setDeliveryError(null);
 
       const res = await api.get('/delivery/batches');
-
       if (res.data?.success && Array.isArray(res.data.data)) {
-        const batchList = res.data.data;
-        const active = batchList.find(
-          b => b.rawStatus !== 'COMPLETED' && b.status !== 'Completed'
-        ) || null;
-
-        if (active) {
-          setActiveBatch(active);
-          setOrders(active.orders || []);
-          setHasBatch(true);
-        } else {
-          setActiveBatch(null);
-          setOrders([]);
-          setHasBatch(false);
-        }
-
-        const completedBatches = batchList.filter(
+        const completedBatches = res.data.data.filter(
           b => b.rawStatus === 'COMPLETED' || b.status === 'Completed'
         );
         const historical = completedBatches.flatMap(b => b.orders || []);
-
         if (historical.length > 0) {
           setHistoryOrders(historical);
         }
       }
 
       const agentId = currentUser?.id;
-
       if (agentId) {
         try {
           const agentRes = await api.get(`/delivery/agents/${agentId}`);
-
           if (agentRes.data?.success && agentRes.data.data) {
             setAgentProfile(prev => ({
               ...prev,
@@ -358,9 +411,7 @@ export const DeliveryProvider = ({ children }) => {
               availability: agentRes.data.data.availability || prev.availability
             }));
           }
-        } catch {
-          // Agent details fetch warning ignored if endpoint restricted
-        }
+        } catch {}
       }
     } catch (err) {
       console.warn('Failed to fetch real delivery data:', err);
@@ -587,6 +638,7 @@ export const DeliveryProvider = ({ children }) => {
       if (res?.success) {
         addToast(`Batch ${targetId} accepted! Proceed to merchant pickups.`, 'success');
       }
+      return res;
     } else if (appUpdateBatchStatus) {
       await appUpdateBatchStatus(targetId, 'Pickup in Progress');
       addToast(`Batch ${targetId} accepted! Proceed to merchant pickups.`, 'success');
