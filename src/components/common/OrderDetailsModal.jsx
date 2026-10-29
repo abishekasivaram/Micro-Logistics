@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin, Store, Calendar, Clock, Package, CheckCircle, Truck } from 'lucide-react';
+import { X, MapPin, Store, Calendar, Clock, Package, CheckCircle, Truck, Key } from 'lucide-react';
+import api from '../../services/api';
 import StatusBadge from './StatusBadge';
 import './OrderDetailsModal.css';
 
@@ -24,6 +25,22 @@ const OrderDetailsModal = ({ order, onClose }) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const [deliveryOtp, setDeliveryOtp] = useState(null);
+
+  useEffect(() => {
+    if (!order) return;
+    const ordId = order.orderCode || order.id || order.orderId;
+    if (ordId) {
+      api.get(`/delivery/orders/${ordId}/otp`)
+        .then(res => {
+          if (res.data?.success && res.data.data?.otp) {
+            setDeliveryOtp(res.data.data.otp);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [order]);
 
   if (!order) return null;
 
@@ -87,6 +104,60 @@ const OrderDetailsModal = ({ order, onClose }) => {
           ) : (
             <div className="cancelled-banner">
               <span className="badge badge-cancelled">Order Cancelled</span>
+            </div>
+          )}
+
+          {/* Secret Delivery PIN for Handover */}
+          {deliveryOtp && (
+            <div style={{
+              margin: '16px 0',
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: '#f0fdf4',
+              border: '1.5px solid #86efac',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: '#22c55e',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  flexShrink: 0
+                }}>
+                  <Key size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Delivery Verification PIN
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#166534' }}>
+                    Provide this 4-digit code to the delivery courier to confirm receipt
+                  </div>
+                </div>
+              </div>
+              <div style={{
+                fontFamily: 'monospace',
+                fontSize: '22px',
+                fontWeight: '900',
+                letterSpacing: '0.2em',
+                color: '#15803d',
+                padding: '6px 14px',
+                background: '#fff',
+                borderRadius: '8px',
+                border: '1px solid #bbf7d0',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                whiteSpace: 'nowrap'
+              }}>
+                {deliveryOtp}
+              </div>
             </div>
           )}
 

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateOrderStatus = exports.createOrder = exports.getOrderById = exports.getOrders = void 0;
 const supabase_1 = require("../config/supabase");
 const mappings_1 = require("../utils/mappings");
+const aggregation_service_1 = require("../services/aggregation.service");
 const getOrders = async (req, res) => {
     try {
         let query = supabase_1.supabase.from('orders').select(`
@@ -247,9 +248,9 @@ const updateOrderStatus = async (req, res) => {
                 return res.status(403).json({ success: false, message: 'Forbidden: Vendors cannot transition orders to this status' });
             }
 
-            // Vendor Handover rule: Only allowed when a delivery person is assigned to the order or batch
+            // Vendor Handover rule: Only allowed when a delivery person is confirmed assigned by backend
             if (status === 'HANDED_OVER' || status === 'PICKED_UP') {
-                if (!order.assigned_agent_id && !order.batch_id) {
+                if (!order.assigned_agent_id) {
                     return res.status(400).json({ 
                         success: false, 
                         message: 'Cannot confirm handover: A delivery person has not yet been assigned by Admin' 
@@ -348,6 +349,13 @@ const updateOrderStatus = async (req, res) => {
             deliveryStatus = 'PICKED_UP';
         }
         else if (status === 'OUT_FOR_DELIVERY') {
+            // Require pickup confirmation before starting transit.
+            if (order.delivery_status !== 'PICKED_UP' && userRole !== 'admin') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot start transit: Vendor handover must be confirmed before the order can be marked out for delivery'
+                });
+            }
             dbOrderStatus = 'OUT_FOR_DELIVERY';
             deliveryStatus = 'OUT_FOR_DELIVERY';
         }
@@ -381,6 +389,14 @@ const updateOrderStatus = async (req, res) => {
     `).single();
         if (error)
             throw error;
+
+        // Automatically trigger AI aggregation & courier assignment if order transitioned to READY_FOR_DELIVERY
+        if (dbOrderStatus === 'READY_FOR_DELIVERY') {
+            (0, aggregation_service_1.runAutomaticAggregation)().catch(err => {
+                console.error('Background auto-aggregation error:', err.message);
+            });
+        }
+
         res.json({ success: true, data: (0, mappings_1.mapOrderToFrontend)(data) });
     }
     catch (err) {

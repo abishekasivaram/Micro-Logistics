@@ -4,7 +4,7 @@ import {
   PackageCheck, Truck, MapPin, TrendingUp, ArrowRight, Lock, 
   Clock, Navigation, ShieldCheck, CheckCircle2, AlertCircle, 
   RotateCw, Eye, Sparkles, Battery, BatteryCharging, Zap, Compass, ChevronRight, Boxes,
-  Phone, MessageSquare, ExternalLink, Calendar, Check, Award, ArrowUpRight
+  Phone, MessageSquare, ExternalLink, Calendar, Check, Award, ArrowUpRight, X
 } from 'lucide-react';
 import { useDelivery } from '../../context/DeliveryContext';
 import StatCard from '../../components/delivery/StatCard';
@@ -18,7 +18,7 @@ const DeliveryDashboard = () => {
   const { 
     agentProfile, updateAgentAvailability, stats, activeBatch, 
     orders, timeline, shiftSummary, hasBatch, setHasBatch,
-    setSelectedOrderForDrawer 
+    setSelectedOrderForDrawer, acceptBatch, rejectBatch
   } = useDelivery();
 
   // Compute Greeting by time of day
@@ -38,14 +38,14 @@ const DeliveryDashboard = () => {
   const availability = agentProfile?.availability || 'Available';
 
   // Active batch progress computations
-  const totalStops = orders?.length || 5;
-  const completedCount = orders?.filter(o => o.status === 'DELIVERED').length || 2;
-  const progressPercent = Math.round((completedCount / totalStops) * 100);
+  const totalStops = orders?.length || 0;
+  const completedCount = (orders || []).filter(o => o.status === 'DELIVERED').length;
+  const progressPercent = totalStops > 0 ? Math.round((completedCount / totalStops) * 100) : 0;
 
   // Next stop calculation
-  const nextStopOrder = orders?.find(o => o.status === 'OUT_FOR_DELIVERY') || 
-                        orders?.find(o => o.status === 'PICKED_UP' || o.status === 'PENDING') || 
-                        orders?.[0];
+  const nextStopOrder = (orders || []).find(o => o.status === 'OUT_FOR_DELIVERY') || 
+                        (orders || []).find(o => o.status === 'PICKED_UP' || o.status === 'PENDING') || 
+                        (orders || [])[0];
 
   return (
     <div className="dl-dashboard-page">
@@ -65,7 +65,7 @@ const DeliveryDashboard = () => {
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 ) : (
-                  <span>{agentDisplayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                  <span>{String(agentDisplayName || 'DA').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
                 )}
               </div>
               <span className={`pilot-status-beacon ${availability === 'Available' ? 'is-live' : availability === 'On Break' ? 'is-break' : 'is-offline'}`} />
@@ -220,11 +220,79 @@ const DeliveryDashboard = () => {
                     </div>
                     <div className="mission-zone-info">
                       <span className="mission-corridor">{activeBatch.zone}</span>
-                      <span className="mission-priority-tag">High Priority • Cold Chain</span>
+                      <span className="mission-priority-tag">High Priority • Aggregated Batch</span>
                     </div>
                   </div>
                   <DeliveryStatusBadge status={activeBatch.status} size="md" />
                 </div>
+
+                {/* Assignment Acceptance Gate (Step 4 of Delivery Workflow) */}
+                {activeBatch.status === 'ASSIGNED' && (
+                  <div style={{
+                    margin: '16px 0',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(234, 88, 12, 0.08) 100%)',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <AlertCircle size={20} color="#d97706" />
+                      <div>
+                        <strong style={{ fontSize: '15px', color: '#b45309' }}>New Batch Assignment Received</strong>
+                        <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#78350f' }}>
+                          Batch #{activeBatch.batchId} contains {totalStops} order(s). Please accept this assignment before starting merchant pickups.
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={() => acceptBatch(activeBatch.batchId)}
+                        style={{
+                          flex: 1,
+                          padding: '10px 16px',
+                          background: '#16a34a',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontWeight: '700',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <Check size={16} strokeWidth={2.5} /> Accept Assignment
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => rejectBatch(activeBatch.batchId)}
+                        style={{
+                          flex: 1,
+                          padding: '10px 16px',
+                          background: '#fff',
+                          color: '#dc2626',
+                          border: '1px solid #fca5a5',
+                          borderRadius: '8px',
+                          fontWeight: '600',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <X size={16} /> Decline / Reassign
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* 3-Stage Visual Pipeline Progress */}
                 <div className="mission-pipeline-tracker">
@@ -289,13 +357,13 @@ const DeliveryDashboard = () => {
                     <div className="waypoint-content-grid">
                       <div className="waypoint-customer-details">
                         <div className="customer-avatar-box">
-                          <span>{nextStopOrder.customerName.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+                          <span>{String(nextStopOrder.customerName || 'Customer').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
                         </div>
                         <div className="customer-text-meta">
-                          <h3 className="customer-name-heading">{nextStopOrder.customerName}</h3>
+                          <h3 className="customer-name-heading">{nextStopOrder.customerName || 'Customer'}</h3>
                           <p className="customer-destination-addr">
                             <MapPin size={14} className="text-primary inline-icon" />
-                            <span>{nextStopOrder.address}</span>
+                            <span>{nextStopOrder.address || 'Chennai'}</span>
                           </p>
                           {nextStopOrder.notes && (
                             <span className="customer-note-pill">
@@ -328,7 +396,7 @@ const DeliveryDashboard = () => {
                         <span>Call</span>
                       </a>
                       <a 
-                        href={`https://wa.me/${(nextStopOrder.customerPhone || '919840233441').replace(/[^0-9]/g, '')}`} 
+                        href={`https://wa.me/${String(nextStopOrder.customerPhone || '919840233441').replace(/[^0-9]/g, '')}`} 
                         target="_blank" 
                         rel="noreferrer" 
                         className="wp-action-btn btn-wa"
@@ -338,7 +406,7 @@ const DeliveryDashboard = () => {
                         <span>WhatsApp</span>
                       </a>
                       <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nextStopOrder.address)}`}
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nextStopOrder.address || 'Chennai')}`}
                         target="_blank"
                         rel="noreferrer"
                         className="wp-action-btn btn-nav"
@@ -364,32 +432,44 @@ const DeliveryDashboard = () => {
                 <div className="mission-metrics-matrix">
                   <div className="m-metric-card">
                     <span className="m-metric-label">Total Cargo</span>
-                    <span className="m-metric-val dl-tabular">{totalStops} Parcels (12.4 kg)</span>
+                    <span className="m-metric-val dl-tabular">{totalStops} Parcels</span>
                   </div>
                   <div className="m-metric-card">
                     <span className="m-metric-label">Route Corridor</span>
-                    <span className="m-metric-val dl-tabular">{activeBatch.totalDistanceKm} km total</span>
+                    <span className="m-metric-val dl-tabular">{activeBatch?.totalDistanceKm || 0} km total</span>
                   </div>
                   <div className="m-metric-card">
                     <span className="m-metric-label">Est. Mission Time</span>
-                    <span className="m-metric-val dl-tabular">{activeBatch.estimatedTimeMins} mins</span>
+                    <span className="m-metric-val dl-tabular">{activeBatch?.estimatedTimeMins || 0} mins</span>
                   </div>
                   <div className="m-metric-card">
                     <span className="m-metric-label">Remaining Drops</span>
-                    <span className="m-metric-val dl-tabular">{totalStops - completedCount} pending</span>
+                    <span className="m-metric-val dl-tabular">{Math.max(0, totalStops - completedCount)} pending</span>
                   </div>
                 </div>
 
                 {/* Primary Mission Action Footer */}
                 <div className="mission-footer-action-row">
-                  <button 
-                    type="button" 
-                    className="mission-cta-primary continue-mission-btn"
-                    onClick={() => navigate('/delivery/route')}
-                  >
-                    <span>Continue Turn-by-Turn Route</span>
-                    <ArrowRight size={18} />
-                  </button>
+                  {activeBatch.status === 'ASSIGNED' ? (
+                    <button 
+                      type="button" 
+                      className="mission-cta-primary continue-mission-btn"
+                      onClick={() => acceptBatch(activeBatch.batchId)}
+                      style={{ background: '#16a34a' }}
+                    >
+                      <Check size={18} strokeWidth={2.5} />
+                      <span>Accept Assignment & Start Pickups</span>
+                    </button>
+                  ) : (
+                    <button 
+                      type="button" 
+                      className="mission-cta-primary continue-mission-btn"
+                      onClick={() => navigate('/delivery/pickup')}
+                    >
+                      <PackageCheck size={18} />
+                      <span>Open Merchant Pickups ({(orders || []).filter(o => !['OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)).length} pending)</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -397,7 +477,7 @@ const DeliveryDashboard = () => {
                     onClick={() => navigate('/delivery/status')}
                   >
                     <ShieldCheck size={16} />
-                    <span>Update Status & Proof</span>
+                    <span>Delivery Status & OTP</span>
                   </button>
                 </div>
               </div>
@@ -460,22 +540,22 @@ const DeliveryDashboard = () => {
             <div className="telemetry-metrics-grid">
               <div className="telemetry-cell">
                 <span className="t-label">Hours Online</span>
-                <span className="t-val dl-tabular">{shiftSummary.hoursOnline}</span>
+                <span className="t-val dl-tabular">{shiftSummary?.hoursOnline || '5.4 hrs'}</span>
                 <span className="t-subtext">Since 07:00 AM</span>
               </div>
               <div className="telemetry-cell">
                 <span className="t-label">Distance Run</span>
-                <span className="t-val dl-tabular">{shiftSummary.distanceTraveledKm} km</span>
+                <span className="t-val dl-tabular">{shiftSummary?.distanceTraveledKm || 38.5} km</span>
                 <span className="t-subtext">Avg 18.2 km/h</span>
               </div>
               <div className="telemetry-cell">
                 <span className="t-label">Completed Drops</span>
-                <span className="t-val dl-tabular">{shiftSummary.ordersCompleted} orders</span>
+                <span className="t-val dl-tabular">{shiftSummary?.ordersCompleted ?? completedCount} orders</span>
                 <span className="t-subtext text-emerald">100% on-time</span>
               </div>
               <div className="telemetry-cell cell-earnings-highlight">
                 <span className="t-label">Estimated Payout</span>
-                <span className="t-val t-earnings dl-tabular">{shiftSummary.estimatedEarnings}</span>
+                <span className="t-val t-earnings dl-tabular">{shiftSummary?.estimatedEarnings || '₹850'}</span>
                 <span className="t-subtext text-emerald">+₹240 incentives</span>
               </div>
             </div>
@@ -498,11 +578,11 @@ const DeliveryDashboard = () => {
                   <span className="dl-live-dot" /> LIVE
                 </span>
               </div>
-              <span className="feed-event-count dl-tabular">{timeline.length} events logged</span>
+              <span className="feed-event-count dl-tabular">{(timeline || []).length} events logged</span>
             </div>
 
             <div className="feed-items-scroll">
-              <DeliveryTimeline items={timeline} maxItems={6} />
+              <DeliveryTimeline items={timeline || []} maxItems={6} />
             </div>
           </div>
         </div>

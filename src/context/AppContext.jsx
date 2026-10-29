@@ -320,7 +320,7 @@ export const AppProvider = ({ children }) => {
         name: data.fullName,
         username: data.username,
         email: data.email,
-        password: data.password || 'password123',
+        password: data.password,
         phone: data.phone,
         address: data.address,
         area: data.cityArea || 'Local',
@@ -346,7 +346,7 @@ export const AppProvider = ({ children }) => {
         shopName: data.businessName,
         username: data.username,
         email: data.email,
-        password: data.password || 'password123',
+        password: data.password,
         phone: data.phone,
         address: data.businessAddress,
         area: data.cityArea || 'Local Area',
@@ -641,6 +641,95 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Automatic AI-Powered Aggregation & Fleet Assignment Engine
+  const runAutomaticAggregation = async () => {
+    if (currentUser?.isDemo || offlineMode) {
+      const readyOrders = (orders || []).filter(o => 
+        ['READY_FOR_DELIVERY', 'READY'].includes((o.status || o.orderStatus || '').toUpperCase()) &&
+        !o.batchId &&
+        !['CANCELLED', 'DELIVERED', 'COMPLETED', 'OUT_FOR_DELIVERY'].includes((o.status || o.orderStatus || '').toUpperCase())
+      );
+
+      if (readyOrders.length === 0) {
+        addNotification(`Automatic Aggregation: No ready orders waiting for aggregation.`, 'system');
+        return { success: true, queuedCount: 0, formedBatchesCount: 0 };
+      }
+
+      const clusters = [];
+      for (let i = 0; i < readyOrders.length; i += 4) {
+        const slice = readyOrders.slice(i, i + 4);
+        if (slice.length > 0 && slice.length <= 4) clusters.push(slice);
+      }
+
+      if (clusters.length === 0) return { success: true, queuedCount: readyOrders.length, formedBatchesCount: 0 };
+
+      const availableAgents = (deliveryAgents || []).filter(a => (a.status || '').toLowerCase() === 'available' || (a.availability || '').toLowerCase() === 'available');
+
+      for (let idx = 0; idx < clusters.length; idx++) {
+        const cluster = clusters[idx];
+        const assignedAgent = availableAgents[idx % availableAgents.length] || null;
+        const newBatchId = `B-${Math.floor(1000 + Math.random() * 9000)}`;
+        const orderIds = cluster.map(o => o.id || o.orderId);
+
+        const newBatch = {
+          id: newBatchId,
+          batchId: newBatchId,
+          batchCode: newBatchId,
+          orderCount: cluster.length,
+          orderIds: orderIds,
+          agentId: assignedAgent ? assignedAgent.id : null,
+          agentName: assignedAgent ? (assignedAgent.name || assignedAgent.username || 'Agent') : null,
+          estimatedDistance: parseFloat((2.5 + cluster.length * 1.3).toFixed(1)),
+          estimatedTime: Math.round(15 + cluster.length * 7),
+          status: assignedAgent ? 'Assigned' : 'Pending Assignment',
+          aggregationStatus: assignedAgent ? 'Assigned' : 'Batch Created',
+          deliveryDate: cluster[0].deliveryDate || new Date().toISOString().split('T')[0],
+          deliverySlot: cluster[0].deliveryTimeSlot || '9:00 AM – 1:00 PM',
+          orders: cluster
+        };
+
+        setDeliveryBatches(prev => [newBatch, ...prev]);
+        setOrders(prev => prev.map(o => orderIds.includes(o.id) || orderIds.includes(o.orderId) ? {
+          ...o,
+          batchId: newBatchId,
+          assignedAgent: assignedAgent ? (assignedAgent.name || assignedAgent.username) : null,
+          assignedAgentId: assignedAgent ? assignedAgent.id : null,
+          orderStatus: assignedAgent ? 'ASSIGNED' : 'READY_FOR_DELIVERY',
+          status: assignedAgent ? 'ASSIGNED' : 'READY_FOR_DELIVERY',
+          aggregationStatus: assignedAgent ? 'Assigned' : 'Batch Created',
+          deliveryStatus: assignedAgent ? 'Assigned' : 'Pending Assignment'
+        } : o));
+      }
+
+      addNotification(`Automatic Aggregation: Formed ${clusters.length} batch(es) of 4 orders and assigned to fleet!`, 'system');
+      return { success: true, queuedCount: readyOrders.length - clusters.length * 4, formedBatchesCount: clusters.length };
+    }
+
+    try {
+      const res = await api.post('/delivery/aggregate');
+      if (res.data?.success) {
+        const [batchRes, ordRes] = await Promise.all([
+          api.get('/delivery/batches'),
+          api.get('/orders')
+        ]);
+        if (batchRes.data?.success) setDeliveryBatches(batchRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
+        
+        const count = res.data?.data?.formedBatchesCount || 0;
+        if (count > 0) {
+          addNotification(`Automatic Aggregation: Created ${count} automated batch(es) and assigned to couriers!`, 'aggregation');
+        } else {
+          const msg = res.data?.data?.message || 'Aggregation sweep completed.';
+          addNotification(msg, 'system');
+        }
+        return res.data;
+      }
+    } catch (err) {
+      console.error('Failed to run automatic aggregation:', err);
+      return null;
+    }
+  };
+
   // Step 2 of Workflow: Assign Agent to existing Delivery Batch
   const assignAgentToBatch = async (batchId, agentId) => {
     if (currentUser?.isDemo || offlineMode) {
@@ -738,6 +827,72 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       console.error(err);
       addNotification(`Failed to update batch status.`, 'error');
+    }
+  };
+
+  const respondToBatchAssignment = async (batchId, action) => {
+    if (currentUser?.isDemo || offlineMode) {
+      if (action === 'ACCEPT') {
+        setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, status: 'Pickup in Progress' } : b));
+        addNotification(`Batch ${batchId} accepted. You may start pickups.`, 'delivery');
+        return { success: true };
+      } else {
+        setDeliveryBatches(prev => prev.map(b => (b.id === batchId || b.batchId === batchId) ? { ...b, agentId: null, agentName: null, status: 'Pending Assignment' } : b));
+        addNotification(`Assignment declined. Reassigning batch...`, 'delivery');
+        return { success: true };
+      }
+    }
+
+    try {
+      const res = await api.post(`/delivery/batches/${batchId}/respond`, { action });
+      if (res.data?.success) {
+        const [batchRes, ordRes] = await Promise.all([
+          api.get('/delivery/batches'),
+          api.get('/orders')
+        ]);
+        if (batchRes.data?.success) setDeliveryBatches(batchRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
+        addNotification(res.data.message || `Batch assignment response recorded.`, 'delivery');
+        return res.data;
+      }
+      return { success: false, message: res.data?.message };
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || 'Failed to process batch response.';
+      addNotification(msg, 'error');
+      return { success: false, message: msg };
+    }
+  };
+
+  const verifyDeliveryOtp = async (orderId, otp) => {
+    if (currentUser?.isDemo || offlineMode) {
+      setOrders(prev => prev.map(o => (o.id === orderId || o.orderId === orderId) ? {
+        ...o,
+        status: 'DELIVERED',
+        orderStatus: 'DELIVERED',
+        deliveryStatus: 'Delivered to Customer'
+      } : o));
+      addNotification(`Order ${orderId} OTP verified and delivered!`, 'delivery');
+      return { success: true };
+    }
+
+    try {
+      const res = await api.post('/delivery/verify-otp', { orderId, otp });
+      if (res.data?.success) {
+        const [batchRes, ordRes] = await Promise.all([
+          api.get('/delivery/batches'),
+          api.get('/orders')
+        ]);
+        if (batchRes.data?.success) setDeliveryBatches(batchRes.data.data);
+        if (ordRes.data?.success) setOrders(ordRes.data.data);
+        addNotification(res.data.message || `Order ${orderId} successfully delivered!`, 'success');
+        return { success: true, data: res.data.data };
+      }
+      return { success: false, message: res.data?.message || 'Verification failed' };
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid OTP code.';
+      addNotification(msg, 'error');
+      return { success: false, message: msg };
     }
   };
 
@@ -1029,6 +1184,8 @@ export const AppProvider = ({ children }) => {
       customers, setCustomers, updateCustomerStatus,
       deliveryAgents, setDeliveryAgents, addDeliveryAgent, updateDeliveryAgent,
       deliveryBatches, setDeliveryBatches, createDeliveryBatch, assignAgentToBatch, updateBatchStatus,
+      respondToBatchAssignment, verifyDeliveryOtp,
+      runAutomaticAggregation,
       deliveryGroups,
       products, addProduct, updateProduct, deleteProduct,
       notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,

@@ -14,6 +14,9 @@ router.get('/batches/:id', (0, auth_middleware_1.requireRole)(['admin', 'deliver
 router.post('/batches', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.createBatch);
 router.post('/batches/:id/assign', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.assignBatch);
 router.patch('/batches/:id/status', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.updateBatchStatus);
+router.post('/batches/:id/respond', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.respondToBatchAssignment);
+router.post('/aggregate', (0, auth_middleware_1.requireRole)(['admin', 'vendor']), delivery_controller_1.triggerAutomaticAggregation);
+router.get('/aggregation-overview', (0, auth_middleware_1.requireRole)(['admin']), delivery_controller_1.getAggregationOverview);
 router.get('/orders/:id/otp', (0, auth_middleware_1.requireRole)(['customer', 'admin']), delivery_controller_1.getOrderOtp);
 router.post('/verify-otp', (0, auth_middleware_1.requireRole)(['admin', 'delivery_partner']), delivery_controller_1.verifyDeliveryOtp);
 exports.default = router;

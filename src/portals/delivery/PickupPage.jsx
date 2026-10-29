@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Store, MapPin, Phone, PackageCheck, QrCode, CheckCircle2, 
@@ -16,6 +16,7 @@ import './PickupPage.css';
 
 const PickupPage = () => {
   const navigate = useNavigate();
+
   const { activeBatch, hasBatch, addToast, updateBatchStatus } = useDelivery();
 
   const deriveHubs = (batch) => {
@@ -63,6 +64,10 @@ const PickupPage = () => {
   };
 
   const [hubs, setHubs] = useState(() => deriveHubs(activeBatch));
+
+  useEffect(() => {
+    setHubs(deriveHubs(activeBatch));
+  }, [activeBatch]);
   const [selectedHubForConfirm, setSelectedHubForConfirm] = useState(null);
   const [scanningHub, setScanningHub] = useState(null);
   const [scannedCodes, setScannedCodes] = useState({
@@ -71,7 +76,9 @@ const PickupPage = () => {
     'hub-3': true
   });
   const [checkedItems, setCheckedItems] = useState({});
-  const [copiedHubId, setCopiedHubId] = useState(null);
+  React.useEffect(() => {
+    setHubs(deriveHubs(activeBatch));
+  }, [activeBatch]);
 
   React.useEffect(() => {
     setHubs(deriveHubs(activeBatch));
@@ -136,6 +143,15 @@ const PickupPage = () => {
     if (!selectedHubForConfirm) return;
     const hubId = selectedHubForConfirm.id;
 
+    // Transition all orders in this hub to OUT_FOR_DELIVERY
+    if (selectedHubForConfirm.orders && selectedHubForConfirm.orders.length > 0) {
+      selectedHubForConfirm.orders.forEach(ord => {
+        if (updateOrderStatus) {
+          updateOrderStatus(ord.id, 'OUT_FOR_DELIVERY');
+        }
+      });
+    }
+
     setHubs(prev => prev.map(h => {
       if (h.id === hubId) {
         return {
@@ -147,7 +163,7 @@ const PickupPage = () => {
       return h;
     }));
 
-    addToast(`All parcels collected from ${selectedHubForConfirm.name}`, 'success');
+    addToast(`All parcels collected from ${selectedHubForConfirm.name} and marked Out for Delivery!`, 'success');
     setSelectedHubForConfirm(null);
   };
 
@@ -317,12 +333,12 @@ const PickupPage = () => {
                 </div>
 
                 <div className="pk-hub-contact-bar">
-                  <a href={`tel:${hub.contact}`} className="pk-hub-btn btn-call" title="Call Merchant Manager">
+                  <a href={`tel:${hub.contact || hub.phone || '+919840122334'}`} className="pk-hub-btn btn-call" title="Call Merchant Manager">
                     <Phone size={13} />
                     <span>Call Hub</span>
                   </a>
                   <a 
-                    href={`https://wa.me/${hub.contact.replace(/[^0-9]/g, '')}`} 
+                    href={`https://wa.me/${String(hub.contact || hub.phone || '919840122334').replace(/[^0-9]/g, '')}`} 
                     target="_blank" 
                     rel="noreferrer" 
                     className="pk-hub-btn btn-wa"
@@ -332,7 +348,7 @@ const PickupPage = () => {
                     <span>WhatsApp</span>
                   </a>
                   <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hub.address)}`}
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hub.address || 'Chennai')}`}
                     target="_blank"
                     rel="noreferrer"
                     className="pk-hub-btn btn-nav"
@@ -392,14 +408,36 @@ const PickupPage = () => {
                   </button>
 
                   {!isCollected ? (
-                    <button
-                      type="button"
-                      className="pk-btn-collect"
-                      onClick={() => setSelectedHubForConfirm(hub)}
-                    >
-                      <CheckCircle2 size={14} />
-                      <span>Mark Collected</span>
-                    </button>
+                    hub.allOrdersHandedOver !== false ? (
+                      <button
+                        type="button"
+                        className="pk-btn-collect"
+                        onClick={() => setSelectedHubForConfirm(hub)}
+                        title="Vendor has confirmed handover. Confirm collection to start transit."
+                      >
+                        <CheckCircle2 size={14} />
+                        <span>Confirm Collection & Depart</span>
+                      </button>
+                    ) : (
+                      <div 
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '7px 12px',
+                          background: '#fffbeb',
+                          color: '#b45309',
+                          border: '1px solid #fde68a',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}
+                        title="Merchant staff has not yet confirmed handover of order items"
+                      >
+                        <Clock size={13} color="#d97706" />
+                        <span>Awaiting Merchant Handover</span>
+                      </div>
+                    )
                   ) : (
                     <div className="pk-collected-pill">
                       <CheckCheck size={14} className="text-emerald" />

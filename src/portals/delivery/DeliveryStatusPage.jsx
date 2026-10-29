@@ -10,13 +10,15 @@ import EmptyState from '../../components/delivery/EmptyState';
 import './DeliveryStatusPage.css';
 
 const DeliveryStatusPage = () => {
-  const { orders, updateOrderStatus, hasBatch, setSelectedOrderForDrawer, addToast } = useDelivery();
+  const { orders, updateOrderStatus, verifyOtp, hasBatch, setSelectedOrderForDrawer, addToast } = useDelivery();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [modalType, setModalType] = useState(null); // 'delivered' | 'failed'
 
   // Delivered Modal Inputs
   const [otpInput, setOtpInput] = useState('');
+  const [otpError, setOtpError] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [podNotes, setPodNotes] = useState('');
   const [signatureDone, setSignatureDone] = useState(false);
   const [photoProof, setPhotoProof] = useState(null);
@@ -34,6 +36,7 @@ const DeliveryStatusPage = () => {
     setSelectedOrder(order);
     setModalType('delivered');
     setOtpInput('');
+    setOtpError(null);
     setPodNotes('');
     setSignatureDone(false);
     setPhotoProof(null);
@@ -52,8 +55,9 @@ const DeliveryStatusPage = () => {
 
   const handleConfirmDelivered = async () => {
     if (!selectedOrder) return;
+
     const cleanOtp = otpInput.trim();
-    if (cleanOtp.length !== 4) {
+    if (!/^\d{4}$/.test(cleanOtp)) {
       setModalError('Please enter the mandatory 4-digit customer OTP provided at doorstep.');
       return;
     }
@@ -61,7 +65,7 @@ const DeliveryStatusPage = () => {
     try {
       setIsSubmitting(true);
       setModalError(null);
-      await updateOrderStatus(selectedOrder.id, 'DELIVERED', {
+      await updateOrderStatus(selectedOrder.id || selectedOrder.orderCode, 'DELIVERED', {
         otp: cleanOtp,
         notes: podNotes,
         photo: photoProof,
@@ -69,11 +73,14 @@ const DeliveryStatusPage = () => {
       });
       setModalType(null);
       setSelectedOrder(null);
+      setOtpInput('');
     } catch (err) {
       setModalError(err.message || 'OTP verification failed. Please verify with customer.');
     } finally {
       setIsSubmitting(false);
     }
+
+    
   };
 
   const handleConfirmFailed = () => {
@@ -128,10 +135,10 @@ const DeliveryStatusPage = () => {
             {/* Customer Details */}
             <div className="order-recipient-row">
               <div className="recipient-info">
-                <h3 className="recipient-name">{order.customerName}</h3>
+                <h3 className="recipient-name">{order.customerName || "Customer"}</h3>
                 <p className="recipient-address">
                   <MapPin size={14} className="address-pin" />
-                  <span>{order.address}</span>
+                  <span>{order.address || "Chennai"}</span>
                 </p>
               </div>
 
@@ -145,20 +152,23 @@ const DeliveryStatusPage = () => {
 
             {/* Large Thumb-Friendly Status Selector Strip */}
             <div className="status-selector-strip" role="group" aria-label="Order status actions">
-              {/* Button 1: Picked Up */}
-              <button
-                type="button"
-                className={`thumb-status-btn btn-picked ${order.status === 'PICKED_UP' ? 'active' : ''}`}
-                onClick={() => updateOrderStatus(order.id, 'PICKED_UP')}
+              {/* Button 1: Handover status */}
+              <div
+                className={`thumb-status-btn btn-picked ${order.status === 'PICKED_UP' || order.vendorHandoverConfirmed ? 'active' : ''}`}
+                style={{ cursor: 'default' }}
+                title={order.vendorHandoverConfirmed ? 'Vendor has confirmed handover at store' : 'Awaiting vendor handover confirmation'}
               >
                 <span className="btn-status-indicator" />
-                <span className="btn-label">Picked Up</span>
-              </button>
+                <span className="btn-label">{order.vendorHandoverConfirmed ? 'Handover Confirmed' : 'Awaiting Vendor'}</span>
+              </div>
 
               {/* Button 2: Out for Delivery */}
               <button
                 type="button"
                 className={`thumb-status-btn btn-out ${order.status === 'OUT_FOR_DELIVERY' ? 'active' : ''}`}
+                disabled={!order.vendorHandoverConfirmed}
+                style={!order.vendorHandoverConfirmed ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                title={order.vendorHandoverConfirmed ? 'Start delivery transit' : 'Vendor handover must be confirmed before start of transit'}
                 onClick={() => updateOrderStatus(order.id, 'OUT_FOR_DELIVERY')}
               >
                 <Truck size={16} />
@@ -217,7 +227,7 @@ const DeliveryStatusPage = () => {
 
               <div className="modal-order-summary">
                 <span className="sum-order-id">{selectedOrder.orderCode || selectedOrder.id}</span>
-                <span className="sum-customer">{selectedOrder.customerName}</span>
+                <span className="sum-customer">{selectedOrder?.customerName || "Customer"}</span>
                 <span className="sum-amount dl-tabular">
                   {selectedOrder.codAmount > 0 ? `Collected ₹${selectedOrder.codAmount} COD` : 'Prepaid'}
                 </span>
@@ -226,19 +236,28 @@ const DeliveryStatusPage = () => {
               {/* 4-Digit OTP Input (Strictly Mandatory) */}
               <div className="form-group-block">
                 <label className="input-label" htmlFor="otp-input-field">
-                  <Key size={14} /> Enter 4-Digit Customer OTP (Mandatory) *
-                </label>
+                  <Key size={14} /> Enter 4-Digit Customer OTP (Mandatory) *                </label>
                 <input
                   id="otp-input-field"
                   type="text"
                   maxLength={4}
                   placeholder="e.g. 4821"
                   value={otpInput}
-                  onChange={e => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                  onChange={e => {
+                    setOtpInput(e.target.value.replace(/\D/g, ''));
+                    setOtpError(null);
+                  }}
                   className="dl-otp-input dl-tabular"
                   autoFocus
+                  style={otpError ? { borderColor: '#ef4444' } : {}}
                 />
-                <span className="input-hint">OTP is securely available on the customer's portal and receipt</span>
+                {otpError ? (
+                  <span style={{ color: '#ef4444', fontSize: '13px', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                    {otpError}
+                  </span>
+                ) : (
+                  <span className="input-hint">Customer views this secret 4-digit PIN in their order tracking screen</span>
+                )}
               </div>
 
               {/* Digital Signature Pad Simulator (Optional Proof of Delivery) */}
@@ -253,7 +272,7 @@ const DeliveryStatusPage = () => {
                   {signatureDone ? (
                     <div className="signature-signed-text">
                       <Check size={18} className="text-success" />
-                      <span>Signature Captured: {selectedOrder.customerName}</span>
+                      <span>Signature Captured: {selectedOrder?.customerName || "Customer"}</span>
                     </div>
                   ) : (
                     <div className="signature-placeholder">
@@ -298,6 +317,7 @@ const DeliveryStatusPage = () => {
                 className="dl-btn dl-btn-primary w-full"
                 onClick={handleConfirmDelivered}
                 disabled={otpInput.trim().length !== 4 || isSubmitting}
+                style={otpInput.trim().length !== 4 || isSubmitting ? { opacity: 0.65 } : {}}
               >
                 <CheckCircle2 size={16} /> {isSubmitting ? 'Verifying OTP with Server...' : 'Verify OTP & Mark Delivered'}
               </button>

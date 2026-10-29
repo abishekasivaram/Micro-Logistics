@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppContext } from './AppContext';
 import api from '../services/api';
 import {
@@ -22,7 +22,15 @@ export const useDelivery = () => {
 };
 
 export const DeliveryProvider = ({ children }) => {
-  const { currentUser, setCurrentUser } = useAppContext();
+  const { 
+    currentUser, setCurrentUser, 
+    deliveryBatches = [], orders: allAppOrders = [], 
+    updateOrderStatus: appUpdateOrderStatus, 
+    updateBatchStatus: appUpdateBatchStatus,
+    respondToBatchAssignment: appRespondToBatchAssignment,
+    verifyDeliveryOtp: appVerifyDeliveryOtp,
+    vendors = []
+  } = useAppContext();
 
   // 1. Theme State (Light / Dark)
   const [theme, setTheme] = useState(() => {
@@ -48,6 +56,23 @@ export const DeliveryProvider = ({ children }) => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  // Toasts System
+  const [toasts, setToasts] = useState([]);
+
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const addToast = (message, type = 'success', undoAction = null) => {
+    const id = Date.now() + Math.random().toString(36).substr(2, 4);
+    const newToast = { id, message, type, undoAction };
+    setToasts(prev => [...prev.slice(-3), newToast]);
+
+    setTimeout(() => {
+      removeToast(id);
+    }, 4500);
+  };
+
   // 2. Agent Profile & Availability
   const [agentProfile, setAgentProfile] = useState(() => {
     try {
@@ -65,6 +90,18 @@ export const DeliveryProvider = ({ children }) => {
   });
 
   useEffect(() => {
+    if (currentUser?.name) {
+      setAgentProfile(prev => ({
+        ...prev,
+        name: currentUser.name || prev.name,
+        phone: currentUser.phone || prev.phone,
+        agentId: currentUser.legacy_id || currentUser.id || prev.agentId,
+        availability: currentUser.availability || prev.availability
+      }));
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
     try {
       localStorage.setItem('micrologi_agent_profile', JSON.stringify(agentProfile));
     } catch (e) {
@@ -79,36 +116,193 @@ export const DeliveryProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [deliveryError, setDeliveryError] = useState(null);
 
-  // 5. Active Batch & Orders
-  const [hasBatch, setHasBatch] = useState(true);
+  // 5. Live Active Batch & Orders Resolution
+  const [simulationMode, setSimulationMode] = useState(false);
   const [activeBatch, setActiveBatch] = useState(INITIAL_ACTIVE_BATCH);
-  const [orders, setOrders] = useState(INITIAL_ACTIVE_BATCH.orders);
-  const [timeline, setTimeline] = useState(INITIAL_TODAY_TIMELINE);
-  const [historyOrders, setHistoryOrders] = useState(INITIAL_HISTORICAL_ORDERS);
+  const [orders, setOrders] = useState(INITIAL_ACTIVE_BATCH.orders || []);
+  const [hasBatch, setHasBatch] = useState(true);
 
-  // 6. Notifications
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const liveAssignedBatch = useMemo(() => {
+    if (currentUser?.isDemo) return null;
 
-  // 7. Toasts System
-  const [toasts, setToasts] = useState([]);
+    const userId = currentUser?.id;
+    const legacyId = currentUser?.legacy_id;
 
-  const addToast = (message, type = 'success', undoAction = null) => {
-    const id = Date.now() + Math.random().toString(36).substr(2, 4);
-    const newToast = { id, message, type, undoAction };
-    setToasts(prev => [...prev.slice(-3), newToast]);
+    const found = deliveryBatches.find(b => {
+      const isAssigned =
+        b.agentId === userId ||
+        b.agentId === legacyId ||
+        b.agent_id === userId;
 
-    setTimeout(() => {
-      removeToast(id);
-    }, 4500);
-  };
+      const isNotDone =
+        b.status !== 'COMPLETED' && b.status !== 'Completed';
 
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
+      return isAssigned && isNotDone;
+    });
 
-  // 8. Fetch Real Backend Delivery Data
+    if (found) return found;
+
+    if (currentUser?.role === 'admin') {
+      return deliveryBatches.find(
+        b => b.status !== 'COMPLETED' && b.status !== 'Completed'
+      ) || null;
+    }
+
+    return null;
+  }, [deliveryBatches, currentUser]);
+
+  const hasLiveBatch = !!liveAssignedBatch;
+   
+
+  const liveBatchOrders = useMemo(() => {
+    if (!liveAssignedBatch) return [];
+
+    const batchCode =
+      liveAssignedBatch.batchCode ||
+      liveAssignedBatch.batchId ||
+      liveAssignedBatch.id;
+
+    const batchDbId = liveAssignedBatch.id;
+    const orderIds = liveAssignedBatch.orderIds || [];
+
+    const matched = allAppOrders.filter(o => {
+      if (batchDbId && (o.batch_id === batchDbId || o.batchId === batchDbId)) {
+        return true;
+      }
+
+      if (batchCode && (o.batchId === batchCode || o.batch_id === batchCode)) {
+        return true;
+      }
+
+      return (
+        orderIds.includes(o.id) ||
+        orderIds.includes(o.orderId) ||
+        orderIds.includes(o.orderCode)
+      );
+    });
+
+    return matched.map(o => {
+      const orderSt = (
+        o.order_status || o.orderStatus || o.status || 'PLACED'
+      ).toUpperCase();
+
+      const delivSt = (
+        o.delivery_status || o.deliveryStatus || ''
+      ).toUpperCase();
+
+      let mappedUiStatus = 'ASSIGNED';
+
+      if (orderSt === 'DELIVERED') {
+        mappedUiStatus = 'DELIVERED';
+      } else if (orderSt === 'OUT_FOR_DELIVERY') {
+        mappedUiStatus = 'OUT_FOR_DELIVERY';
+      } else if (delivSt === 'PICKED_UP' || delivSt.includes('PICKED')) {
+        mappedUiStatus = 'PICKED_UP';
+      }
+
+      const vendorHandoverConfirmed =
+        delivSt === 'PICKED_UP' ||
+        delivSt.includes('PICKED') ||
+        orderSt === 'OUT_FOR_DELIVERY' ||
+        orderSt === 'DELIVERED';
+
+      return {
+        id: o.id || o.orderCode || o.orderId,
+        orderCode: o.orderCode || o.id || o.orderId,
+        status: mappedUiStatus,
+        rawOrderStatus: orderSt,
+        rawDeliveryStatus: delivSt,
+        vendorHandoverConfirmed,
+        customerName:
+          o.customerName || o.customer?.profile?.username || 'Customer',
+        customerPhone:
+          o.customerPhone || o.customer?.profile?.phone || '+91 98402 33441',
+        address: o.deliveryLocation || o.deliveryAddress || 'Chennai',
+        pickupLocation:
+          o.pickupLocation || o.pickup_location || 'Merchant Hub, Chennai',
+        vendorName: o.vendorName || o.vendor?.shop_name || 'Partner Merchant',
+        vendorId: o.vendorId || o.vendor_id,
+        items: o.items || [],
+        total: Number(o.total || 0),
+        codAmount:
+          o.paymentMethod === 'COD' ? Number(o.total || 0) : 0,
+        timeSlot: o.deliveryTimeSlot || o.deliverySlot || '9:00 AM – 1:00 PM',
+        notes: o.notes || 'Please verify 4-digit PIN with recipient'
+      };
+    });
+  }, [liveAssignedBatch, allAppOrders]);
+
+  const liveHubs = useMemo(() => {
+    if (liveBatchOrders.length === 0) return [];
+
+    const hubsMap = {};
+
+    liveBatchOrders.forEach(ord => {
+      const vKey = ord.vendorName || 'Merchant Store';
+
+      if (!hubsMap[vKey]) {
+        hubsMap[vKey] = {
+          id: `hub-${vKey.replace(/\s+/g, '-').toLowerCase()}`,
+          name: vKey,
+          address: ord.pickupLocation || 'Commercial Complex, Chennai',
+          phone: ord.vendorPhone || '+91 98401 22334',
+          contact: ord.vendorPhone || '+91 98401 22334',
+          barcode: `HUB-${Math.abs(
+            vKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 90000 + 10000
+          )}`,
+          parcels: 0,
+          orders: [],
+          itemsList: [],
+          status: 'PENDING'
+        };
+      }
+
+      hubsMap[vKey].parcels += 1;
+      hubsMap[vKey].orders.push(ord);
+
+      const orderItems = ord.items?.length
+        ? ord.items.map(it => ({
+            id: `${ord.id}-${it.productId || it.name || 'item'}`,
+            name: `${it.name || 'Item'} (x${it.qty || 1})`,
+            orderId: ord.orderCode || ord.id
+          }))
+        : [{
+            id: `${ord.id}-pkg`,
+            name: `Parcel Cargo (${ord.orderCode || ord.id})`,
+            orderId: ord.orderCode || ord.id
+          }];
+
+      hubsMap[vKey].itemsList.push(...orderItems);
+    });
+
+    return Object.values(hubsMap).map(hub => {
+      const allOrdersHandedOver =
+        hub.orders.every(o => o.vendorHandoverConfirmed);
+
+      const allOrdersInTransitOrDelivered =
+        hub.orders.every(o =>
+          ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
+        );
+
+      let hubStatus = 'PENDING';
+
+      if (allOrdersInTransitOrDelivered) {
+        hubStatus = 'COLLECTED';
+      } else if (allOrdersHandedOver) {
+        hubStatus = 'READY_FOR_COLLECTION';
+      }
+
+      return {
+        ...hub,
+        allOrdersHandedOver,
+        status: hubStatus
+      };
+    });
+  }, [liveBatchOrders]);
+
+   
+        // 8. Fetch Real Backend Delivery Data
   const refreshDeliveryData = useCallback(async () => {
-    // If running in demo mode without real authentication, use demo fixtures
     if (currentUser?.isDemo) {
       setActiveBatch(INITIAL_ACTIVE_BATCH);
       setOrders(INITIAL_ACTIVE_BATCH.orders || []);
@@ -121,12 +315,13 @@ export const DeliveryProvider = ({ children }) => {
       setIsLoading(true);
       setDeliveryError(null);
 
-      // Fetch assigned batches for the authenticated delivery agent
       const res = await api.get('/delivery/batches');
+
       if (res.data?.success && Array.isArray(res.data.data)) {
         const batchList = res.data.data;
-        // Locate first active non-completed batch
-        const active = batchList.find(b => b.rawStatus !== 'COMPLETED' && b.status !== 'Completed') || null;
+        const active = batchList.find(
+          b => b.rawStatus !== 'COMPLETED' && b.status !== 'Completed'
+        ) || null;
 
         if (active) {
           setActiveBatch(active);
@@ -138,19 +333,22 @@ export const DeliveryProvider = ({ children }) => {
           setHasBatch(false);
         }
 
-        // Completed batches become historical orders
-        const completedBatches = batchList.filter(b => b.rawStatus === 'COMPLETED' || b.status === 'Completed');
+        const completedBatches = batchList.filter(
+          b => b.rawStatus === 'COMPLETED' || b.status === 'Completed'
+        );
         const historical = completedBatches.flatMap(b => b.orders || []);
+
         if (historical.length > 0) {
           setHistoryOrders(historical);
         }
       }
 
-      // Refresh agent profile details from backend if agent ID is known
       const agentId = currentUser?.id;
+
       if (agentId) {
         try {
           const agentRes = await api.get(`/delivery/agents/${agentId}`);
+
           if (agentRes.data?.success && agentRes.data.data) {
             setAgentProfile(prev => ({
               ...prev,
@@ -160,12 +358,12 @@ export const DeliveryProvider = ({ children }) => {
               availability: agentRes.data.data.availability || prev.availability
             }));
           }
-        } catch (agErr) {
+        } catch {
           // Agent details fetch warning ignored if endpoint restricted
         }
       }
     } catch (err) {
-      console.warn('Failed to fetch real delivery data, falling back to cached state:', err);
+      console.warn('Failed to fetch real delivery data:', err);
       setDeliveryError(err.response?.data?.message || err.message);
     } finally {
       setIsLoading(false);
@@ -244,6 +442,16 @@ export const DeliveryProvider = ({ children }) => {
 
     const previousStatus = targetOrder.status;
     setPreviousStates(prev => ({ ...prev, [orderId]: previousStatus }));
+    if (
+  newStatus === 'OUT_FOR_DELIVERY' &&
+  !targetOrder.vendorHandoverConfirmed
+) {
+  const handoverError = new Error(
+    `Cannot start transit: Vendor handover has not been confirmed for ${targetOrder.orderCode || orderId} yet.`
+  );
+  addToast(handoverError.message, 'danger');
+  throw handoverError;
+}
 
     // Rule: Delivery verification strictly requires valid customer OTP
     if (newStatus === 'DELIVERED') {
@@ -365,10 +573,54 @@ export const DeliveryProvider = ({ children }) => {
     addToast('Cleared all notifications', 'neutral');
   };
 
+
   // 11. Order Drawer
   const [selectedOrderForDrawer, setSelectedOrderForDrawer] = useState(null);
 
-  // 12. Command Palette
+  // 12. Workflow Actions (Accept / Reject Batch, Pickup, OTP Verification)
+  const acceptBatch = async (batchId) => {
+    const targetId = batchId || activeBatch?.batchId || activeBatch?.id;
+    if (!targetId) return;
+
+    if (appRespondToBatchAssignment) {
+      const res = await appRespondToBatchAssignment(targetId, 'ACCEPT');
+      if (res?.success) {
+        addToast(`Batch ${targetId} accepted! Proceed to merchant pickups.`, 'success');
+      }
+    } else if (appUpdateBatchStatus) {
+      await appUpdateBatchStatus(targetId, 'Pickup in Progress');
+      addToast(`Batch ${targetId} accepted! Proceed to merchant pickups.`, 'success');
+    }
+  };
+
+  const rejectBatch = async (batchId) => {
+    const targetId = batchId || activeBatch?.batchId || activeBatch?.id;
+    if (!targetId) return;
+
+    if (appRespondToBatchAssignment) {
+      const res = await appRespondToBatchAssignment(targetId, 'REJECT');
+      if (res?.success) {
+        addToast('Assignment declined. Batch safely routed to next available courier.', 'info');
+      }
+    }
+  };
+
+  const verifyOtp = async (orderId, otp) => {
+    if (!appVerifyDeliveryOtp) {
+      addToast('Verification service unavailable', 'danger');
+      return { success: false, message: 'Service unavailable' };
+    }
+
+    const res = await appVerifyDeliveryOtp(orderId, otp);
+    if (res?.success) {
+      addToast(`Order ${orderId} OTP verified successfully! Marked as Delivered.`, 'success');
+      return { success: true };
+    }
+
+    addToast(res?.message || 'Invalid OTP code. Please re-check with customer.', 'danger');
+    return { success: false, message: res?.message || 'Invalid OTP' };
+  };
+
   const [isCmdOpen, setIsCmdOpen] = useState(false);
 
   useEffect(() => {
@@ -417,6 +669,9 @@ export const DeliveryProvider = ({ children }) => {
         addToast,
         removeToast,
         updateOrderStatus,
+        acceptBatch,
+        rejectBatch,
+        verifyOtp,
         selectedOrderForDrawer,
         setSelectedOrderForDrawer,
         isCmdOpen,
@@ -427,4 +682,3 @@ export const DeliveryProvider = ({ children }) => {
     </DeliveryContext.Provider>
   );
 };
-

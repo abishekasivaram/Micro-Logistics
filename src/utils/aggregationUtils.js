@@ -152,43 +152,58 @@ export const areLocationsCompatible = (order1, order2, maxRadiusKm = 3.5) => {
   return area1 === area2 || area1.includes(area2) || area2.includes(area1);
 };
 
+export const MIN_BATCH_SIZE = 1;
+export const MAX_BATCH_SIZE = 4;
+
 /**
  * Smart Order Aggregation Function
- * Evaluates orders eligible for aggregation and clusters compatible pairs/groups.
- * Independently validates:
- *  1. Status eligibility (rejects CANCELLED, DELIVERED, and already batched orders)
- *  2. Delivery Date equality (does NOT silently default dates)
- *  3. Delivery Time Slot compatibility
- *  4. Geographic / Locality compatibility (Time slot match ALONE never qualifies distant orders)
- *  5. Max batch size ceiling
- *  6. Does NOT recommend singleton orders as aggregation groups unless allowSingleOrderBatches is explicitly true.
+/**
+ * Evaluates orders eligible for aggregation and clusters compatible groups.
+ * Validates status, batch assignment, delivery date/time, and location compatibility.
+ * Enforces batch-size limits and excludes singleton groups by default.
  */
 export const findSuitableOrderGroups = (orders = [], agents = [], config = {}) => {
-  const maxOrdersPerBatch = config.maxOrdersPerBatch || 4;
+  const minBatchSize = config.minBatchSize ?? MIN_BATCH_SIZE;
+  const maxOrdersPerBatch = config.maxOrdersPerBatch ?? MAX_BATCH_SIZE;
   const allowSingleOrderBatches = config.allowSingleOrderBatches === true;
 
-  // Filter orders eligible for aggregation:
+  // Filter orders eligible for aggregation.
   const eligibleOrders = orders.filter(o => {
     if (!o) return false;
-    const rawStatus = (o.order_status || o.status || o.orderStatus || '').toUpperCase();
-    const rawAggStatus = (o.aggregation_status || o.aggregationStatus || '').toUpperCase();
+
+    const rawStatus = (
+      o.order_status || o.status || o.orderStatus || ''
+    ).toUpperCase();
+
+    const rawAggStatus = (
+      o.aggregation_status || o.aggregationStatus || ''
+    ).toUpperCase();
+
     const batchId = o.batch_id || o.batchId;
 
-    // Must not be already assigned to a batch
     if (batchId) return false;
 
-    // Must not be in terminal or in-flight delivery states
-    if (['DELIVERED', 'CANCELLED', 'OUT_FOR_DELIVERY'].includes(rawStatus)) {
+    if ([
+      'DELIVERED',
+      'CANCELLED',
+      'OUT_FOR_DELIVERY',
+      'COMPLETED'
+    ].includes(rawStatus)) {
       return false;
     }
 
-    // Must not already have an active batch lifecycle
     if (['BATCH_CREATED', 'ASSIGNED', 'COMPLETED'].includes(rawAggStatus)) {
       return false;
     }
 
-    // Must be in an aggregation-ready status
-    const isStatusEligible = ['READY_FOR_DELIVERY', 'PREPARING', 'PLACED', 'CONFIRMED'].includes(rawStatus);
+    const isStatusEligible = [
+      'READY_FOR_DELIVERY',
+      'READY',
+      'PREPARING',
+      'PLACED',
+      'CONFIRMED'
+    ].includes(rawStatus);
+
     const isAggEligible = !rawAggStatus || [
       'WAITING_FOR_AGGREGATION',
       'WAITING FOR AGGREGATION',
@@ -199,6 +214,7 @@ export const findSuitableOrderGroups = (orders = [], agents = [], config = {}) =
 
     return isStatusEligible && isAggEligible;
   });
+   
 
   if (eligibleOrders.length === 0) return [];
 
@@ -320,29 +336,37 @@ export const findSuitableOrderGroups = (orders = [], agents = [], config = {}) =
       // Cap score between 60% and 98%
       const finalScore = Math.min(98, Math.max(60, score));
 
-      // Explicitly mark metrics as heuristic estimates (not dynamic road-network routing)
-      const estimatedDistance = parseFloat((2.5 + groupOrders.length * 1.2).toFixed(1)); // km estimate
-      const estimatedTime = Math.round(15 + estimatedDistance * 6); // minutes estimate
+      // Enforce batch size limits and mark metrics as heuristic estimates.
+      // The project requires at least 4 orders per suggested group.
+      if (groupOrders.length >= minBatchSize && groupOrders.length <= maxOrdersPerBatch) {
+        const estimatedDistance = parseFloat(
+          (2.5 + groupOrders.length * 1.2).toFixed(1)
+        ); // km estimate
 
-      suggestedGroups.push({
-        id: `SUG-B${String(groupCounter++).padStart(3, '0')}`,
-        recommendationLabel: 'Suggested Aggregation Group',
-        orderIds: groupOrders.map(o => o.id || o.order_code || o.orderCode),
-        orders: groupOrders,
-        sellerIds: Array.from(new Set(groupOrders.map(o => o.vendor_id || o.vendorId || o.sellerId))),
-        sellerNames: sellerNames,
-        pickupArea: pickupAreas.join(', '),
-        deliveryArea: dropAreas.join(', '),
-        deliveryDate: dateKey,
-        deliveryTimeSlot: primarySlot,
-        orderCount: groupOrders.length,
-        compatibilityScore: finalScore,
-        estimatedDistance: estimatedDistance,
-        estimatedTime: estimatedTime,
-        isEstimated: true,
-        estimationMethod: 'heuristic_linear_model',
-        reasons: reasons
-      });
+        const estimatedTime = Math.round(15 + estimatedDistance * 6); // minutes estimate
+
+        suggestedGroups.push({
+          id: `SUG-B${String(groupCounter++).padStart(3, '0')}`,
+          recommendationLabel: 'Suggested Aggregation Group',
+          orderIds: groupOrders.map(o => o.id || o.order_code || o.orderCode),
+          orders: groupOrders,
+          sellerIds: Array.from(
+            new Set(groupOrders.map(o => o.vendor_id || o.vendorId || o.sellerId))
+          ),
+          sellerNames: sellerNames,
+          pickupArea: pickupAreas.join(', '),
+          deliveryArea: dropAreas.join(', '),
+          deliveryDate: primary.deliveryDate || dateKey,
+          deliveryTimeSlot: primary.deliveryTimeSlot || primarySlot,
+          orderCount: groupOrders.length,
+          compatibilityScore: finalScore,
+          estimatedDistance: estimatedDistance,
+          estimatedTime: estimatedTime,
+          isEstimated: true,
+          estimationMethod: 'heuristic_linear_model',
+          reasons: reasons
+        });
+      }
     }
   });
 

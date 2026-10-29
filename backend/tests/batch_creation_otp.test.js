@@ -115,20 +115,33 @@ const { mockDatabase, mockSupabaseInstance } = vi.hoisted(() => {
         or: (condition) => query,
         order: () => query,
         limit: () => query,
-        then: (resolve, reject) => {
-          const tableData = mockDatabase[table] || [];
-          return Promise.resolve({ data: tableData, error: null }).then(resolve, reject);
-        },
-        single: async () => {
-          const tableData = mockDatabase[table] || [];
-          const found = tableData.find(item => {
-            for (const k in currentFilter) {
-              if (item[k] !== currentFilter[k]) return false;
-            }
-            return true;
-          });
-          return { data: found || null, error: found ? null : { message: 'Not found', code: 'PGRST116' } };
-        },
+then: (resolve, reject) => {
+  const tableData = mockDatabase[table] || [];
+  const filteredData = tableData.filter(item =>
+    Object.entries(currentFilter).every(([field, value]) => item[field] === value)
+  );
+  return Promise.resolve({ data: filteredData, error: null }).then(resolve, reject);
+},
+maybeSingle: async () => {
+  const tableData = mockDatabase[table] || [];
+  const found = tableData.find(item => {
+    for (const k in currentFilter) {
+      if (item[k] !== currentFilter[k]) return false;
+    }
+    return true;
+  });
+  return { data: found || null, error: null };
+},
+single: async () => {
+  const tableData = mockDatabase[table] || [];
+  const found = tableData.find(item =>
+    Object.entries(currentFilter).every(([field, value]) => item[field] === value)
+  );
+  return {
+    data: found || null,
+    error: found ? null : { message: 'Not found', code: 'PGRST116' }
+  };
+},
         insert: (data) => {
           const item = Array.isArray(data) ? data[0] : data;
           const created = { id: `id-${Date.now()}`, ...item };
@@ -252,6 +265,7 @@ describe('Backend Batch Creation & OTP Hardening Tests', () => {
       const res = await request(app)
         .get('/api/v1/delivery/orders/ORD-101/otp')
         .set('Authorization', 'Bearer customer-token');
+         
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);

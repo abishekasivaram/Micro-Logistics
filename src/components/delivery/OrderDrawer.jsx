@@ -20,7 +20,7 @@ const OrderDrawer = ({ order, isOpen, onClose, onUpdateStatus }) => {
 
   if (!isOpen || !order) return null;
 
-  const rawPhone = (order.phone || '+919840123456').replace(/\D/g, '');
+  const rawPhone = String(order.customerPhone || order.phone || '+919840123456').replace(/\D/g, '');
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.address || 'Chennai')}`;
   const whatsappUrl = `https://wa.me/${rawPhone}?text=${encodeURIComponent(`Hello ${order.customerName || 'Customer'}, this is David your MicroLogi delivery agent regarding your order ${order.orderCode || order.id}.`)}`;
 
@@ -58,7 +58,7 @@ const OrderDrawer = ({ order, isOpen, onClose, onUpdateStatus }) => {
 
         {/* Action Buttons Strip */}
         <div className="drawer-actions-strip">
-          <a href={`tel:${order.phone || '+919840123456'}`} className="drawer-action-btn btn-call" title="Call Customer">
+          <a href={`tel:${order.customerPhone || order.phone || '+919840123456'}`} className="drawer-action-btn btn-call" title="Call Customer">
             <Phone size={17} />
             <span>Call</span>
           </a>
@@ -82,14 +82,14 @@ const OrderDrawer = ({ order, isOpen, onClose, onUpdateStatus }) => {
                 {(order.customerName || 'U').charAt(0)}
               </div>
               <div className="customer-details">
-                <div className="customer-name">{order.customerName}</div>
-                <div className="customer-phone">{order.phone || '+91 98402 33441'}</div>
+                <div className="customer-name">{order.customerName || "Customer"}</div>
+                <div className="customer-phone">{order.customerPhone || order.phone || '+91 98402 33441'}</div>
               </div>
             </div>
 
             <div className="delivery-address-box">
               <MapPin size={18} className="address-pin-icon" />
-              <div className="address-text">{order.address}</div>
+              <div className="address-text">{order.address || "Chennai"}</div>
             </div>
 
             {order.notes && (
