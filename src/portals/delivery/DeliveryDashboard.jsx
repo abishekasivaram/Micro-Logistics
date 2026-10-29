@@ -4,7 +4,7 @@ import {
   PackageCheck, Truck, MapPin, TrendingUp, ArrowRight, Lock, 
   Clock, Navigation, ShieldCheck, CheckCircle2, AlertCircle, 
   RotateCw, Eye, Sparkles, Battery, BatteryCharging, Zap, Compass, ChevronRight, Boxes,
-  Phone, MessageSquare, ExternalLink, Calendar, Check, Award, ArrowUpRight, X
+  Phone, MessageSquare, ExternalLink, Calendar, Check, Award, ArrowUpRight, X, Store
 } from 'lucide-react';
 import { useDelivery } from '../../context/DeliveryContext';
 import StatCard from '../../components/delivery/StatCard';

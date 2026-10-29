@@ -75,13 +75,7 @@ const PickupPage = () => {
     'hub-3': true
   });
   const [checkedItems, setCheckedItems] = useState({});
-  React.useEffect(() => {
-    setHubs(deriveHubs(activeBatch));
-  }, [activeBatch]);
-
-  React.useEffect(() => {
-    setHubs(deriveHubs(activeBatch));
-  }, [activeBatch]);
+  const [copiedHubId, setCopiedHubId] = useState(null);
 
   const handleCopyAddress = (address, hubId) => {
     if (!address) return;

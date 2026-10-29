@@ -39,7 +39,7 @@ class ErrorBoundary extends React.Component {
             <p className="error-boundary-message">
               An unexpected application error occurred while rendering this view. Our team has been notified.
             </p>
-            {process.env.NODE_ENV !== 'production' && this.state.error && (
+            {this.state.error && (
               <details className="error-boundary-details">
                 <summary>Technical Details</summary>
                 <pre>{this.state.error.toString()}</pre>

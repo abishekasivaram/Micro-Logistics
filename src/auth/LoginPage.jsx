@@ -216,6 +216,7 @@ const LoginPage = () => {
       delivery_partner: 'da1'
     };
     setUsernameOrEmail(demoRoleMap[role] || '');
+    setPassword('password123');
     setErrorMsg('');
   };
 

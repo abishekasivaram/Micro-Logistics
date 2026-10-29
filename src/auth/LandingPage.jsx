@@ -254,6 +254,16 @@ const LandingPage = () => {
             </div>
 
             <div className="role-card">
+              <div className="role-icon delivery-role-icon"><Truck size={28} /></div>
+              <h3>Delivery Portal</h3>
+              <p>Accept batch assignments, navigate multi-seller pickup hubs, track active routes, and verify doorstep delivery OTPs.</p>
+              <div className="role-actions">
+                <Link to="/login" state={{ role: 'delivery_partner' }} className="btn btn-primary w-full">Delivery Login</Link>
+                <Link to="/delivery" className="btn btn-outline w-full mt-2">Delivery Dashboard</Link>
+              </div>
+            </div>
+
+            <div className="role-card">
               <div className="role-icon admin-role-icon"><Shield size={28} /></div>
               <h3>Admin Portal</h3>
               <p>Centralized platform control panel for delivery personnel monitoring, system-wide order aggregation, and settings.</p>

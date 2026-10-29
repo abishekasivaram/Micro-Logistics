@@ -141,6 +141,11 @@ export const DeliveryProvider = ({ children }) => {
   const [historyOrders, setHistoryOrders] = useState(INITIAL_HISTORICAL_ORDERS);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
 
+  // 6. Timeline, History Orders & Notifications State
+  const [timeline, setTimeline] = useState(INITIAL_TODAY_TIMELINE);
+  const [historyOrders, setHistoryOrders] = useState(INITIAL_HISTORICAL_ORDERS);
+  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+
   const liveAssignedBatch = useMemo(() => {
     if (currentUser?.isDemo) return null;
 

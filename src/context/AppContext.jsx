@@ -307,6 +307,13 @@ export const AppProvider = ({ children }) => {
       } catch (err) {
         console.error("Failed to load API data.", err);
         setOfflineMode(true);
+        setVendors(prev => prev && prev.length > 0 ? prev : demoVendors);
+        setProducts(prev => prev && prev.length > 0 ? prev : demoProducts);
+        setCustomers(prev => prev && prev.length > 0 ? prev : demoCustomers);
+        setDeliveryAgents(prev => prev && prev.length > 0 ? prev : demoAgents);
+        setDeliveryBatches(prev => prev && prev.length > 0 ? prev : demoBatches);
+        setOrders(prev => prev && prev.length > 0 ? prev : demoOrders);
+        setNotifications(prev => prev && prev.length > 0 ? prev : demoNotifications);
         addNotification("API Unreachable. Running in offline/demo mode.", "system");
       } finally {
         setGlobalLoading(false);
