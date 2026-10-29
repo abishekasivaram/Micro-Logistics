@@ -126,8 +126,8 @@ const ConfirmationModal = ({
           <button 
             type="button" 
             className={`confirm-btn-action variant-${variant}`} 
-            onClick={() => {
-              onConfirm();
+            onClick={async () => {
+              if (onConfirm) await onConfirm();
               onClose();
             }}
             disabled={isLoading || confirmDisabled}

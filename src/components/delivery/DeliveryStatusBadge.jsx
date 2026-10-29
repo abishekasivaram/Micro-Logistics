@@ -21,9 +21,9 @@ const STATUS_CONFIGS = {
 };
 
 const DeliveryStatusBadge = ({ status = 'PENDING', size = 'md', className = '' }) => {
-  const normalizedKey = String(status).toUpperCase();
+  const normalizedKey = String(status || '').toUpperCase();
   const config = STATUS_CONFIGS[normalizedKey] || {
-    label: status.replace(/_/g, ' '),
+    label: String(status || 'Pending').replace(/_/g, ' '),
     variant: 'neutral',
     pulse: false
   };
