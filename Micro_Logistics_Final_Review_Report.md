@@ -1,196 +1,221 @@
-# Smart Micro-Logistics Management and Hyperlocal Order Aggregation Network
+# MICRO-LOGISTICS MANAGEMENT — LOCAL E-COMMERCE ORDER AGGREGATION NETWORK
 ## Final Project Review Report
 
 ---
 
-**Project Title:** Smart Micro-Logistics Management and Hyperlocal Order Aggregation Network  
-**Repository Branch:** `main`  
-**Execution Environment:** Node.js 20+, Express 5.2.1, React 19.0.0, Vite 6.2.0, Supabase PostgreSQL, Vitest  
-**Document Classification:** Final Review Engineering Report & Architecture Specification  
-**Report Date:** October 2026  
-**Status:** Implementation Complete & Production Verified (52/52 Tests Passing, 0 Build Errors)  
+**Academic Institution:** [COLLEGE / INSTITUTION NAME]  
+**Department:** Department of Information Technology  
+**Degree Program:** Bachelor of Technology / Bachelor of Engineering in Information Technology  
+**Academic Year:** 2026–2027  
+**Document Classification:** Final Project Review & Implementation Defense (Phase 4)  
+**Report Title:** MICRO-LOGISTICS MANAGEMENT — LOCAL E-COMMERCE ORDER AGGREGATION NETWORK  
+*(Official Project Title: Flagged for Final Academic Review Confirmation)*  
+**Repository Branch:** `main` (Remote: `origin/main`)  
+**Report Date:** 29-10-2026  
+**Project Team Members:**
+* **ABISHEKA S** ([REGISTER NUMBER 1])
+* **BOOMIKA V** ([REGISTER NUMBER 2])
+* **DARSANI B** ([REGISTER NUMBER 3])
+
+**Project Supervisor / Faculty Guide:** [PROJECT GUIDE NAME], [Designation], Department of Information Technology  
 
 ---
 
 ## Executive Summary
 
-The **Smart Micro-Logistics Management System** is a unified, full-stack hyperlocal commerce and order-fulfillment platform architected to solve the core economic and operational inefficiencies of urban last-mile logistics. In high-density urban corridors (demonstrated across the Chennai metropolitan area), localized retail delivery traditionally suffers from fragmented order dispatch, excessive fuel and labor overhead caused by single-order courier trips, premature parcel handovers, and delivery failures due to lack of verified proof-of-delivery.
+Urban last-mile logistics represents one of the most operationally challenging and economically strained segments of contemporary e-commerce. While consumer demand for rapid doorstep fulfillment has expanded across groceries, fresh farm produce, and daily household essentials, the dominant fulfillment model relies on an **unconstrained 1:1 courier dispatch mechanism**—where a dedicated courier is dispatched for a single customer order from a single merchant. In high-density urban environments, such as the Chennai metropolitan commercial corridors, this legacy model causes extreme vehicle trip duplication, excessive urban carbon emissions, merchant dispatch chaos, and erratic unit economics.
 
-This platform bridges customers, neighborhood merchants, couriers, and central dispatch coordinators into a single, cohesive reactive network. Key engineering breakthroughs delivered in this release include:
+To systematically resolve these inefficiencies, this project develops the **Micro-Logistics Management and Hyperlocal Order Aggregation Network** (`MicroLogi`). The platform establishes a unified, role-segregated software network connecting Customers, Local Merchants (Vendors), Fleet Delivery Partners, and Central Dispatch Administrators.
 
-1. **Deterministic Automatic Order Aggregation (1–4 Orders Rule):** A flexible clustering engine that groups ready-for-delivery orders into batches containing a minimum of 1 and a maximum of 4 orders based on pickup location, delivery coordinates, time-slot compatibility, and corridor feasibility. The system never blocks single urgent orders while strictly preventing courier overload.
-2. **Couriers Assignment Acceptance Gate:** Enforces Step 4 of the delivery lifecycle where delivery partners receive a consolidated **Dispatch Invitation Card** and must explicitly accept the assignment before hub collections can begin. Rejection safely triggers automated reassignment to available couriers or places the batch in a monitored pending queue.
-3. **Dual-Handshake Pickup & Handover Protocol:** Strict enforcement preventing orders from transitioning to `OUT_FOR_DELIVERY` until the vendor explicitly confirms item handover and the courier validates package collection at the merchant hub.
-4. **Cryptographic 4-Digit Doorstep OTP Verification:** Complete elimination of unverified delivery completions. The backend requires a valid 4-digit numeric one-time password (OTP) generated at order creation before transitioning an order to `DELIVERED`.
-5. **Role-Isolated Dashboards & Normalized Account Structure:** Clean, dedicated portals for Customers, Vendors, Delivery Agents, and System Administrators powered by Supabase PostgreSQL, strict JWT authentication, and zero data leakage across tenant boundaries.
+The core engineering innovations of this platform comprise:
+1. **Deterministic Automatic Order Aggregation (1–4 Orders Rule):** A heuristic clustering engine implemented in [`backend/src/services/aggregation.service.js`](file:///c:/Users/Boomika/OneDrive/Desktop/Micro-Logistics/backend/src/services/aggregation.service.js) that groups ready-to-deliver orders into consolidated multi-stop delivery batches containing between a minimum of 1 and a maximum of 4 orders ($1 \le N \le 4$). This policy eliminates the starvation of single urgent orders while strictly preventing courier vehicle overload.
+2. **Couriers Assignment Acceptance Gate:** A mandatory workflow gate in [`src/portals/delivery/DeliveryDashboard.jsx`](file:///c:/Users/Boomika/OneDrive/Desktop/Micro-Logistics/src/portals/delivery/DeliveryDashboard.jsx) where delivery couriers receive a **Dispatch Invitation Card** and must explicitly review and accept or decline the assignment before merchant pickups can commence.
+3. **Dual-Handshake Merchant Pickup Protocol:** An enforceable physical custody transfer mechanism requiring both merchant handover confirmation and courier collection validation before orders transition to `OUT_FOR_DELIVERY`.
+4. **Cryptographic 4-Digit Doorstep OTP Verification:** Verification of delivery via a 4-digit numeric One-Time Password generated at order placement and cryptographically matched by the server before any order is finalized as `DELIVERED`.
+5. **Role-Segregated Single-Page Application:** Four dedicated user portals powered by React 19, Express 5, and Supabase PostgreSQL with strict Row-Level Security (RLS) and JWT authorization.
 
-All 52 automated tests in the backend Vitest test suite pass unconditionally, and the frontend builds cleanly with zero compilation errors in 1.28 seconds.
+As of October 29, 2026, the backend test suite achieves **52/52 passing tests across 6 test suites**, and the frontend production build compiles cleanly in **1.67 seconds** with zero errors.
 
 ---
 
 ## Table of Contents
 
-- [Chapter 1: Introduction & Problem Statement](#chapter-1-introduction--problem-statement)
-  - [1.1 Context & Background](#11-context--background)
-  - [1.2 Problem Formulation](#12-problem-formulation)
+- [Chapter 1: Introduction and Problem Definition](#chapter-1-introduction-and-problem-definition)
+  - [1.1 Background and Context](#11-background-and-context)
+  - [1.2 Problem Statement](#12-problem-statement)
   - [1.3 Project Objectives](#13-project-objectives)
-  - [1.4 Scope of the Implementation](#14-scope-of-the-implementation)
-- [Chapter 2: System Architecture & Technology Stack](#chapter-2-system-architecture--technology-stack)
-  - [2.1 High-Level Architecture](#21-high-level-architecture)
-  - [2.2 Technology Stack Details](#22-technology-stack-details)
+  - [1.4 Scope and Delimitation](#14-scope-and-delimitation)
+- [Chapter 2: System Architecture and Technology Stack](#chapter-2-system-architecture-and-technology-stack)
+  - [2.1 High-Level System Architecture](#21-high-level-system-architecture)
+  - [2.2 Comprehensive Technology Stack](#22-comprehensive-technology-stack)
   - [2.3 Client-Side Module Organization](#23-client-side-module-organization)
   - [2.4 Server-Side Module Organization](#24-server-side-module-organization)
-- [Chapter 3: Database Design & Entity-Relationship Modeling](#chapter-3-database-design--entity-relationship-modeling)
-  - [3.1 Entity-Relationship (ER) Diagram](#31-entity-relationship-er-diagram)
-  - [3.2 Relational Schema Specifications](#32-relational-schema-specifications)
-  - [3.3 Data Integrity & Foreign Key Constraints](#33-data-integrity--foreign-key-constraints)
-- [Chapter 4: End-to-End Workflow & Lifecycle Implementation](#chapter-4-end-to-end-workflow--lifecycle-implementation)
+- [Chapter 3: Database Design and Entity Modeling](#chapter-3-database-design-and-entity-modeling)
+  - [3.1 Relational Entity-Relationship Diagram](#31-relational-entity-relationship-diagram)
+  - [3.2 Database Schema Specifications](#32-database-schema-specifications)
+  - [3.3 Integrity Constraints and Transactional Boundaries](#33-integrity-constraints-and-transactional-boundaries)
+- [Chapter 4: End-to-End Operational Workflow](#chapter-4-end-to-end-operational-workflow)
   - [4.1 Detailed 8-Step Lifecycle](#41-detailed-8-step-lifecycle)
-  - [4.2 End-to-End Sequence Diagram](#42-end-to-end-sequence-diagram)
-  - [4.3 State Transition Matrix](#43-state-transition-matrix)
-  - [4.4 Order Aggregation & Dynamic Clustering Logic](#44-order-aggregation--dynamic-clustering-logic)
-- [Chapter 5: Role-Based Portals & User Interface Architecture](#chapter-5-role-based-portals--user-interface-architecture)
-  - [5.1 Customer Experience Portal](#51-customer-experience-portal)
-  - [5.2 Vendor (Seller) Fulfillment Portal](#52-vendor-seller-fulfillment-portal)
-  - [5.3 Delivery Fleet Control Tower Portal](#53-delivery-fleet-control-tower-portal)
-  - [5.4 Central System Administration Portal](#54-central-system-administration-portal)
-- [Chapter 6: Security Architecture, Authentication & Role Isolation](#chapter-6-security-architecture-authentication--role-isolation)
-  - [6.1 Authentication Mechanism & Session Validation](#61-authentication-mechanism--session-validation)
-  - [6.2 Role-Based Access Control (RBAC)](#62-role-based-access-control-rbac)
-  - [6.3 Tenant & Role Isolation Verification](#63-tenant--role-isolation-verification)
-- [Chapter 7: Quality Assurance, Automated Testing & Verification](#chapter-7-quality-assurance-automated-testing--verification)
-  - [7.1 Automated Test Suite Breakdown (52/52 Tests)](#71-automated-test-suite-breakdown-5252-tests)
-  - [7.2 Production Build & Bundle Verification](#72-production-build--bundle-verification)
-  - [7.3 Edge Case & Fault Handling Matrix](#73-edge-case--fault-handling-matrix)
-- [Chapter 8: Data Cleansing, Approved Accounts & Directory Normalization](#chapter-8-data-cleansing-approved-accounts--directory-normalization)
-  - [8.1 Removal of Sample Artifacts & Name Normalization](#81-removal-of-sample-artifacts--name-normalization)
-  - [8.2 Canonical Directory of Approved Project Accounts](#82-canonical-directory-of-approved-project-accounts)
-  - [8.3 Customer Order History Linkage Resolution](#83-customer-order-history-linkage-resolution)
-- [Chapter 9: Conclusion, Limitations & Future Roadmap](#chapter-9-conclusion-limitations--future-roadmap)
-  - [9.1 Project Evaluation Summary](#91-project-evaluation-summary)
-  - [9.2 Current Operational Limitations](#92-current-operational-limitations)
-  - [9.3 Technical Roadmap](#93-technical-roadmap)
+  - [4.2 End-to-End Sequence Flow](#42-end-to-end-sequence-flow)
+  - [4.3 Dual-Handshake Pickup Protocol](#43-dual-handshake-pickup-protocol)
+  - [4.4 Step 4 Courier Acceptance Gate](#44-step-4-courier-acceptance-gate)
+- [Chapter 5: Order Aggregation Engine & Mathematical Formulation](#chapter-5-order-aggregation-engine--mathematical-formulation)
+  - [5.1 Algorithmic Grouping Criteria](#51-algorithmic-grouping-criteria)
+  - [5.2 Spatial Proximity and Corridor Distance Formulation](#52-spatial-proximity-and-corridor-distance-formulation)
+  - [5.3 Courier Allocation Scoring Model](#53-courier-allocation-scoring-model)
+  - [5.4 Comprehensive Worked Aggregation Example](#54-comprehensive-worked-aggregation-example)
+  - [5.5 Edge Case Handling](#55-edge-case-handling)
+- [Chapter 6: State Transition Modeling](#chapter-6-state-transition-modeling)
+  - [6.1 Unified State Transition Matrix](#61-unified-state-transition-matrix)
+  - [6.2 State Machine Lifecycle Diagram](#62-state-machine-lifecycle-diagram)
+- [Chapter 7: Role-Based Portals & User Interface Architecture](#chapter-7-role-based-portals--user-interface-architecture)
+  - [7.1 Customer Experience Portal](#71-customer-experience-portal)
+  - [7.2 Vendor (Seller) Fulfillment Portal](#72-vendor-seller-fulfillment-portal)
+  - [7.3 Delivery Fleet Control Tower Portal](#73-delivery-fleet-control-tower-portal)
+  - [7.4 Central Dispatch Administration Portal](#74-central-dispatch-administration-portal)
+  - [7.5 Verified Application Screenshots](#75-verified-application-screenshots)
+- [Chapter 8: Security Architecture, Authentication, and Role Isolation](#chapter-8-security-architecture-authentication-and-role-isolation)
+  - [8.1 Authentication and Token Propagation](#81-authentication-and-token-propagation)
+  - [8.2 Role-Based Access Control (RBAC)](#82-role-based-access-control-rbac)
+  - [8.3 Tenant Isolation and Data Protection](#83-tenant-isolation-and-data-protection)
+  - [8.4 Approved Demonstration Accounts Directory](#84-approved-demonstration-accounts-directory)
+- [Chapter 9: Quality Assurance, Automated Testing, and System Verification](#chapter-9-quality-assurance-automated-testing-and-system-verification)
+  - [9.1 Automated Backend Test Execution](#91-automated-backend-test-execution)
+  - [9.2 Production Build Verification](#92-production-build-verification)
+  - [9.3 Automated Testing vs. Manual End-to-End Verification](#93-automated-testing-vs-manual-end-to-end-verification)
+- [Chapter 10: Individual Team Member Contributions](#chapter-10-individual-team-member-contributions)
+  - [10.1 Work Allocation and Domain Ownership](#101-work-allocation-and-domain-ownership)
+  - [10.2 Contribution Matrix](#102-contribution-matrix)
+- [Chapter 11: Conclusion, Limitations, and Future Roadmap](#chapter-11-conclusion-limitations-and-future-roadmap)
+  - [11.1 Conclusion](#111-conclusion)
+  - [11.2 Current Operational Limitations](#112-current-operational-limitations)
+  - [11.3 Technical Development Roadmap](#113-technical-development-roadmap)
 - [References & Appendices](#references--appendices)
+  - [Academic References](#academic-references)
   - [Appendix A: REST API Endpoint Catalog](#appendix-a-rest-api-endpoint-catalog)
-  - [Appendix B: Verification Checklist & Manual Action Items](#appendix-b-verification-checklist--manual-action-items)
+  - [Appendix B: Implementation Verification Checklist](#appendix-b-implementation-verification-checklist)
 
 ---
 
-## Chapter 1: Introduction & Problem Statement
+## Chapter 1: Introduction and Problem Definition
 
-### 1.1 Context & Background
-Urban consumption habits have shifted decisively toward hyperlocal quick-commerce, where consumers expect fresh groceries, pharmaceuticals, and daily essentials delivered within compressed time windows (30 minutes to 4 hours). However, the underlying physical supply chain faces severe unit-economic pressure:
+### 1.1 Background and Context
+Hyperlocal e-commerce has expanded rapidly across metropolitan India, with consumers expecting rapid doorstep delivery of everyday necessities such as fresh groceries, bakery goods, and dairy products. Unlike conventional national parcel logistics, hyperlocal fulfillment operates under stringent spatial and temporal constraints:
+* **Compressed Fulfillment Windows:** Delivery promises typically span 1 to 4 hours.
+* **Perishable Merchandise:** Temperature-sensitive and fresh items require expedited pickup and handling.
+* **Neighborhood Vendor Dispersion:** Small independent merchants lack centralized warehousing, requiring pickups directly from scattered storefronts.
 
-* Point-to-point single-order delivery models incur prohibitively high fuel and rider costs.
-* Vehicle emissions and urban traffic congestion scale linearly with point-to-point courier trips.
-* Neighborhood independent vendors lack enterprise ERP infrastructure to synchronize inventory, packaging, and courier handovers.
+In dense urban environments such as Chennai, Tamil Nadu, traditional logistics operations result in substantial economic friction, with vehicle trips duplicating routes across commercial corridors such as Anna Nagar, Mylapore, Adyar, and T. Nagar.
 
-The **Smart Micro-Logistics Management System** was engineered to address this gap by establishing an intelligent, corridor-based aggregation network tailored for urban micro-markets.
-
-### 1.2 Problem Formulation
-Traditional hyperlocal delivery systems suffer from five systemic flaws:
-
-1. **Inefficient Batch Sizes:** Legacy algorithms often require rigid batch thresholds (e.g., waiting indefinitely until 4 or 5 orders accumulate), causing unacceptable delivery delays for early customers. Conversely, unconstrained batches overload two-wheeled couriers beyond vehicle carrying capacity.
-2. **Premature Handover & Phantom Transits:** Couriers frequently mark orders "in-transit" before arriving at merchant hubs, obscuring real supply-chain bottlenecks and leaving merchants unable to account for package custody.
-3. **Fragile Proof-of-Delivery:** Delivery agents frequently bypass signature or OTP verifications, leading to customer disputes, fraudulent claims, and lack of accountability.
-4. **Fragmented Operations:** Administrators lack real-time visibility into aggregation efficiency, agent loads, and order bottlenecks across diverse merchant categories.
-5. **Confusing Demo Data & Identity Collisions:** Software demonstration environments frequently suffer from corrupted sample records, unmapped customer names, and overlapping test orders that obstruct evaluation.
+### 1.2 Problem Statement
+Current commercial hyperlocal operations suffer from five critical structural flaws:
+1. **Unbatched 1:1 Courier Dispatch:** Couriers are assigned to single individual orders. When three neighbors in the same apartment complex purchase goods from three adjacent stores on the same street, three separate couriers are dispatched. This causes high fuel costs, traffic congestion, and diminished courier earnings per trip.
+2. **Premature Status Progression ("Phantom Transits"):** Couriers often mark orders "In-Transit" prior to arriving at the merchant location to satisfy platform metrics, leading to customer confusion and lack of custodial accountability.
+3. **Unverified Doorstep Drops:** Deliveries frequently lack secure proof-of-delivery, leading to parcel disputes, theft claims, and customer dissatisfaction.
+4. **Rigid Batch Size Bottlenecks:** Naive batching engines require large clusters before dispatching, causing early orders to sit idle. Conversely, unconstrained batching overloads two-wheeled couriers beyond vehicle carrying capacity.
+5. **Fragmented Stakeholder Software:** Merchants, riders, customers, and dispatchers lack synchronized state visibility, resulting in phone-call-driven coordination.
 
 ### 1.3 Project Objectives
-The core engineering objectives achieved in this project include:
+The engineering objectives of the `MicroLogi` platform are:
+* **Objective 1:** Implement an automated order aggregation engine that clusters 1 to 4 ready-to-deliver orders based on shared delivery dates, compatible time slots, and corridor proximity.
+* **Objective 2:** Enforce an explicit courier assignment acceptance gate where delivery agents can review corridor details, parcel counts, and stops before accepting or rejecting assignments.
+* **Objective 3:** Implement a dual-handshake pickup protocol requiring merchant handover confirmation and rider collection acknowledgement before dispatch.
+* **Objective 4:** Secure final delivery through cryptographic 4-digit One-Time Password (OTP) verification matching.
+* **Objective 5:** Provide four dedicated, responsive web portals for Customers, Sellers, Couriers, and Administrators with zero unauthorized cross-role data access.
 
-* **Dynamic Order Aggregation:** Form batches containing between **1 and 4 orders** strictly based on pickup proximity, dropoff routing, delivery date, and scheduled time window.
-* **Controlled Handshake Protocols:** Enforce strict courier assignment acceptance, merchant package handover confirmation, and doorstep OTP verification.
-* **Role-Based Portals:** Provide purpose-built, responsive interfaces for Admin, Vendor, Delivery, and Customer roles with zero unauthorized cross-role data access.
-* **Data Cleansing & Canonical Accounts:** Purge obsolete testing artifacts, normalize all customer references, and establish approved credentialed accounts (`c1`–`c4`, `v1`–`v4`, `da1`–`da4`, and `admin`).
+### 1.4 Scope and Delimitation
+The project implementation encompasses a full-stack, decoupled Single-Page Application (SPA) and REST API deployed locally, backed by a cloud Supabase PostgreSQL instance. The spatial modeling focuses on the Chennai metropolitan area across 20 distinct urban zones. 
 
-### 1.4 Scope of the Implementation
-The implementation encompasses a full-stack web application deployed with local backend and frontend servers, backed by a managed Supabase PostgreSQL instance. The platform focuses on the Chennai Metropolitan Area, modeling active commercial clusters including Anna Nagar, Mylapore, Adyar, T. Nagar, and the OMR IT Corridor.
+*Delimitation:* Real-time turn-by-turn GPS navigation and dynamic Travelling Salesperson Problem (TSP) road-graph calculations are outside the current scope and are represented via Manhattan/Haversine corridor heuristics and interactive route cards.
 
 ---
 
-## Chapter 2: System Architecture & Technology Stack
+## Chapter 2: System Architecture and Technology Stack
 
-### 2.1 High-Level Architecture
-The system employs a decoupled, multi-tier Single-Page Application (SPA) and RESTful API architecture:
+### 2.1 High-Level System Architecture
+The system utilizes a decoupled, three-tier client-server architecture:
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer ["Client Presentation Tier (Browser)"]
-        CustomerUI["Customer Portal (/customer)"]
-        VendorUI["Vendor Portal (/seller)"]
-        DeliveryUI["Fleet Portal (/delivery)"]
-        AdminUI["Admin Tower (/admin)"]
-        AppContext["AppContext (Global State)"]
-        DeliveryContext["DeliveryContext (Fleet State)"]
+    subgraph PresentationTier ["Presentation Tier (Browser Client - React 19 / Vite)"]
+        CustomerPortal["Customer Portal (/customer)"]
+        VendorPortal["Vendor Portal (/seller)"]
+        DeliveryPortal["Delivery Portal (/delivery)"]
+        AdminPortal["Admin Tower (/admin)"]
+        AppContext["AppContext (Orders & Catalog State)"]
+        DeliveryContext["DeliveryContext (Fleet & Batch State)"]
     end
 
-    subgraph APILayer ["Application Tier (Node.js & Express 5)"]
-        AuthMiddleware["JWT & RBAC Middleware"]
-        OrderRoutes["Order Controller (/api/orders)"]
-        DeliveryRoutes["Delivery Controller (/api/delivery)"]
-        AggregationEngine["Aggregation Service (1-4 Orders Rule)"]
-        VendorRoutes["Vendor Controller (/api/vendors)"]
-        CustomerRoutes["Customer Controller (/api/customers)"]
+    subgraph ApplicationTier ["Application Tier (Node.js & Express 5 API)"]
+        AuthGuard["JWT & RBAC Middleware"]
+        OrderCtrl["Order Controller (/api/orders)"]
+        DeliveryCtrl["Delivery Controller (/api/delivery)"]
+        VendorCtrl["Vendor Controller (/api/vendors)"]
+        CustCtrl["Customer Controller (/api/customers)"]
+        AggregationEngine["Aggregation Engine (1–4 Orders Rule)"]
     end
 
-    subgraph DataLayer ["Persistence & Identity Tier (Supabase)"]
-        PostgreSQL[("Supabase PostgreSQL Database")]
-        AuthService["Supabase Auth (JWT Provider)"]
-        StorageEngine["Relational Entities & FK Constraints"]
+    subgraph DataTier ["Persistence Tier (Supabase PostgreSQL & Auth)"]
+        PostgresDB[("Supabase PostgreSQL")]
+        AuthService["Supabase Auth (GoTrue JWT)"]
+        RLS["Row Level Security Policies"]
     end
 
-    CustomerUI -->|HTTP / Axios| OrderRoutes
-    VendorUI -->|HTTP / Axios| VendorRoutes
-    DeliveryUI -->|HTTP / Axios| DeliveryRoutes
-    AdminUI -->|HTTP / Axios| OrderRoutes
-    AdminUI -->|Trigger Aggregation| AggregationEngine
+    CustomerPortal -->|HTTP REST / Axios| OrderCtrl
+    VendorPortal -->|HTTP REST / Axios| VendorCtrl
+    DeliveryPortal -->|HTTP REST / Axios| DeliveryCtrl
+    AdminPortal -->|HTTP REST / Axios| OrderCtrl
+    AdminPortal -->|Trigger Aggregation| AggregationEngine
 
-    ClientLayer -->|Bearer JWT Token| AuthMiddleware
-    AuthMiddleware -->|Verify Signature| AuthService
-    OrderRoutes -->|SQL Queries| PostgreSQL
-    DeliveryRoutes -->|Batch Operations| PostgreSQL
-    AggregationEngine -->|Read/Write Batches| PostgreSQL
+    PresentationTier -->|Bearer JWT Header| AuthGuard
+    AuthGuard -->|Verify Signature| AuthService
+    OrderCtrl -->|SQL / Service Key| PostgresDB
+    DeliveryCtrl -->|Batch SQL Queries| PostgresDB
+    AggregationEngine -->|Read/Write Batches| PostgresDB
 ```
 
-### 2.2 Technology Stack Details
+### 2.2 Comprehensive Technology Stack
 
-| Layer | Technology | Version | Purpose in Project |
+| Architecture Layer | Technology Selection | Version | Academic & Operational Justification |
 | :--- | :--- | :--- | :--- |
-| **Frontend Framework** | React | 19.0.0 | Component hierarchy, virtual DOM reconciliation, reactive UI |
-| **Build & Bundler** | Vite | 6.2.0 | Hot Module Replacement (HMR), ESM asset bundling |
-| **Routing** | React Router DOM | 7.2.0 | Client-side routing, protected route guards, role redirects |
-| **Styling** | Vanilla CSS + Tokens | CSS3 | Scoped BEM-styled stylesheets, dark/light CSS variables |
-| **Icons** | Lucide React | 1.16.0 | Semantic icons across all role dashboards |
-| **HTTP Client** | Axios | 1.7.9 | Interceptor-driven REST communication with JWT propagation |
-| **Backend Runtime** | Node.js | 20.x / 24.x | Asynchronous event-driven JavaScript server environment |
-| **Web Server Framework**| Express | 5.2.1 | Route dispatching, REST API endpoints, error middleware |
-| **Database** | PostgreSQL (Supabase) | 15+ | Relational data persistence, foreign keys, ACID transactions |
-| **Authentication** | Supabase Auth (GoTrue)| — | Secure token generation, user hashing, session management |
-| **Test Runner** | Vitest | 5.0.0 | High-performance unit and integration test runner |
+| **Frontend Framework** | React | 19.0.0 | Concurrent rendering, virtual DOM reconciliation, component encapsulation |
+| **Frontend Tooling** | Vite | 6.2.0 | Native ESM-based dev server, Hot Module Replacement (HMR), optimized bundling |
+| **Client Routing** | React Router DOM | 7.2.0 | Declarative nested routing, history management, protected route redirects |
+| **Visual Styling** | Vanilla CSS + CSS Variables | CSS3 | Scoped component styling, zero CSS-in-JS runtime overhead, theme token support |
+| **Iconography** | Lucide React | 1.16.0 | Semantic SVG icon system across all portal navigation trees |
+| **HTTP Transport** | Axios | 1.7.9 | Promise-based HTTP client with automatic Bearer JWT injection interceptors |
+| **Backend Runtime** | Node.js | 20.x / 24.x | Non-blocking event-driven I/O model suitable for high-concurrency API dispatching |
+| **Application Framework**| Express | 5.2.1 | Modern routing middleware, centralized exception handling, RESTful standards |
+| **Database Engine** | PostgreSQL (Supabase) | 15+ | ACID transaction compliance, referential integrity, B-Tree indexing, JSONB |
+| **Identity Service** | Supabase Auth (GoTrue)| Managed | Cryptographic SHA-256 password hashing, signed JWT generation, session security |
+| **Automated Testing** | Vitest | 5.0.0 | High-performance multi-threaded test runner with native ESM execution |
 
 ### 2.3 Client-Side Module Organization
-The frontend codebase in `src/` is structured modularly:
-* **`src/auth/`**: Login, registration, landing page, and session-resolution handlers.
-* **`src/components/`**: Reusable atomic UI elements (`StatusBadge`, `ConfirmationModal`, `Header`, `Sidebar`, `EmptyState`).
-* **`src/context/`**: Global state providers (`AppContext.jsx` for catalog, orders, and users; `DeliveryContext.jsx` for fleet telemetry and dispatch workflows).
-* **`src/portals/`**: Segmented role dashboards (`admin/`, `customer/`, `delivery/`, `seller/`).
-* **`src/utils/`**: Helper utilities including `customerDirectory.js`, `imageUtils.js`, and `helpers.js`.
+The client application is organized into modular directories under `src/`:
+* `src/auth/`: Login, registration, landing page, and multi-identifier credential resolution.
+* `src/components/`: Reusable interface components (`Header`, `Sidebar`, `StatusBadge`, `OrderDetailsModal`, `EmptyState`).
+* `src/context/`: Reactive state stores (`AppContext.jsx` managing catalog and orders; `DeliveryContext.jsx` managing active courier batches and telematics).
+* `src/portals/`: Role-specific view modules:
+  * `customer/`: Marketplace catalog browsing, multi-vendor cart, scheduled checkout, live tracking.
+  * `seller/`: Order fulfillment board, inventory manager, vendor handover action triggers.
+  * `delivery/`: Courier cockpit, batch invitation acceptance card, merchant pickup checklist, OTP verification modal.
+  * `admin/`: Central dispatch command tower, visual aggregation manager, fleet supervisor.
+* `src/utils/`: Helper algorithms (`aggregationUtils.js`, `customerDirectory.js`, `helpers.js`).
 
 ### 2.4 Server-Side Module Organization
-The backend in `backend/` follows standard clean architectural conventions:
-* **`backend/src/config/`**: Supabase client initialization, environment variable validations (`env.js`).
-* **`backend/src/controllers/`**: HTTP request handlers (`order.controller.js`, `delivery.controller.js`, `vendor.controller.js`, `customer.controller.js`).
-* **`backend/src/middleware/`**: JWT token verification (`requireAuth`), role authorization gates (`requireRole`), and global error handling.
-* **`backend/src/services/`**: Core computational logic (`aggregation.service.js`).
-* **`backend/src/utils/`**: Relational database to frontend mapping layers (`mappings.js`).
-* **`backend/tests/`**: Automated Vitest test suites.
+The server backend in `backend/` follows clean architectural separation:
+* `backend/src/config/`: Supabase client initialization and environment validation (`supabase.js`, `env.js`).
+* `backend/src/controllers/`: HTTP request dispatchers (`order.controller.js`, `delivery.controller.js`, `vendor.controller.js`, `customer.controller.js`).
+* `backend/src/middleware/`: Security gates (`auth.middleware.js` validating JWTs and RBAC permissions).
+* `backend/src/services/`: Core computational logic (`aggregation.service.js` containing clustering algorithms).
+* `backend/src/utils/`: Legacy-to-database schema bidirectional adapters (`mappings.js`).
+* `backend/tests/`: Automated unit and integration test suites.
 
 ---
 
-## Chapter 3: Database Design & Entity-Relationship Modeling
+## Chapter 3: Database Design and Entity Modeling
 
-### 3.1 Entity-Relationship (ER) Diagram
+### 3.1 Relational Entity-Relationship Diagram
 
 ```mermaid
 erDiagram
@@ -225,11 +250,8 @@ erDiagram
         string legacy_id
         string address
         string area
-        float lat
-        float lng
         string status
         int total_orders
-        int active_orders
     }
 
     VENDORS {
@@ -241,7 +263,6 @@ erDiagram
         string address
         string area
         boolean is_open
-        string status
     }
 
     DELIVERY_AGENTS {
@@ -252,7 +273,6 @@ erDiagram
         int current_orders
         string availability
         string vehicle
-        float rating
     }
 
     ORDERS {
@@ -281,8 +301,6 @@ erDiagram
         int order_count
         string delivery_slot
         date delivery_date
-        decimal estimated_distance
-        int estimated_time
     }
 
     DELIVERY_VERIFICATIONS {
@@ -291,97 +309,122 @@ erDiagram
         string otp_code
         boolean is_verified
         int attempts
-        timestamp verified_at
     }
 ```
 
-### 3.2 Relational Schema Specifications
+### 3.2 Database Schema Specifications
 
 #### 1. `profiles` Table
-Central authentication table referencing Supabase Auth users.
-* `id` (`UUID`, Primary Key): Matches auth user ID.
-* `username` (`VARCHAR(100)`): Unique display handle (e.g., `c1`, `v1`, `da1`, `admin`).
-* `email` (`VARCHAR(255)`): Verified account email.
-* `phone` (`VARCHAR(20)`): Contact telephone number.
-* `role` (`VARCHAR(50)`): Enforced role (`customer`, `vendor`, `delivery_partner`, `admin`).
+Central authentication table referencing Supabase Auth users:
+* `id` (`UUID`, Primary Key): References `auth.users.id`.
+* `username` (`VARCHAR(100)`, Unique): System handle (`c1`, `v1`, `da1`, `admin`).
+* `email` (`VARCHAR(255)`, Unique): User login email.
+* `phone` (`VARCHAR(20)`): Contact phone number.
+* `role` (`VARCHAR(50)`, Not Null): Enforced security role (`customer`, `vendor`, `delivery_partner`, `admin`).
 
 #### 2. `customer_profiles` Table
-Domain-specific attributes for consumer accounts.
+Stores customer-specific metadata:
 * `id` (`UUID`, PK, FK $\rightarrow$ `profiles.id` ON DELETE CASCADE).
-* `legacy_id` (`VARCHAR(50)`): Human-readable code (`c1`, `c2`, `c3`, `c4`).
-* `address` (`TEXT`): Full delivery street address with Chennai pincode.
-* `area` (`VARCHAR(100)`): Delivery zone (e.g., `Anna Nagar East`, `Mylapore`).
+* `legacy_id` (`VARCHAR(50)`): Human-readable alias (`c1`, `c2`, `c3`, `c4`).
+* `address` (`TEXT`): Full residential address with pincode.
+* `area` (`VARCHAR(100)`): Delivery zone (e.g., `Anna Nagar East`).
 * `status` (`VARCHAR(50)`): Account standing (`Active`, `Suspended`).
 
 #### 3. `orders` Table
-Primary order tracking record.
-* `id` (`UUID`, Primary Key): Unique system identifier.
-* `order_code` (`VARCHAR(50)`): Display identifier (e.g., `ORD-5131`).
+Main transactional order tracking table:
+* `id` (`UUID`, Primary Key): System UUID.
+* `order_code` (`VARCHAR(50)`, Unique): Customer display code (e.g., `ORD-5131`).
 * `customer_id` (`UUID`, FK $\rightarrow$ `customer_profiles.id`).
 * `vendor_id` (`UUID`, FK $\rightarrow$ `vendors.id`).
 * `batch_id` (`UUID`, FK $\rightarrow$ `delivery_batches.id`, Nullable).
 * `assigned_agent_id` (`UUID`, FK $\rightarrow$ `delivery_agents.id`, Nullable).
-* `total` (`DECIMAL(10,2)`): Total monetary amount.
-* `order_status` (`VARCHAR(50)`): Core status (`PLACED`, `CONFIRMED`, `PREPARING`, `READY_FOR_DELIVERY`, `ASSIGNED`, `OUT_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`).
-* `delivery_status` (`VARCHAR(50)`): Courier tracking status (`PENDING_ASSIGNMENT`, `ASSIGNED`, `PICKED_UP`, `OUT_FOR_DELIVERY`, `DELIVERED`).
-* `aggregation_status` (`VARCHAR(50)`): Dispatch status (`WAITING_FOR_AGGREGATION`, `GROUPED`, `BATCH_CREATED`, `ASSIGNED`, `COMPLETED`).
+* `total` (`DECIMAL(10,2)`): Total order amount in INR.
+* `order_status` (`VARCHAR(50)`): Preparation state (`PLACED`, `CONFIRMED`, `PREPARING`, `READY_FOR_DELIVERY`, `ASSIGNED`, `OUT_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`).
+* `delivery_status` (`VARCHAR(50)`): Transport state (`PENDING_ASSIGNMENT`, `ASSIGNED`, `PICKED_UP`, `OUT_FOR_DELIVERY`, `DELIVERED`).
+* `aggregation_status` (`VARCHAR(50)`): Clustering state (`WAITING_FOR_AGGREGATION`, `GROUPED`, `BATCH_CREATED`, `ASSIGNED`, `COMPLETED`).
+* `delivery_time_slot` (`VARCHAR(50)`): Scheduled fulfillment window.
+* `delivery_date` (`DATE`): Scheduled fulfillment date.
 
 #### 4. `delivery_batches` Table
-Represents an aggregated consolidation of 1 to 4 orders.
-* `id` (`UUID`, Primary Key): System batch UUID.
-* `batch_code` (`VARCHAR(50)`): Human-readable code (e.g., `B-5047`).
+Consolidates 1 to 4 orders into a single delivery task:
+* `id` (`UUID`, Primary Key).
+* `batch_code` (`VARCHAR(50)`, Unique): Batch identifier (e.g., `B-5047`).
 * `agent_id` (`UUID`, FK $\rightarrow$ `delivery_agents.id`, Nullable).
-* `status` (`VARCHAR(50)`): Batch execution state (`PENDING_ASSIGNMENT`, `ASSIGNED`, `PICKUP_IN_PROGRESS`, `PICKED_UP`, `OUT_FOR_DELIVERY`, `COMPLETED`).
-* `order_count` (`INT`): Number of aggregated orders ($1 \le N \le 4$).
-* `delivery_slot` (`VARCHAR(50)`): Delivery schedule slot (e.g., `9:00 AM – 1:00 PM`).
+* `status` (`VARCHAR(50)`): Execution state (`PENDING_ASSIGNMENT`, `ASSIGNED`, `PICKUP_IN_PROGRESS`, `PICKED_UP`, `OUT_FOR_DELIVERY`, `COMPLETED`).
+* `aggregation_status` (`VARCHAR(50)`): Batch phase (`BATCH_CREATED`, `ASSIGNED`, `IN_TRANSIT`, `COMPLETED`).
+* `order_count` (`INT`, Check $1 \le N \le 4$): Number of aggregated orders.
+* `delivery_slot` (`VARCHAR(50)`): Consolidated delivery window.
 * `delivery_date` (`DATE`): Delivery calendar date.
 
 #### 5. `delivery_verifications` Table
-Stores secret cryptographic OTPs for doorstep delivery proof.
+Secures proof of delivery:
 * `id` (`UUID`, Primary Key).
 * `order_id` (`UUID`, FK $\rightarrow$ `orders.id` ON DELETE CASCADE, Unique).
-* `otp_code` (`VARCHAR(6)`): 4-digit numeric verification code.
-* `is_verified` (`BOOLEAN`): Verification completion flag.
-* `attempts` (`INT`): Failed attempt counter (security lock after 5 attempts).
+* `otp_code` (`VARCHAR(6)`, Not Null): 4-digit secret delivery PIN.
+* `is_verified` (`BOOLEAN`, Default `FALSE`): Verification status.
+* `attempts` (`INT`, Default 0): Failed attempt counter (locks after 5 failures).
 
-### 3.3 Data Integrity & Foreign Key Constraints
-* **Cascade Deletions:** Deleting an order cascades to its items and verification records without corrupting batches.
-* **Batch Disassociation:** Setting `batch_id = NULL` removes an order from a batch without deleting the order record.
-* **Atomic Batch Updates:** Batch assignment updates both `delivery_batches.agent_id` and all associated `orders.assigned_agent_id` in a single transactional step.
+### 3.3 Integrity Constraints and Transactional Boundaries
+* **Referential Cascades:** Order deletion cascades to items and verifications, avoiding orphaned records.
+* **Batch Disassociation:** Setting `batch_id = NULL` removes an order from a batch without deleting the underlying order record.
+* **Atomic Batch Assignment:** When an admin assigns a batch to a courier, a single transactional operation updates both `delivery_batches.agent_id` and all associated `orders.assigned_agent_id` records.
 
 ---
 
-## Chapter 4: End-to-End Workflow & Lifecycle Implementation
+## Chapter 4: End-to-End Operational Workflow
 
 ### 4.1 Detailed 8-Step Lifecycle
+
+The end-to-end operational lifecycle spans four participating roles across 8 deterministic stages:
+
+1. **Step 1: Order Placement & OTP Generation (Customer)**  
+   The customer selects local merchant items, chooses a delivery address, and selects a scheduled delivery window (e.g., `9:00 AM – 1:00 PM`). Upon checkout, the system creates an order in `PLACED` status and generates a cryptographically random 4-digit numeric OTP stored in `delivery_verifications`.
+2. **Step 2: Order Acceptance & Preparation (Vendor)**  
+   The merchant receives the order on their fulfillment board, verifies inventory availability, and confirms the order (`PLACED` $\rightarrow$ `CONFIRMED`). When packaging begins, status updates to `PREPARING`.
+3. **Step 3: Staging for Delivery (Vendor)**  
+   Once packaging is complete and the manifest is affixed, the vendor marks the order as `READY_FOR_DELIVERY`. The aggregation engine marks the order as `WAITING_FOR_AGGREGATION`.
+4. **Step 4: Automatic Aggregation & Courier Assignment (Admin / System)**  
+   The aggregation engine scans ready orders, groups compatible orders into batches of 1 to 4 ($1 \le N \le 4$), creates a `delivery_batches` record (`BATCH_CREATED`), and evaluates available couriers based on zone proximity and remaining capacity. The batch is assigned to the best-matching courier (`ASSIGNED`).
+5. **Step 5: Courier Acceptance Gate (Courier)**  
+   The assigned courier's dashboard displays a prominent **Dispatch Invitation Card** detailing the batch code, corridor, order count, and estimated time. The courier must click **Accept Assignment** to claim the batch (`status: PICKUP_IN_PROGRESS`). If declined, the batch transitions to `PENDING_ASSIGNMENT` for automated or manual reassignment.
+6. **Step 6: Dual-Handshake Merchant Hub Pickup (Vendor & Courier)**  
+   The courier navigates to the merchant storefront. The vendor verifies the courier's presence and marks the order as handed over (`vendor_handover_confirmed = true`). The courier checks the parcels and validates collection (`PICKED_UP`).
+7. **Step 7: Corridor Dispatch (Courier)**  
+   Once all merchant parcels for the batch are collected, the batch and orders transition to `OUT_FOR_DELIVERY`. The customer's tracking portal displays live transit status and displays the customer's 4-digit delivery OTP.
+8. **Step 8: Doorstep Handover & OTP Verification (Courier & Customer)**  
+   The courier arrives at the customer's doorstep. The customer provides their 4-digit OTP. The courier submits the code via the verification interface. The server validates the code against `delivery_verifications`:
+   * **Correct Match:** The order immediately transitions to `DELIVERED`, recording verification timestamp.
+   * **Incorrect Match:** An error is displayed; the attempt counter is incremented.
+
+### 4.2 End-to-End Sequence Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Customer as Customer (c1-c4)
     actor Vendor as Vendor (v1-v4)
-    actor Admin as Admin Dispatch
-    actor Courier as Delivery Partner (da1-da4)
+    actor Admin as Dispatch Admin
+    actor Courier as Delivery Courier (da1-da4)
 
     Note over Customer,Courier: Stage 1: Order Placement & Preparation
-    Customer->>Vendor: 1. Place Order (Select Slot, Address, Generate OTP)
+    Customer->>Vendor: 1. Place Order (Select Slot, Generate 4-Digit OTP)
     Vendor->>Vendor: 2. Accept & Prepare Order (CONFIRMED -> PREPARING)
-    Vendor->>Admin: 3. Mark Order READY_FOR_DELIVERY
+    Vendor->>Admin: 3. Mark Ready for Delivery (READY_FOR_DELIVERY)
 
-    Note over Admin,Courier: Stage 2: Automatic Aggregation & Courier Assignment
-    Admin->>Admin: 4. Run Aggregation Engine (1 to 4 Compatible Orders per Batch)
-    Admin->>Courier: 5. Assign Batch to Suitable Available Courier (ASSIGNED)
-    
+    Note over Admin,Courier: Stage 2: Aggregation & Assignment
+    Admin->>Admin: 4. Execute Clustering Engine (1-4 Orders Rule)
+    Admin->>Courier: 5. Assign Batch to Available Courier (ASSIGNED)
+
     Note over Courier: Stage 3: Acceptance Gate
     Courier->>Courier: 6. Review Dispatch Invitation (Route, Stops, Parcels)
     alt Courier Accepts
         Courier->>Admin: 7a. Accept Batch (PICKUP_IN_PROGRESS)
     else Courier Declines
-        Courier->>Admin: 7b. Decline Assignment -> Auto-reassign to da3/da4 or PENDING
+        Courier->>Admin: 7b. Decline Assignment -> Reassign / PENDING_ASSIGNMENT
     end
 
     Note over Vendor,Courier: Stage 4: Merchant Hub Pickups
-    Courier->>Vendor: 8. Arrive at Merchant Hub
+    Courier->>Vendor: 8. Arrive at Merchant Storefront
     Vendor->>Courier: 9. Hand Over Packages (Vendor Handover Confirmed)
     Courier->>Courier: 10. Confirm Collection (PICKED_UP -> OUT_FOR_DELIVERY)
 
@@ -393,268 +436,401 @@ sequenceDiagram
     Admin-->>Customer: 15. Real-Time Order Delivered Notification
 ```
 
-### 4.2 State Transition Matrix
+### 4.3 Dual-Handshake Pickup Protocol
+To eliminate phantom transits, the platform enforces a dual-handshake check:
+* **Condition 1:** The merchant must confirm parcel handover on their fulfillment dashboard (`is_handed_over = true`).
+* **Condition 2:** The courier must verify collection on their pickup checklist (`pickup_confirmed = true`).
 
-| Entity | Initial State | Trigger Action | Required Conditions | Resulting State |
-| :--- | :--- | :--- | :--- | :--- |
-| **Order** | `PLACED` | Vendor Confirms | Valid stock | `CONFIRMED` |
-| **Order** | `CONFIRMED` | Vendor Starts Prep | Kitchen / Counter active | `PREPARING` |
-| **Order** | `PREPARING` | Vendor Completes | Packaged & manifest ready | `READY_FOR_DELIVERY` |
-| **Order** | `READY_FOR_DELIVERY`| Aggregation Run | Compatible batch found (1–4) | `ASSIGNED` |
-| **Batch** | `PENDING_ASSIGNMENT`| Courier Assigned | Suitable agent available | `ASSIGNED` |
-| **Batch** | `ASSIGNED` | Courier Accepts | Courier clicks "Accept" | `PICKUP_IN_PROGRESS` |
-| **Batch** | `ASSIGNED` | Courier Declines| Courier clicks "Decline" | `PENDING_ASSIGNMENT` |
-| **Order** | `ASSIGNED` | Hub Collection | Vendor handover confirmed | `OUT_FOR_DELIVERY` |
-| **Order** | `OUT_FOR_DELIVERY` | Verify OTP | Valid 4-digit customer OTP | `DELIVERED` |
+Attempting to mark an order `OUT_FOR_DELIVERY` without both confirmations results in an error in `DeliveryContext.jsx`.
 
-### 4.3 Batch Aggregation & Order State Diagram
+### 4.4 Step 4 Courier Acceptance Gate
+In traditional delivery apps, couriers are often silently assigned orders without consent. `MicroLogi` enforces an explicit acceptance gate:
+* When a batch is in `ASSIGNED` state, the courier dashboard suppresses transit and pickup buttons.
+* It displays a **Dispatch Invitation Card** with two buttons: **Accept Assignment & Start Pickups** (triggers `PICKUP_IN_PROGRESS`) and **Decline / Reassign** (triggers reassignment).
+
+---
+
+## Chapter 5: Order Aggregation Engine & Mathematical Formulation
+
+### 5.1 Algorithmic Grouping Criteria
+The order clustering algorithm implemented in `backend/src/services/aggregation.service.js` groups candidate orders using four criteria:
+
+1. **Delivery Date Equality:**
+   $$\text{Date}(O_i) = \text{Date}(O_j)$$
+   Orders scheduled for different dates are never batched together.
+2. **Time Slot Compatibility:**
+   $$\text{SlotCompatible}(S_i, S_j) = \text{TRUE}$$
+   Exact matching slots or predefined overlapping windows (e.g., `7:00 AM – 11:00 AM` and `9:00 AM – 1:00 PM`) are valid.
+3. **Corridor Proximity Limits:**
+   $$D_{\text{pickup}}(P_i, P_j) \le 8.5\text{ km} \quad \text{and} \quad D_{\text{drop}}(D_i, D_j) \le 9.0\text{ km}$$
+   Distances are computed using the Haversine formula over transit coordinates.
+4. **Deterministic Batch Size Bounds:**
+   $$1 \le |B_k| \le 4$$
+   Batches contain between 1 and 4 orders. The system never blocks a solitary order, and never places a 5th order into an existing batch.
+
+### 5.2 Spatial Proximity and Corridor Distance Formulation
+Distance between two geographic coordinates $(\phi_1, \lambda_1)$ and $(\phi_2, \lambda_2)$ is determined using the Haversine formula:
+
+$$a = \sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)$$
+
+$$c = 2 \cdot \text{atan2}\left(\sqrt{a}, \sqrt{1-a}\right)$$
+
+$$D = R \cdot c$$
+
+where $R = 6371\text{ km}$ is Earth's mean radius.
+
+Estimated batch route distance and transit time are modeled as:
+$$\text{Estimated Distance (km)} = 2.5 + (|B| \times 1.3)$$
+$$\text{Estimated Time (minutes)} = \text{round}(15 + (\text{Estimated Distance} \times 5.5))$$
+
+### 5.3 Courier Allocation Scoring Model
+When a batch $B$ is created, available couriers are evaluated using a multi-factor scoring function:
+
+$$\text{Score}(A_m) = S_{\text{base}} + S_{\text{proximity}} - S_{\text{workload}} + S_{\text{rating}}$$
+
+* $S_{\text{base}} = 50$
+* $S_{\text{proximity}} = +40$ (if agent's operating zone matches batch pickup/drop area) or $\max(0, 30 - 3 \times D)$
+* $S_{\text{workload}} = -5 \times (\text{current active orders})$
+* $S_{\text{rating}} = +2 \times (\text{agent rating out of 5.0})$
+
+The available agent with the highest positive score is selected. If an agent previously declined the batch, they are excluded from the candidate pool.
+
+### 5.4 Comprehensive Worked Aggregation Example
+
+*(Note: The following scenario uses illustrative sample data to demonstrate the mathematical clustering rules).*
+
+#### Input: 6 Pending Orders Ready for Delivery (Morning Dispatch)
+* **Order 1 (ORD-901):** Customer `c1` (Anna Nagar East), Vendor `v1` (Namma Chennai Naturals, Anna Nagar), Slot `9:00 AM – 1:00 PM`, Date `2026-10-29`, Total ₹540.
+* **Order 2 (ORD-902):** Customer `c1` (Anna Nagar East), Vendor `v4` (Metro Grocers, Anna Nagar), Slot `9:00 AM – 1:00 PM`, Date `2026-10-29`, Total ₹320.
+* **Order 3 (ORD-903):** Customer `c2` (Shenoy Nagar, 1.8 km from Anna Nagar), Vendor `v1` (Namma Chennai Naturals, Anna Nagar), Slot `9:00 AM – 1:00 PM`, Date `2026-10-29`, Total ₹780.
+* **Order 4 (ORD-904):** Customer `c4` (Kilpauk, 2.7 km from Anna Nagar), Vendor `v1` (Namma Chennai Naturals, Anna Nagar), Slot `9:00 AM – 1:00 PM`, Date `2026-10-29`, Total ₹450.
+* **Order 5 (ORD-905):** Customer `c3` (Adyar, South Chennai, 14.8 km from Anna Nagar), Vendor `v3` (Amudham Hub, Adyar), Slot `9:00 AM – 1:00 PM`, Date `2026-10-29`, Total ₹610.
+* **Order 6 (ORD-906):** Customer `c1` (Anna Nagar East), Vendor `v1` (Namma Chennai Naturals, Anna Nagar), Slot `6:00 PM – 10:00 PM` (Evening slot), Date `2026-10-29`, Total ₹410.
+
+#### Aggregation Evaluation & Batch Formation:
+
+| Batch Identifier | Assigned Orders | Total Items | Pickups Required | Dropoff Corridor | Status / Decision Rationale |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **Batch A (`B-101`)** | ORD-901, ORD-902, ORD-903, ORD-904 | 9 items | 2 Hubs (`v1`, `v4` in Anna Nagar) | Anna Nagar $\rightarrow$ Shenoy Nagar $\rightarrow$ Kilpauk | **Created (4 Orders)**: Same morning slot, same date, within 2.7 km corridor. Maximum capacity reached ($N=4$). |
+| **Batch B (`B-102`)** | ORD-905 | 2 items | 1 Hub (`v3` in Adyar) | Adyar Corridor | **Created (1 Order)**: Separated from Batch A because pickup and dropoff distances (14.8 km) exceed the 8.5 km / 9.0 km corridor thresholds. Valid single-order batch. |
+| **Pending Queue** | ORD-906 | 1 item | 1 Hub (`v1`) | Anna Nagar | **Separated / Queued**: Time slot (`6:00 PM – 10:00 PM`) is incompatible with the 9:00 AM morning batch. Staged for evening aggregation. |
+
+#### Financial & Efficiency Breakdown for Batch A:
+* **Combined Merchandise Value:** ₹540 + ₹320 + ₹780 + ₹450 = **₹2,090.00**
+* **Customer Delivery Surcharge:** ₹35 per order $\times 4 =$ **₹140.00**
+* **Courier Milk-Run Compensation:** Base pay ₹50 + (₹25 $\times 4$ drops) = **₹150.00**
+* **Travel Distance Analysis:**
+  * Conventional 1:1 Dispatch (4 separate round trips): $4 \times 5.8\text{ km} = \mathbf{23.2\text{ km}}$
+  * Implemented Milk-Run Route: $2.5 + (4 \times 1.3) = \mathbf{7.7\text{ km}}$
+  * **Distance Saved:** $23.2\text{ km} - 7.7\text{ km} = \mathbf{15.5\text{ km}}$ (**66.8% reduction in travel distance**)
+
+### 5.5 Edge Case Handling
+
+| Edge Case Scenario | Algorithm Behavior in Code | Verified Test Suite Evidence |
+| :--- | :--- | :--- |
+| **Single Ready Order ($N=1$)** | Creates an immediate 1-order batch; does not delay delivery | `aggregation.test.js` line 62 |
+| **5 Compatible Orders in Corridor** | Slices into Batch 1 ($N=4$) and Batch 2 ($N=1$) | `aggregation.test.js` line 84 |
+| **Courier Declines Assignment** | Calls `reassignBatch()`; assigns to next best agent or sets `PENDING_ASSIGNMENT` | `aggregation.service.js` line 245 |
+| **Incompatible Time Windows** | Separates orders into distinct delivery batches | `aggregation.test.js` line 101 |
+| **Cross-Town Locations (> 9.0 km)** | Separates orders into geographically isolated batches | `aggregation.service.js` line 155 |
+
+---
+
+## Chapter 6: State Transition Modeling
+
+### 6.1 Unified State Transition Matrix
+
+The table below details all valid entity states, triggers, conditions, and resulting states across the system lifecycle:
+
+| Lifecycle Stage | Entity | Attribute Evaluated | Initial Value | Triggering Action | Pre-Condition Check | Final Value |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1. Placement** | Order | `order_status` | *None* | Customer places order | Valid cart & slot selected | `PLACED` |
+| | Order | `delivery_status` | *None* | System initial state | Verification record created | `PENDING_ASSIGNMENT` |
+| | Order | `aggregation_status`| *None* | System initial state | Awaiting merchant readiness | `WAITING_FOR_AGGREGATION` |
+| **2. Preparation**| Order | `order_status` | `PLACED` | Vendor confirms order | Stock verified | `CONFIRMED` |
+| | Order | `order_status` | `CONFIRMED` | Vendor starts preparation | Kitchen / packing started | `PREPARING` |
+| **3. Readiness** | Order | `order_status` | `PREPARING` | Vendor marks packaged | Parcel packed & manifest ready | `READY_FOR_DELIVERY` |
+| **4. Clustering** | Batch | `status` | *None* | Aggregation engine runs | $1 \le N \le 4$ compatible orders | `PENDING_ASSIGNMENT` |
+| | Batch | `aggregation_status`| *None* | Batch record generated | Cluster validated | `BATCH_CREATED` |
+| **5. Assignment** | Batch | `status` | `PENDING_ASSIGNMENT` | Dispatcher allocates courier | Courier available & within zone | `ASSIGNED` |
+| | Order | `order_status` | `READY_FOR_DELIVERY` | Batch allocated to courier | Batch linked to order | `ASSIGNED` |
+| | Order | `delivery_status` | `PENDING_ASSIGNMENT` | Batch allocated to courier | Courier ID written to order | `ASSIGNED` |
+| **6. Acceptance** | Batch | `status` | `ASSIGNED` | Courier clicks "Accept" | Step 4 Acceptance Gate passed | `PICKUP_IN_PROGRESS` |
+| *(Rejection)* | Batch | `status` | `ASSIGNED` | Courier clicks "Decline" | Reassigned or queued | `PENDING_ASSIGNMENT` |
+| **7. Handover** | Order | Handover flag | `false` | Vendor clicks handover | Courier present at storefront | `vendor_handover_confirmed = true` |
+| **8. Collection** | Batch | `status` | `PICKUP_IN_PROGRESS` | Courier confirms collection | All merchant parcels secured | `PICKED_UP` |
+| **9. Dispatch** | Batch | `status` | `PICKED_UP` | Courier departs merchant hub | All hub parcels confirmed | `OUT_FOR_DELIVERY` |
+| | Order | `order_status` | `ASSIGNED` | Courier departs merchant hub | Hub parcels confirmed | `OUT_FOR_DELIVERY` |
+| | Order | `delivery_status` | `ASSIGNED` | Courier departs merchant hub | Hub parcels confirmed | `OUT_FOR_DELIVERY` |
+| **10. Delivery** | Order | `order_status` | `OUT_FOR_DELIVERY` | Courier verifies OTP | 4-digit numeric code match | `DELIVERED` |
+| | Order | `delivery_status` | `OUT_FOR_DELIVERY` | Courier verifies OTP | 4-digit numeric code match | `DELIVERED` |
+| | Order | `aggregation_status`| `ASSIGNED` | All batch orders completed | Batch fulfilled | `COMPLETED` |
+| | Batch | `status` | `OUT_FOR_DELIVERY` | All orders delivered | All drops verified | `COMPLETED` |
+
+### 6.2 State Machine Lifecycle Diagram
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PLACED : Customer Checkout
-    PLACED --> CONFIRMED : Vendor Accepts
-    CONFIRMED --> PREPARING : Packaging Initiated
+    [*] --> PLACED : Customer Checkout & OTP Created
+    PLACED --> CONFIRMED : Vendor Confirms
+    CONFIRMED --> PREPARING : Packaging Started
     PREPARING --> READY_FOR_DELIVERY : Vendor Marks Ready
 
-    state "Order Aggregation (1-4 Orders Rule)" as AggregationEngine {
-        READY_FOR_DELIVERY --> BATCH_EVALUATION
-        BATCH_EVALUATION --> BATCH_CREATED : Grouped (Slot, Date, Area)
-        BATCH_CREATED --> ASSIGNED : Assign Agent (da1-da4)
+    state "Clustering & Assignment Engine" as Clustering {
+        READY_FOR_DELIVERY --> BATCH_CREATED : Grouped (1-4 Orders Rule)
+        BATCH_CREATED --> ASSIGNED : Matched to Courier (da1-da4)
     }
 
     ASSIGNED --> PICKUP_IN_PROGRESS : Courier Accepts Assignment
-    ASSIGNED --> PENDING_ASSIGNMENT : Courier Declines (Reassign)
-    PENDING_ASSIGNMENT --> ASSIGNED : Reassigned to Next Available Courier
+    ASSIGNED --> PENDING_ASSIGNMENT : Courier Declines Assignment
+    PENDING_ASSIGNMENT --> ASSIGNED : Reassigned to Available Agent
 
-    PICKUP_IN_PROGRESS --> OUT_FOR_DELIVERY : Vendor Handover Confirmed & Hub Collected
+    PICKUP_IN_PROGRESS --> OUT_FOR_DELIVERY : Vendor Handover & Courier Collection Confirmed
     OUT_FOR_DELIVERY --> DELIVERED : 4-Digit Doorstep OTP Verified
     DELIVERED --> [*]
 ```
 
-### 4.4 Order Aggregation & Dynamic Clustering Logic
-The core algorithm implemented in [`backend/src/services/aggregation.service.js`](file:///c:/Users/Boomika/OneDrive/Desktop/Micro-Logistics/backend/src/services/aggregation.service.js) enforces the following constraints:
-
-1. **Maximum Batch Size ($N \le 4$):** Under no circumstance can a batch exceed 4 orders.
-2. **Minimum Batch Size ($N \ge 1$):** A batch can validly be created with 1, 2, 3, or 4 orders. The system does not stall single urgent orders waiting for 4 orders to accumulate.
-3. **Compatibility Filters:**
-   * **Delivery Date:** Orders must share the identical calendar date (`delivery_date`).
-   * **Time Slot:** Orders must occupy compatible delivery windows (`9:00 AM – 1:00 PM`, `12:00 PM – 4:00 PM`, `4:00 PM – 8:00 PM`).
-   * **Route Corridor:** Pickups and dropoffs must fall within contiguous urban sectors (e.g., Anna Nagar $\leftrightarrow$ Kilpauk, or Adyar $\leftrightarrow$ Mylapore).
-4. **Agent Workload Balancing:** Delivery partners have an assigned capacity (default 5 concurrent orders). Agents with active batches nearing capacity are excluded from assignment.
-
 ---
 
-## Chapter 5: Role-Based Portals & User Interface Architecture
+## Chapter 7: Role-Based Portals & User Interface Architecture
 
-### 5.1 Customer Experience Portal (`/customer`)
-* **Store & Product Discovery (`/customer/browse`):** Interactive product grid categorized into Grocery, Fruits & Vegetables, Dairy, and Bakery.
-* **Cart & Multi-Vendor Grouping (`/customer/cart`):** Aggregates items by merchant, displaying estimated packing times and subtotal calculations.
-* **Checkout & Slot Scheduling (`/customer/checkout`):** Seamless address selection from saved addresses (Home, Work, Parents) and choice of scheduled delivery slot.
-* **Live Order Tracking (`/customer/track`):** 5-stage progress tracker displaying courier contact, assigned batch, and the customer's **Secret 4-digit Delivery OTP** required at drop-off.
-* **Order History (`/customer/orders`):** Archive of historical and active deliveries with item manifests.
+### 7.1 Customer Experience Portal (`/customer`)
+* **Local Merchant Discovery (`/customer/browse`):** Categorized browsing across organic groceries, provisions, bakery, and farm produce.
+* **Multi-Vendor Cart (`/customer/cart`):** Consolidates purchases from distinct neighborhood merchants with transparent subtotal and delivery fee calculations.
+* **Scheduled Slot Checkout (`/customer/checkout`):** Address selection with Chennai pincode validation and choice of delivery time slots.
+* **Live Order Tracking (`/customer/track`):** Progress timeline displaying courier contact, assigned batch, and the customer's **Secret 4-Digit Delivery OTP** required at the doorstep.
+* **Order History (`/customer/orders`):** Archive of historical and active deliveries with itemized receipts.
 
-### 5.2 Vendor (Seller) Fulfillment Portal (`/seller`)
-* **Fulfillment Queue (`/seller/orders`):** Incoming order board organized by status. Vendors transition orders through `CONFIRMED` $\rightarrow$ `PREPARING` $\rightarrow$ `READY_FOR_DELIVERY`.
-* **Vendor Handover Guard:** Once an assigned courier arrives, the merchant confirms handover per order with a single click.
-* **Catalog & Stock Management (`/seller/products`, `/seller/inventory`):** Dynamic inventory depletion alerts and product status toggling.
+### 7.2 Vendor (Seller) Fulfillment Portal (`/seller`)
+* **Live Fulfillment Board (`/seller/orders`):** Real-time board allowing merchants to transition orders through `CONFIRMED` $\rightarrow$ `PREPARING` $\rightarrow$ `READY_FOR_DELIVERY`.
+* **Vendor Handover Protocol:** Displays assigned courier information once the batch is accepted. Provides single-click confirmation of parcel handover to the courier.
+* **Catalog & Inventory Control (`/seller/products`, `/seller/inventory`):** Dynamic stock updating and product availability toggling.
 * **Customer Directory (`/seller/customers`):** Store customer base displaying local patron profiles, lifetime order counts, and historical purchases.
 
-### 5.3 Delivery Fleet Control Tower Portal (`/delivery`)
-* **Unified Active Batch Deck (`/delivery`):**
-  * When in `ASSIGNED` state: Displays a prominent **Dispatch Invitation Card** summarizing batch ID, corridor, parcel count, and estimated time. Offers single-click **Accept Assignment & Start Pickups** or **Decline / Reassign**. Premature transit progress is strictly hidden.
-  * When in `PICKUP_IN_PROGRESS`: Automatically displays the merchant hub collection route with vendor phone, address, and Google Maps deep-link.
-* **Merchant Hub Pickup Checklist (`/delivery/pickup`):** Displays required parcels per merchant hub. Prevents order transit until vendor handover is verified.
-* **Dropoff Execution & OTP Verification (`/delivery/status`):** Interface for submitting the customer's 4-digit PIN. Validates against the backend before completing delivery.
+### 7.3 Delivery Fleet Control Tower Portal (`/delivery`)
+* **Active Batch Cockpit (`/delivery`):**
+  * When in `ASSIGNED` state: Displays a prominent **Dispatch Invitation Card** with batch details, stop counts, and estimated time. Offers single-click **Accept Assignment & Start Pickups** or **Decline / Reassign**.
+  * When in `PICKUP_IN_PROGRESS`: Automatically renders merchant addresses, merchant contact details, and Google Maps directions.
+* **Merchant Hub Pickup Checklist (`/delivery/pickup`):** Enforces parcel collection confirmation for each merchant hub.
+* **Dropoff Execution & OTP Verification (`/delivery/status`):** Numerical PIN verification interface. Validates code against the server before marking an order `DELIVERED`.
 
-### 5.4 Central System Administration Portal (`/admin`)
-* **Executive Control Tower (`/admin`):** High-level KPI widgets tracking gross order value, active batches, online couriers, and on-time performance.
-* **Order Aggregation Manager (`/admin/order-aggregation`):** Visual preview of compatible order clusters. Displays match scores and enables automated or manual batch creation.
-* **Fleet Dispatcher (`/admin/delivery-management`):** Batch queue allowing manual reassignment or courier overrides.
-* **Customer Roster (`/admin/customers`):** Complete customer directory displaying `c1`–`c4` with real order counts and a detailed **Order History** tab.
+### 7.4 Central Dispatch Administration Portal (`/admin`)
+* **Command Tower Cockpit (`/admin`):** System-wide KPIs including active batches, online fleet couriers, orders in flight, and on-time performance.
+* **Order Aggregation Manager (`/admin/order-aggregation`):** Visual preview of compatible order clusters with automated batch creation triggers.
+* **Fleet Dispatcher (`/admin/delivery-management`):** Manual batch reassignment and courier workload balancing.
+* **Customer Roster (`/admin/customers`):** Registered customer directory displaying `c1`–`c4` with order counts and an **Order History** tab.
+
+### 7.5 Verified Application Screenshots
+
+The following actual application screenshots demonstrate key components of the implemented system:
+
+#### Figure 7.1: Delivery Fleet Cockpit with Active Batch and Step 4 Acceptance Gate
+![Delivery Agent Dashboard with Active Batch](docs/screenshots/delivery_agent_dashboard_active_batch.png)
+*Figure 7.1: The delivery partner dashboard displaying an active assigned batch (`#B-8779`), showing the Dispatch Invitation Card with Accept Assignment and Decline/Reassign actions.*
+
+#### Figure 7.2: New Batch Assignment Notification Card
+![New Batch Assignment Received](docs/screenshots/delivery_dashboard_batch_assignment.png)
+*Figure 7.2: Detail view of the Step 4 Acceptance Gate where couriers must explicitly accept new assignments before pickups are initiated.*
+
+#### Figure 7.3: Merchant Hub Pickup and Handover Screen
+![Merchant Hub Pickup Handover](docs/screenshots/delivery_pickup_handover.png)
+*Figure 7.3: Merchant hub collection checklist requiring physical confirmation of parcel handover at vendor storefronts.*
+
+#### Figure 7.4: Dropoff Status & Doorstep OTP Verification Interface
+![Delivery Status & OTP Verification](docs/screenshots/delivery_status_tracking.png)
+*Figure 7.4: Courier delivery status interface featuring 4-digit customer OTP verification input and delivery completion controls.*
+
+#### Figure 7.5: Navigation Sidebar with Logout Controls
+![Delivery Sidebar Navigation](docs/screenshots/delivery_sidebar_navigation.png)
+*Figure 7.5: Responsive fleet navigation sidebar showing operational links and formatted logout action.*
 
 ---
 
-## Chapter 6: Security Architecture, Authentication & Role Isolation
+## Chapter 8: Security Architecture, Authentication, and Role Isolation
 
-### 6.1 Authentication Mechanism & Session Validation
-Authentication is anchored on Supabase Auth. Upon successful login at `/login`:
-1. Supabase validates credentials and issues an encrypted, signed JWT bearer token.
-2. The client attaches this token to all outbound Axios requests: `Authorization: Bearer <JWT>`.
+### 8.1 Authentication and Token Propagation
+Authentication uses Supabase Auth (GoTrue). When a user authenticates at `/login`:
+1. The server issues an encrypted, signed JWT bearer token containing user UUID, email, and role.
+2. The client attaches this token to all outbound requests: `Authorization: Bearer <JWT>`.
 3. The Express middleware [`backend/src/middleware/auth.middleware.js`](file:///c:/Users/Boomika/OneDrive/Desktop/Micro-Logistics/backend/src/middleware/auth.middleware.js) validates the signature against `SUPABASE_JWT_SECRET` and attaches `req.user` to the request pipeline.
 
-### 6.2 Role-Based Access Control (RBAC)
-Every route is guarded by `requireRole(allowedRoles)`:
-* **Admin-Only Routes:** Batch aggregation triggers, courier profile creation, seller approvals (`requireRole(['admin'])`).
-* **Delivery Routes:** Batch status updates, OTP verification (`requireRole(['admin', 'delivery_partner'])`).
+### 8.2 Role-Based Access Control (RBAC)
+Routes are protected by `requireRole(allowedRoles)`:
+* **Admin-Only Routes:** Aggregation engine triggers, vendor approval, courier onboarding (`requireRole(['admin'])`).
+* **Delivery Routes:** Batch acceptance, collection confirmation, OTP verification (`requireRole(['admin', 'delivery_partner'])`).
 * **Vendor Routes:** Product inventory updates, handover confirmations (`requireRole(['admin', 'vendor'])`).
-* **Customer Routes:** Order placement, OTP retrieval (`requireRole(['customer', 'admin'])`).
+* **Customer Routes:** Order creation, personal OTP retrieval (`requireRole(['customer', 'admin'])`).
 
-### 6.3 Tenant & Role Isolation Verification
-* **Customer Isolation:** Customers can only fetch their own profile and orders. Attempting to query another customer's ID yields HTTP 403 Forbidden.
-* **Vendor Isolation:** Merchants cannot modify products belonging to another vendor.
-* **Delivery Agent Isolation:** Couriers cannot accept or update batches assigned to other couriers. Flexible validation supports both UUID and legacy handles (`da1`..`da4`).
+### 8.3 Tenant Isolation and Data Protection
+* **Customer Data Isolation:** Customers can only query their own orders. Querying another customer's ID returns HTTP 403 Forbidden.
+* **Vendor Product Guard:** Merchants cannot modify or delete product listings belonging to another store.
+* **Delivery Agent Guard:** Couriers cannot update or complete batches assigned to other couriers.
+* **Credential Protection:** Passwords, database service keys, and JWT secrets are excluded from repository tracking.
+
+### 8.4 Approved Demonstration Accounts Directory
+
+For academic review and defense purposes, the following verified accounts are configured in the system:
+
+| Role Category | Account Alias | Display Name | Assigned Area / Corridor | Operating Scope |
+| :--- | :--- | :--- | :--- | :--- |
+| **System Admin** | `admin` | Central Dispatch Admin | All Chennai Zones | Platform governance & manual batching |
+| **Customer** | `c1` | Priya Rajan | Anna Nagar East, Chennai | Organic groceries & daily provisions |
+| **Customer** | `c2` | Ramesh Kumar | Mylapore, Chennai | Dairy & packaged bakery orders |
+| **Customer** | `c3` | Ananya Sharma | Adyar, Chennai | Farm produce & cold-pressed oils |
+| **Customer** | `c4` | Karthik V | Thoraipakkam / OMR | Household staples & provisions |
+| **Vendor** | `v1` | Namma Chennai Naturals | Anna Nagar (Organic Groceries) | 18 stock lines, pickup hub 1 |
+| **Vendor** | `v2` | Chennai Daily Essentials | Mylapore (Provisions & Dairy) | 14 stock lines, pickup hub 2 |
+| **Vendor** | `v3` | Amudham Organic Hub | Adyar (Produce & Oils) | 22 stock lines, pickup hub 3 |
+| **Vendor** | `v4` | Metro Grocers & Bakes | T. Nagar (Bakery & Foods) | 16 stock lines, pickup hub 4 |
+| **Courier** | `da1` | Fleet Captain (DA1) | Adyar / Mylapore Corridor | Two-wheeler cargo, capacity 5 |
+| **Courier** | `da2` | Fleet Captain (DA2) | Velachery / OMR Corridor | Electric cargo scooter, capacity 5 |
+| **Courier** | `da3` | Fleet Captain (DA3) | Anna Nagar / Kilpauk | Commercial EV cargo, capacity 5 |
+| **Courier** | `da4` | Fleet Captain (DA4) | T. Nagar / Kodambakkam | Electric two-wheeler, capacity 5 |
+
+*(Note: Passwords are encrypted in Supabase Auth and distributed via secure offline credential sheets during review).*
 
 ---
 
-## Chapter 7: Quality Assurance, Automated Testing & Verification
+## Chapter 9: Quality Assurance, Automated Testing, and System Verification
 
-### 7.1 Automated Test Suite Breakdown (52/52 Tests)
-The test suite in `backend/tests/` executes under Vitest, providing 100% test pass rates across all 6 test suites:
+### 9.1 Automated Backend Test Execution
+Automated backend verification is executed via Vitest. The test suite was executed in the project environment with the following results:
+
+**Execution Command:** `npm --prefix backend test`  
+**Execution Timestamp:** 29-10-2026, 11:17:36 AM  
+**Test Suite Summary:** 6 passed test files, 52 passed tests, 0 failed tests  
+**Execution Duration:** 1.05 seconds  
 
 ```text
- ✓ tests/seed.test.js (1 test)
- ✓ tests/aggregation.test.js (12 tests)
- ✓ tests/batch_creation_otp.test.js (6 tests)
- ✓ tests/health.test.js (2 tests)
- ✓ tests/api.test.js (4 tests)
- ✓ tests/security.test.js (27 tests)
+ RUN  v5.0.0 C:/Users/Boomika/OneDrive/Desktop/Micro-Logistics/backend
+
+ ✓ tests/seed.test.js (1 test) 4ms
+ ✓ tests/aggregation.test.js (12 tests) 16ms
+ ✓ tests/health.test.js (2 tests) 34ms
+ ✓ tests/api.test.js (4 tests) 45ms
+ ✓ tests/batch_creation_otp.test.js (6 tests) 68ms
+ ✓ tests/security.test.js (27 tests) 154ms
 
  Test Files  6 passed (6)
       Tests  52 passed (52)
-   Duration  1.48s
+   Duration  1.05s
 ```
 
-#### Test Suite Descriptions:
-1. **`aggregation.test.js` (12 tests):** Validates the 1–4 orders rule, geographic clustering, time-slot compatibility, and refusal to exceed 4 orders per batch.
-2. **`batch_creation_otp.test.js` (6 tests):** Validates batch assignment, courier acceptance, OTP generation, and strict refusal to mark `DELIVERED` without a valid 4-digit PIN.
-3. **`security.test.js` (27 tests):** Comprehensive RBAC tests validating customer isolation, vendor isolation, SQL injection resilience, and courier assignment checks.
-4. **`api.test.js` (4 tests):** Validates core HTTP endpoint contracts and status codes.
-5. **`health.test.js` (2 tests):** Validates database connectivity and server liveness.
-6. **`seed.test.js` (1 test):** Validates baseline relational seed integrity.
+#### Detailed Breakdown of Test Suites:
+1. **`tests/aggregation.test.js` (12 tests):** Validates the 1–4 orders rule, time slot compatibility (`areTimeSlotsCompatible`), locality extraction, proximity scoring, and multi-batch slicing.
+2. **`tests/batch_creation_otp.test.js` (6 tests):** Validates batch formation, courier assignment, OTP creation, and strict rejection of unverified delivery attempts.
+3. **`tests/security.test.js` (27 tests):** Validates RBAC route protection, customer data isolation, vendor catalog protection, and SQL injection resilience.
+4. **`tests/api.test.js` (4 tests):** Validates REST API contracts and HTTP status response codes.
+5. **`tests/health.test.js` (2 tests):** Validates server liveness and Supabase database connectivity.
+6. **`tests/seed.test.js` (1 test):** Validates relational database seed integrity.
 
-### 7.2 Production Build & Bundle Verification
-Running `npm run build` compiles the React 19 application via Vite in **1.78 seconds** with **0 warnings and 0 errors**:
-* Total production chunks: 58 optimized ESM modules.
-* CSS design tokens and scoped component styles bundled with zero layout shifts.
+### 9.2 Production Build Verification
+The frontend production build was verified using Vite:
 
-### 7.3 Edge Case & Fault Handling Matrix
+**Execution Command:** `npm run build`  
+**Execution Timestamp:** 29-10-2026, 11:17:58 AM  
+**Build Result:** Built in 1.67 seconds, 0 compilation warnings, 0 errors  
+**Module Count:** 2,091 modules transformed across 58 optimized client chunks  
 
-| Scenario / Edge Case | System Behavior | Verified Codebase Mechanism |
-| :--- | :--- | :--- |
-| **Only 1 order ready** | Immediate batch creation ($N=1$); no stalling | `findCompatibleBatches` in `aggregation.service.js` |
-| **5 orders ready in same slot** | Creates Batch 1 ($N=4$) and Batch 2 ($N=1$) | `MAX_BATCH_SIZE = 4` slice limit |
-| **Courier declines batch** | Auto-reassigns to next available agent or marks `PENDING_ASSIGNMENT` | `reassignBatch()` in `aggregation.service.js` |
-| **Premature transit attempt** | Throws error; handover confirmation enforced | Check in `DeliveryContext.jsx` line 512 |
-| **Incorrect delivery OTP** | Rejects completion; increments attempt counter | `verifyDeliveryOtp()` in `delivery.controller.js` |
-| **Customer data leakage** | Blocks cross-customer queries with HTTP 403 | `getCustomerById()` in `customer.controller.js` |
+### 9.3 Automated Testing vs. Manual End-to-End Verification
+To maintain academic integrity, automated unit test results are clearly distinguished from manual end-to-end verification:
+
+* **Automated Unit & Integration Tests (100% Verified):** Aggregation mathematical limits ($1 \le N \le 4$), time slot pairing, courier scoring, OTP matching, and RBAC security gates are fully validated by automated Vitest scripts.
+* **Manual Browser Verification (Verified in Development Environment):** Delivery agent login (`da2`), active batch display, Step 4 acceptance gate button triggers, sidebar logout spacing, and customer order history displays have been verified in the running Vite browser application.
+* **Field Verification (Pending / Out of Scope):** Physical on-road vehicle navigation across Chennai traffic corridors and real-time cellular SMS OTP delivery are not physically verified and are scheduled for post-academic deployment.
 
 ---
 
-## Chapter 8: Data Cleansing, Approved Accounts & Directory Normalization
+## Chapter 10: Individual Team Member Contributions
 
-### 8.1 Removal of Sample Artifacts & Name Normalization
-* **Elimination of "Boomi" References:** Purged temporary testing artifacts and state references to "boomi" or "Boomika" across `AppContext.jsx`, `demoData.js`, and local storage caches.
-* **Removal of Dummy Accounts:** Removed obsolete sample accounts (`c5`, `c6`) so that all dashboards consistently show only legitimate project accounts.
+### 10.1 Work Allocation and Domain Ownership
+Project responsibilities were allocated across the three team members according to technical specialization:
 
-### 8.2 Canonical Directory of Approved Project Accounts
+* **ABISHEKA S:** Led project problem definition, literature review, core mathematical modeling of order aggregation, cryptographic OTP security protocols, automated testing quality assurance, and technical report authoring.
+* **BOOMIKA V:** Led the frontend user experience and interface engineering, designing the responsive vanilla CSS design system, implementing all role-based dashboards (Customer, Vendor, Delivery, Admin), building the interactive route and order drawers, and managing client-side state hydration.
+* **DARSANI B:** Led system architecture, Supabase PostgreSQL relational schema design, database migrations, Row Level Security (RLS) policies, Express 5 backend controllers, REST API endpoint implementation, and co-developed the aggregation engine.
 
-#### 1. Customers (`c1`–`c4`)
-| ID | Display Name | Username | Email | Delivery Area & Corridor |
-| :--- | :--- | :--- | :--- | :--- |
-| `c1` | Priya Rajan | `c1` | `priya_auth@example.com` | Anna Nagar East, Chennai - 600102 |
-| `c2` | Ramesh Kumar | `c2` | `c2@example.com` | Mylapore, Chennai - 600004 |
-| `c3` | Ananya Sharma | `c3` | `c3@example.com` | Adyar, Chennai - 600020 |
-| `c4` | Karthik V | `c4` | `c4@example.com` | Thoraipakkam / OMR, Chennai - 600097 |
+### 10.2 Contribution Matrix
 
-#### 2. Local Vendors / Sellers (`v1`–`v4`)
-| ID | Store Name | Username | Email | Category & Location |
-| :--- | :--- | :--- | :--- | :--- |
-| `v1` | Namma Chennai Naturals | `v1` | `contact_auth@nammachennai.com` | Organic Groceries (Anna Nagar) |
-| `v2` | Chennai Daily Essentials | `v2` | `v2@example.com` | Daily Provisions & Dairy (Mylapore) |
-| `v3` | Amudham Organic Hub | `v3` | `v3@example.com` | Farm Produce & Cold-Pressed Oils (Adyar)|
-| `v4` | Metro Grocers & Bakes | `v4` | `v4@example.com` | Bakery & Packaged Foods (T. Nagar) |
-
-#### 3. Delivery Fleet Partners (`da1`–`da4`)
-| ID | Agent Handle | Vehicle Type | Operating Area | Capacity |
-| :--- | :--- | :--- | :--- | :--- |
-| `da1` | Fleet Captain (DA1) | TVS XL 100 Cargo | Adyar / Mylapore Corridor | 5 orders |
-| `da2` | Fleet Captain (DA2) | Electric Cargo Scooter | Velachery / OMR Corridor | 5 orders |
-| `da3` | Fleet Captain (DA3) | Commercial EV Cargo | Anna Nagar / Kilpauk | 5 orders |
-| `da4` | Fleet Captain (DA4) | Hero Electric Nyx | T. Nagar / Kodambakkam | 5 orders |
-
-#### 4. System Administrator
-* **Username:** `admin` | **Email:** `admin@example.com` | **Access:** Unrestricted platform control.
-
-### 8.3 Customer Order History Linkage Resolution
-In [`AdminCustomersPage.jsx`](file:///c:/Users/Boomika/OneDrive/Desktop/Micro-Logistics/src/portals/admin/AdminCustomersPage.jsx) and [`CustomersPage.jsx`](file:///c:/Users/Boomika/OneDrive/Desktop/Micro-Logistics/src/portals/seller/CustomersPage.jsx), order-to-customer matching now uses robust multi-attribute resolution:
-```javascript
-const custOrders = orders.filter(o => 
-  o.customerId === c.id || 
-  o.customerId === c.uuid || 
-  o.customerId === c.legacy_id ||
-  o.customerLegacyId === c.legacy_id ||
-  o.customerName === c.name ||
-  o.customerName === c.username
-);
-```
-This correctly resolves all 17 live database orders to their parent accounts:
-* **`c1` (Priya Rajan):** 11 orders
-* **`c2` (Ramesh Kumar):** 1 order
-* **`c3` (Ananya Sharma):** 2 orders
-* **`c4` (Karthik V):** 3 orders
+| Project Engineering Domain | ABISHEKA S<br/>([REGISTER NUMBER 1]) | BOOMIKA V<br/>([REGISTER NUMBER 2]) | DARSANI B<br/>([REGISTER NUMBER 3]) |
+| :--- | :---: | :---: | :---: |
+| **Project Aim, Objectives & Technical Scope** | **Primary Lead (60%)** | Supporting (20%) | Supporting (20%) |
+| **Problem Formulation & Literature Review** | **Primary Lead (50%)** | Supporting (25%) | Supporting (25%) |
+| **UI/UX Portal Layouts & Navigation** | Supporting (15%) | **Primary Lead (70%)** | Supporting (15%) |
+| **CSS Design Tokens & Mobile Responsiveness** | Supporting (20%) | **Primary Lead (60%)** | Supporting (20%) |
+| **System Architecture & Tier Topology** | Supporting (20%) | Supporting (20%) | **Primary Lead (60%)** |
+| **Relational Schema Design & SQL Migrations** | Supporting (20%) | Supporting (20%) | **Primary Lead (60%)** |
+| **Order Aggregation Engine Development** | **Co-Lead (45%)** | Supporting (15%) | **Co-Lead (40%)** |
+| **Backend Express API & Middleware** | Supporting (20%) | Supporting (20%) | **Primary Lead (60%)** |
+| **Route Visualization & Order Drawer UI** | Supporting (20%) | **Primary Lead (55%)** | Supporting (25%) |
+| **OTP Verification & Security Implementation** | **Co-Lead (40%)** | Supporting (20%) | **Co-Lead (40%)** |
+| **Automated Testing & Quality Assurance** | **Co-Lead (40%)** | Supporting (20%) | **Co-Lead (40%)** |
+| **Report Preparation & Review Documentation** | **Primary Lead (50%)** | Supporting (25%) | Supporting (25%) |
 
 ---
 
-## Chapter 9: Conclusion, Limitations & Future Roadmap
+## Chapter 11: Conclusion, Limitations, and Future Roadmap
 
-### 9.1 Project Evaluation Summary
-The Smart Micro-Logistics Management System successfully demonstrates an end-to-end, corridor-based hyperlocal delivery platform. By replacing unconstrained dispatching with an automatic 1–4 order aggregation model and enforcing strict physical verification handshakes (acceptance gate, vendor handover, doorstep OTP), the system delivers high operational reliability and transparent unit economics.
+### 11.1 Conclusion
+The **Micro-Logistics Management and Hyperlocal Order Aggregation Network** demonstrates that last-mile delivery economics in dense urban micro-markets can be substantially improved through intelligent order clustering and physical handover verification. By replacing fragmented 1:1 courier dispatching with a deterministic **1 to 4 order milk-run aggregation model**, the system achieves a modeled 66.8% reduction in courier travel distance without starving solitary customer orders. Furthermore, the dual-handshake pickup protocol and 4-digit doorstep OTP verification eliminate phantom transits and unverified delivery disputes.
 
-### 9.2 Current Operational Limitations
-While the system is robust and fully functional, the following limitations are noted for transparency:
-1. **Distance Estimation Model:** Route distances currently utilize Euclidean and Manhattan corridor heuristics rather than real-time Google Maps Distance Matrix API calls.
-2. **Synchronous Notification Polling:** Frontend notifications operate via reactive state polling rather than bidirectional WebSockets (Socket.io) or Supabase Realtime subscriptions.
-3. **Static Vehicle Routing:** Route stop sequences are sorted by corridor priority but do not yet compute dynamic Travelling Salesperson Problem (TSP) shortest-path optimization.
+### 11.2 Current Operational Limitations
+1. **Heuristic Distance Calculations:** Route distances utilize Haversine and Manhattan corridor heuristics rather than dynamic turn-by-turn road network APIs (e.g., Google Maps Distance Matrix).
+2. **State Polling vs. WebSockets:** Frontend dashboards update through interval-based polling rather than bidirectional WebSockets (Socket.io) or Supabase Realtime subscriptions.
+3. **Static Waypoint Sequencing:** Route stops are sequenced by geographic hub order rather than dynamic Travelling Salesperson Problem (TSP) shortest-path optimization.
 
-### 9.3 Technical Roadmap
-* **Phase 1 (Q1 2027):** Integrate Google Maps Directions & Distance Matrix API for dynamic turn-by-turn routing.
-* **Phase 2 (Q2 2027):** Implement Supabase Realtime broadcast channels for sub-second courier location tracking.
-* **Phase 3 (Q3 2027):** Deploy automated SMS / WhatsApp gateway webhooks (Twilio / Gupshup) for direct OTP delivery to consumer mobile numbers.
+### 11.3 Technical Development Roadmap
+* **Phase 1 (Q1 2027):** Integrate Google Maps Directions API to provide real-time turn-by-turn routing and dynamic transit estimation.
+* **Phase 2 (Q2 2027):** Implement Supabase Realtime channels for instant courier geolocation telemetry.
+* **Phase 3 (Q3 2027):** Integrate cellular SMS and WhatsApp Business gateways (Twilio / Gupshup) for direct OTP delivery to consumer mobile devices.
 
 ---
 
 ## References & Appendices
 
-### References
-1. G. Ghiani, G. Laporte, and R. Musmanno, *Introduction to Logistics Systems Management*, John Wiley & Sons, 2013.
+### Academic References
+1. G. Ghiani, G. Laporte, and R. Musmanno, *Introduction to Logistics Systems Management*, 2nd ed., Chichester, UK: John Wiley & Sons, 2013.
 2. M. W. Savelsbergh and M. Sol, "The General Pickup and Delivery Problem," *Transportation Science*, vol. 29, no. 1, pp. 17–29, 1995.
-3. Node.js Foundation, *Express.js 5.0 Production Architecture and Route Handling Standards*, 2024.
-4. Supabase Documentation, *Row Level Security, Foreign Key Relationships, and JWT Lifecycle Patterns*, 2025.
+3. H. Min, "The Multiple Vehicle Routing Problem with Simultaneous Delivery and Pick-up Points," *Transportation Research Part A: General*, vol. 23, no. 5, pp. 377–386, 1989.
+4. Node.js Foundation, *Express.js 5.0 Production Architecture and Route Handling Standards*, OpenJS Foundation, 2024.
+5. Supabase Documentation, *Row Level Security, Foreign Key Relationships, and JWT Lifecycle Patterns*, Supabase Inc., 2025.
 
 ---
 
 ### Appendix A: REST API Endpoint Catalog
 
-| Method | Endpoint | Authorized Roles | Description |
+| HTTP Method | API Route | Authorized Roles | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Public | Authenticates user; returns JWT token & user profile |
-| `GET` | `/api/orders` | All Authenticated | Fetches role-scoped orders list |
-| `POST` | `/api/orders` | Customer, Admin | Creates a new order and generates 4-digit OTP |
-| `PATCH` | `/api/orders/:id/status` | Vendor, Delivery, Admin | Advances order status through fulfillment lifecycle |
+| `POST` | `/api/auth/login` | Public | Authenticates credentials; returns JWT token & user profile |
+| `POST` | `/api/auth/resolve` | Public | Resolves username, shop name, or legacy ID to email |
+| `GET` | `/api/orders` | All Authenticated | Retrieves role-scoped order records |
+| `POST` | `/api/orders` | Customer, Admin | Creates a new order and generates 4-digit secret OTP |
+| `PATCH` | `/api/orders/:id/status` | Vendor, Delivery, Admin | Advances order lifecycle status |
 | `GET` | `/api/delivery/batches` | Delivery, Admin | Retrieves delivery batches and assigned stops |
-| `POST` | `/api/delivery/batches` | Admin | Aggregates eligible orders into a new batch (1–4 orders) |
-| `POST` | `/api/delivery/batches/:id/respond`| Delivery, Admin | Courier accepts (`ACCEPT`) or declines (`REJECT`) batch |
-| `POST` | `/api/delivery/verify-otp`| Delivery, Admin | Validates 4-digit customer OTP; marks order `DELIVERED`|
+| `POST` | `/api/delivery/batches` | Admin | Runs aggregation engine and forms new batches (1–4 orders) |
+| `POST` | `/api/delivery/batches/:id/respond` | Delivery, Admin | Courier accepts (`ACCEPT`) or declines (`REJECT`) batch |
+| `POST` | `/api/delivery/verify-otp` | Delivery, Admin | Validates 4-digit OTP; marks order `DELIVERED` |
 | `GET` | `/api/delivery/orders/:id/otp` | Customer, Admin | Retrieves customer's secret OTP code |
 | `GET` | `/api/customers` | Admin, Vendor | Retrieves customer directory with order counts |
-| `GET` | `/api/vendors` | All Authenticated | Retrieves active merchant profiles and operating zones |
+| `GET` | `/api/vendors` | All Authenticated | Retrieves registered local merchant profiles |
+| `GET` | `/api/health` | Public | Health check verifying server and database liveness |
 
 ---
 
-### Appendix B: Verification Checklist & Manual Action Items
+### Appendix B: Implementation Verification Checklist
 
-| Checklist Item | Codebase Status | Manual Verification Note |
+| Architectural Requirement | Implementation Location | Verification Evidence |
 | :--- | :--- | :--- |
-| **Max 4 Orders / Batch** | Verified in `aggregation.service.js` | Tested across 1, 2, 3, and 4 order thresholds |
-| **Min 1 Order / Batch** | Verified in `aggregation.service.js` | Tested; 1 order creates a valid single-drop batch |
-| **Courier Acceptance Gate** | Verified in `DeliveryDashboard.jsx` | Dispatch Invitation Card displays accept/decline |
-| **Vendor Handover Guard** | Verified in `DeliveryContext.jsx` | Orders cannot transition to transit before handover |
-| **Doorstep OTP Proof** | Verified in `delivery.controller.js` | Strict 4-digit numeric validation required |
-| **Removal of "Boomi"** | Verified in `AppContext.jsx` | Purged from memory, state, and localStorage |
-| **Customer Order History** | Verified in `AdminCustomersPage.jsx` | Displays complete order manifests for `c1`–`c4` |
-| **Sidebar Logout Spacing** | Verified in `DeliverySidebar.css` | 10px flex gap with left alignment |
-| **Remote Git Push** | Verified | Rebased and pushed to `origin/main` (`bd9cbd9`) |
+| **Max 4 Orders per Batch** | `backend/src/services/aggregation.service.js` | Tested in `aggregation.test.js` (5 orders sliced into 4+1) |
+| **Min 1 Order per Batch** | `backend/src/services/aggregation.service.js` | Tested in `aggregation.test.js` (single orders not blocked) |
+| **Courier Acceptance Gate** | `src/portals/delivery/DeliveryDashboard.jsx` | Dispatch Invitation Card displays Accept / Decline actions |
+| **Dual-Handshake Pickup** | `src/context/DeliveryContext.jsx` | Transit blocked until vendor handover is confirmed |
+| **Doorstep OTP Proof** | `backend/src/controllers/delivery.controller.js` | Tested in `batch_creation_otp.test.js` (requires valid PIN) |
+| **Removal of "Boomi"** | `src/context/AppContext.jsx`, `demoData.js` | Purged from client state, mock data, and local storage |
+| **Customer Order History** | `src/portals/admin/AdminCustomersPage.jsx` | Multi-attribute matching maps all 17 orders to `c1`–`c4` |
+| **Sidebar Logout Spacing** | `src/components/delivery/DeliverySidebar.css` | Left-aligned layout with 10px flex gap |
+| **Automated Test Suite** | `backend/tests/` | 52/52 tests passing in 1.05s |
+| **Production Build** | `package.json` (`npm run build`) | Built in 1.67s with 0 errors |
 
 ---
-*Report compiled and verified against codebase commit `bd9cbd9`.*
-
+*Report finalized and verified against project codebase on October 29, 2026.*
